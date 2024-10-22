@@ -1,6 +1,6 @@
 # 🏢Skyscraper
 
-I have modified the very powerful scraper developed mainly by Muldjord and later on enhanced by Detain and lately by Gemba. I forked the Detain version (two years ago) after it had reached a somewhat stale state, and I started adding many features to cater to my needs. Some changes very implemented (more elegantly) by Gemba, but my fork had already diverged too much so I just cherry-picked from his fork what I felt I needed instead of rebasing to his fork and starting from there.
+I have modified the very powerful scraper developed mainly by [Muldjord](https://github.com/muldjord/skyscraper) and later on enhanced by [Detain](https://github.com/detain/skyscraper) and lately by [Gemba](https://github.com/Gemba/skyscraper/). I forked the Detain version (two years ago) after it had reached a somewhat stale state, and I started adding many features to cater to my needs. Some changes very implemented (more elegantly) by Gemba, but my fork had already diverged too much so I just cherry-picked from his fork what I felt I needed instead of rebasing to his fork and starting from there.
 
 The main changes have been:
 
@@ -30,6 +30,9 @@ And of course:
 * ...Changes that I need that probably no other one out there will need :)
 
 Below original Readme:
+
+
+
 
 Original project by [Lars Muldjord](https://github.com/muldjord/skyscraper)
 
