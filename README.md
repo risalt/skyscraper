@@ -13,7 +13,7 @@ The main changes have been:
 * Chiptune: A specialized scraper that matches my soundtrack collection stored in my [Navidrome](https://github.com/navidrome/navidrome) SQLite database to my game collection.
 * OfflineMobyGames: A hybrid frontend that uses an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
 * Customflags: A specialized scraper that detects special files in my collection to deduce the concepts: Completed, Favourite, Played, First Played, Last Played, Total Times Played, Time Played.
-* Launchbox: A very inefficient but effective scraper based in the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
+* Launchbox: A very inefficient but effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
 
 ## Fix Broken Scrapers
 * Notably OpenRetro, WorldOfSpectrum, but also fixes and improvements to IGDB, MobyGames ArcadeDB, TGDB and, of course the King Screenscraper.
