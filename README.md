@@ -28,8 +28,9 @@ And of course:
 * Some changes to minimize the false positives from the scrapers, specially as I basically turned off the checksum/hash mechanisms (as my files are frequently modified and the checksum search would generally fail).
 * New cache tools to manage big databases such as mine (several tens of thousands of entries) and spot inconsistencies and false positive matches.
 * ...Changes that I need that probably no other one out there will need :)
+ 
 
-Below original Readme:
+## Original Readme:
 
 
 
