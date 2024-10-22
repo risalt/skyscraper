@@ -33,9 +33,10 @@
 #endif
 
 MobyGames::MobyGames(Settings *config,
-		     QSharedPointer<NetManager> manager)
+                     QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
+  incrementalScraping = true;
   connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
   limitTimer.setInterval(10000); // 10 second request limit
   limitTimer.setSingleShot(false);
@@ -55,18 +56,31 @@ MobyGames::MobyGames(Settings *config,
   fetchOrder.append(RATING);
   fetchOrder.append(COVER);
   fetchOrder.append(SCREENSHOT);
+  fetchOrder.append(TEXTURE);
+  fetchOrder.append(MARQUEE);
+  fetchOrder.append(WHEEL);
+  fetchOrder.append(MANUAL);
 }
 
 void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
-				QString searchName, QString platform)
+                                QString searchName, QString)
 {
+  loadConfig("mobygames.json");
   QString platformId = getPlatformId(config->platform);
+  if (platformId == "na") {
+    reqRemaining = 0;
+    printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
+    return;
+  }
 
   printf("Waiting as advised by MobyGames api restrictions...\n");
   limiter.exec();
-  netComm->request(searchUrlPre + "?api_key=" + StrTools::unMagic("175;229;170;189;188;202;211;117;164;165;185;209;164;234;180;155;199;209;224;231;193;190;173;175") + "&title=" + searchName + (platformId == "na"?"":"&platform=" + platformId));
+  QString searchUrl = searchUrlPre + "?api_key=" + config->apiKey + 
+                      "&title=" + searchName + (platformId == "na"?"":"&platform=" + platformId);
+  netComm->request(searchUrl);
   q.exec();
   data = netComm->getData();
+  printf("s %s\n", searchUrl.toStdString().c_str());
 
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
@@ -92,10 +106,12 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
     QJsonArray jsonPlatforms = jsonGame["platforms"].toArray();
     while(!jsonPlatforms.isEmpty()) {
       QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
-      game.url = searchUrlPre + "/" + game.id + "/platforms/" + QString::number(jsonPlatform["platform_id"].toInt()) + "?api_key=" + StrTools::unMagic("175;229;170;189;188;202;211;117;164;165;185;209;164;234;180;155;199;209;224;231;193;190;173;175");
-      game.platform = jsonPlatform["platform_name"].toString();
-      if(platformMatch(game.platform, platform)) {
-	gameEntries.append(game);
+      QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
+      if (gamePlatformId == platformId ) {
+        game.url = searchUrlPre + "/" + game.id + "/platforms/" +
+                   QString::number(jsonPlatform["platform_id"].toInt()) + "?api_key=" + config->apiKey;
+        game.platform = jsonPlatform["platform_name"].toString();
+        gameEntries.append(game);
       }
       jsonPlatforms.removeFirst();
     }
@@ -103,13 +119,19 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-void MobyGames::getGameData(GameEntry &game)
+void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   printf("Waiting to get game data...\n");
   limiter.exec();
   netComm->request(game.url);
   q.exec();
   data = netComm->getData();
+  printf("g %s\n", game.url.toStdString().c_str());
 
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
@@ -117,6 +139,20 @@ void MobyGames::getGameData(GameEntry &game)
   }
 
   jsonObj = QJsonDocument::fromJson(game.miscData).object();
+
+  printf("Waiting to get media data...\n");
+  limiter.exec();
+  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+  q.exec();
+  data = netComm->getData();
+  jsonMedia = QJsonDocument::fromJson(data);
+
+  printf("Waiting to get screenshot data...\n");
+  limiter.exec();
+  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+  q.exec();
+  data = netComm->getData();
+  jsonScreens = QJsonDocument::fromJson(data);
 
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
@@ -132,26 +168,68 @@ void MobyGames::getGameData(GameEntry &game)
     case PLAYERS:
       getPlayers(game);
       break;
-    case RATING:
-      getRating(game);
-      break;
     case AGES:
       getAges(game);
       break;
+    case RATING:
+      getRating(game);
+      break;
     case TAGS:
       getTags(game);
+      break;
+    case FRANCHISES:
+      getFranchises(game);
       break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
     case COVER:
       if(config->cacheCovers) {
-	getCover(game);
+        if ((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
       }
       break;
     case SCREENSHOT:
       if(config->cacheScreenshots) {
-	getScreenshot(game);
+        if ((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
+      }
+      break;
+    case WHEEL:
+      if(config->cacheWheels) {
+        if ((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
+      }
+      break;
+    case MARQUEE:
+      if(config->cacheMarquees) {
+        if ((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
+      }
+      break;
+    case TEXTURE:
+      if (config->cacheTextures) {
+        if ((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
+      }
+      break;
+    case VIDEO:
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        if ((!cache) || (cache && cache->videoData == "")) {
+          getVideo(game);
+        }
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        if ((!cache) || (cache && cache->manualData == "")) {
+          getManual(game);
+        }
       }
       break;
     default:
@@ -169,7 +247,8 @@ void MobyGames::getPlayers(GameEntry &game)
 {
   QJsonArray jsonAttribs = jsonDoc.object()["attributes"].toArray();
   for(int a = 0; a < jsonAttribs.count(); ++a) {
-    if(jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Players Supported") {
+    if(jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Players Supported" || 
+       jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Offline Players") {
       game.players = jsonAttribs.at(a).toObject()["attribute_name"].toString();
     }
   }
@@ -250,8 +329,8 @@ void MobyGames::getPublisher(GameEntry &game)
     QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
     for(int b = 0; b < jsonCompanies.count(); ++b) {
       if(jsonCompanies.at(b).toObject()["role"].toString() == "Published by") {
-	game.publisher = jsonCompanies.at(b).toObject()["company_name"].toString();
-	return;
+        game.publisher = jsonCompanies.at(b).toObject()["company_name"].toString();
+        return;
       }
     }
   }
@@ -264,8 +343,8 @@ void MobyGames::getDeveloper(GameEntry &game)
     QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
     for(int b = 0; b < jsonCompanies.count(); ++b) {
       if(jsonCompanies.at(b).toObject()["role"].toString() == "Developed by") {
-	game.developer = jsonCompanies.at(b).toObject()["company_name"].toString();
-	return;
+        game.developer = jsonCompanies.at(b).toObject()["company_name"].toString();
+        return;
       }
     }
   }
@@ -285,21 +364,14 @@ void MobyGames::getRating(GameEntry &game)
   if(jsonValue != QJsonValue::Undefined) {
     double rating = jsonValue.toDouble();
     if(rating != 0.0) {
-      game.rating = QString::number(rating / 5.0);
+      game.rating = QString::number(rating / 10.0);
     }
   }
 }
 
 void MobyGames::getCover(GameEntry &game)
 {
-  printf("Waiting to get cover data...\n");
-  limiter.exec();
-  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
-  q.exec();
-  data = netComm->getData();
-
-  jsonDoc = QJsonDocument::fromJson(data);
-  if(jsonDoc.isEmpty()) {
+  if(jsonMedia.isEmpty()) {
     return;
   }
 
@@ -307,33 +379,33 @@ void MobyGames::getCover(GameEntry &game)
   bool foundFrontCover= false;
 
   for(const auto &region: regionPrios) {
-    QJsonArray jsonCoverGroups = jsonDoc.object()["cover_groups"].toArray();
+    QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
       QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
       while(!jsonCountries.isEmpty()) {
-	if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
-	  foundRegion = true;
-	  break;
-	}
-	jsonCountries.removeFirst();
+        if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+          foundRegion = true;
+          break;
+        }
+        jsonCountries.removeFirst();
       }
       if(!foundRegion) {
-	jsonCoverGroups.removeFirst();
-	continue;
+        jsonCoverGroups.removeFirst();
+        continue;
       }
       QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
       while(!jsonCovers.isEmpty()) {
-	QJsonObject jsonCover = jsonCovers.first().toObject();
-	if(jsonCover["scan_of"].toString().toLower().simplified().contains("front cover")) {
-	  coverUrl = jsonCover["image"].toString();
-	  foundFrontCover= true;
-	  break;
-	}
-	jsonCovers.removeFirst();
+        QJsonObject jsonCover = jsonCovers.first().toObject();
+        if(jsonCover["scan_of"].toString().toLower().simplified().contains("front cover")) {
+          coverUrl = jsonCover["image"].toString();
+          foundFrontCover= true;
+          break;
+        }
+        jsonCovers.removeFirst();
       }
       if(foundFrontCover) {
-	break;
+        break;
       }
       jsonCoverGroups.removeFirst();
     }
@@ -345,6 +417,7 @@ void MobyGames::getCover(GameEntry &game)
   coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
 
   if(!coverUrl.isEmpty()) {
+    printf("Waiting to get cover data...\n");
     netComm->request(coverUrl);
     q.exec();
     QImage image;
@@ -355,25 +428,266 @@ void MobyGames::getCover(GameEntry &game)
   }
 }
 
-void MobyGames::getScreenshot(GameEntry &game)
+void MobyGames::getManual(GameEntry &game)
 {
-  printf("Waiting to get screenshot data...\n");
-  limiter.exec();
-  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
-  q.exec();
-  data = netComm->getData();
-
-  jsonDoc = QJsonDocument::fromJson(data);
-  if(jsonDoc.isEmpty()) {
+  if(jsonMedia.isEmpty()) {
     return;
   }
 
-  QJsonArray jsonScreenshots = jsonDoc.object()["screenshots"].toArray();
+  QString coverUrl = "";
+  bool foundFrontCover= false;
+
+  for(const auto &region: regionPrios) {
+    QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
+    while(!jsonCoverGroups.isEmpty()) {
+      bool foundRegion = false;
+      QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
+      while(!jsonCountries.isEmpty()) {
+        if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+          foundRegion = true;
+          break;
+        }
+        jsonCountries.removeFirst();
+      }
+      if(!foundRegion) {
+        jsonCoverGroups.removeFirst();
+        continue;
+      }
+      QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
+      while(!jsonCovers.isEmpty()) {
+        QJsonObject jsonCover = jsonCovers.first().toObject();
+        if(jsonCover["scan_of"].toString().toLower().simplified().contains("manual")) {
+          coverUrl = jsonCover["image"].toString();
+          foundFrontCover= true;
+          break;
+        }
+        jsonCovers.removeFirst();
+      }
+      if(foundFrontCover) {
+        break;
+      }
+      jsonCoverGroups.removeFirst();
+    }
+    if(foundFrontCover) {
+      break;
+    }
+  }
+
+  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+
+  if(!coverUrl.isEmpty()) {
+    printf("Waiting to get manual data...\n");
+    netComm->request(coverUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.manualData = netComm->getData();
+      QByteArray contentType = netComm->getContentType();
+      if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
+         !contentType.isEmpty() && game.manualData.size() > 4096) {
+        game.manualFormat = contentType.mid(contentType.indexOf("/") + 1,
+                                            contentType.length() - contentType.indexOf("/") + 1);
+        if (game.manualFormat.length()>4) {
+          game.manualFormat = "webp";
+        }
+      } else {
+        game.manualData = "";
+      }      
+    }
+  }
+}
+
+void MobyGames::getMarquee(GameEntry &game)
+{
+  if(jsonMedia.isEmpty()) {
+    return;
+  }
+
+  QString coverUrl = "";
+  bool foundFrontCover= false;
+
+  for(const auto &region: regionPrios) {
+    QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
+    while(!jsonCoverGroups.isEmpty()) {
+      bool foundRegion = false;
+      QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
+      while(!jsonCountries.isEmpty()) {
+        if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+          foundRegion = true;
+          break;
+        }
+        jsonCountries.removeFirst();
+      }
+      if(!foundRegion) {
+        jsonCoverGroups.removeFirst();
+        continue;
+      }
+      QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
+      while(!jsonCovers.isEmpty()) {
+        QJsonObject jsonCover = jsonCovers.first().toObject();
+        if(jsonCover["scan_of"].toString().toLower().simplified().contains("inside cover")) {
+          coverUrl = jsonCover["image"].toString();
+          foundFrontCover= true;
+          break;
+        }
+        jsonCovers.removeFirst();
+      }
+      if(foundFrontCover) {
+        break;
+      }
+      jsonCoverGroups.removeFirst();
+    }
+    if(foundFrontCover) {
+      break;
+    }
+  }
+
+  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+
+  if(!coverUrl.isEmpty()) {
+    printf("Waiting to get marquee data...\n");
+    netComm->request(coverUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.marqueeData = netComm->getData();
+    }
+  }
+}
+
+void MobyGames::getTexture(GameEntry &game)
+{
+  if(jsonMedia.isEmpty()) {
+    return;
+  }
+
+  QString coverUrl = "";
+  bool foundFrontCover= false;
+
+  for(const auto &region: regionPrios) {
+    QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
+    while(!jsonCoverGroups.isEmpty()) {
+      bool foundRegion = false;
+      QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
+      while(!jsonCountries.isEmpty()) {
+        if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+          foundRegion = true;
+          break;
+        }
+        jsonCountries.removeFirst();
+      }
+      if(!foundRegion) {
+        jsonCoverGroups.removeFirst();
+        continue;
+      }
+      QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
+      while(!jsonCovers.isEmpty()) {
+        QJsonObject jsonCover = jsonCovers.first().toObject();
+        if(jsonCover["scan_of"].toString().toLower().simplified().contains("back cover")) {
+          coverUrl = jsonCover["image"].toString();
+          foundFrontCover= true;
+          break;
+        }
+        jsonCovers.removeFirst();
+      }
+      if(foundFrontCover) {
+        break;
+      }
+      jsonCoverGroups.removeFirst();
+    }
+    if(foundFrontCover) {
+      break;
+    }
+  }
+
+  if (coverUrl.isEmpty()) {
+    for(const auto &region: regionPrios) {
+      QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
+      while(!jsonCoverGroups.isEmpty()) {
+        bool foundRegion = false;
+        QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
+        while(!jsonCountries.isEmpty()) {
+          if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+            foundRegion = true;
+            break;
+          }
+          jsonCountries.removeFirst();
+        }
+        if(!foundRegion) {
+          jsonCoverGroups.removeFirst();
+          continue;
+        }
+        QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
+        while(!jsonCovers.isEmpty()) {
+          QJsonObject jsonCover = jsonCovers.first().toObject();
+          if(jsonCover["scan_of"].toString().toLower().simplified().contains("media")) {
+            coverUrl = jsonCover["image"].toString();
+            foundFrontCover= true;
+            break;
+          }
+          jsonCovers.removeFirst();
+        }
+        if(foundFrontCover) {
+          break;
+        }
+        jsonCoverGroups.removeFirst();
+      }
+      if(foundFrontCover) {
+        break;
+      }
+    }
+  }
+
+  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+
+  if(!coverUrl.isEmpty()) {
+    printf("Waiting to get back texture data...\n");
+    netComm->request(coverUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.textureData = netComm->getData();
+    }
+  }
+}
+
+void MobyGames::getWheel(GameEntry &game)
+{
+  if(jsonScreens.isEmpty()) {
+    return;
+  }
+
+  QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
 
   if(jsonScreenshots.count() < 1) {
     return;
   }
   int chosen = 1;
+  printf("Waiting to get wheel data...\n");
+  netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));
+  q.exec();
+  QImage image;
+  if(netComm->getError() == QNetworkReply::NoError &&
+     image.loadFromData(netComm->getData())) {
+    game.wheelData = netComm->getData();
+  }
+}
+
+void MobyGames::getScreenshot(GameEntry &game)
+{
+  if(jsonScreens.isEmpty()) {
+    return;
+  }
+
+  QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
+
+  if(jsonScreenshots.count() < 2) {
+    return;
+  }
+  int chosen = 2;
   if(jsonScreenshots.count() >= 3) {
     // First 2 are almost always not ingame, so skip those if we have 3 or more
 #if QT_VERSION >= 0x050a00
@@ -382,6 +696,7 @@ void MobyGames::getScreenshot(GameEntry &game)
     chosen = (qrand() % jsonScreenshots.count() - 3) + 3;
 #endif
   }
+  printf("Waiting to get screenshot data...\n");
   netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));
   q.exec();
   QImage image;
@@ -393,168 +708,37 @@ void MobyGames::getScreenshot(GameEntry &game)
 
 QString MobyGames::getPlatformId(const QString platform)
 {
-  if(platform == "3do") {
-    return "35";
-  } else if(platform == "3ds") {
-    return "101";
-  } else if(platform == "amiga") {
-    return "19";
-  } else if(platform == "aga") {
-    return "19";
-  } else if(platform == "cd32") {
-    return "56";
-  } else if(platform == "cdtv") {
-    return "83";
-  } else if(platform == "amstradcpc") {
-    return "60";
-  } else if(platform == "apple2") {
-    return "31";
-  } else if(platform == "arcade") {
-    return "na";
-  } else if(platform == "arcadia") {
-    return "162";
-  } else if(platform == "astrocde") {
-    return "160";
-  } else if(platform == "atari800") {
-    return "39";
-  } else if(platform == "atari2600") {
-    return "28";
-  } else if(platform == "atari5200") {
-    return "33";
-  } else if(platform == "atari7800") {
-    return "34";
-  } else if(platform == "atarijaguar") {
-    return "17";
-  } else if(platform == "atarilynx") {
-    return "18";
-  } else if(platform == "atarist") {
-    return "24";
-  } else if(platform == "c16") {
-    return "115";
-  } else if(platform == "c64") {
-    return "27";
-  } else if(platform == "c128") {
-    return "61";
-  } else if(platform == "coco") {
-    return "62";
-  } else if(platform == "coleco") {
-    return "29";
-  } else if(platform == "daphne") {
-    return "na";
-  } else if(platform == "dragon32") {
-    return "79";
-  } else if(platform == "dreamcast") {
-    return "8";
-  } else if(platform == "fba") {
-    return "na";
-  } else if(platform == "fds") {
-    return "22";
-  } else if(platform == "gameandwatch") {
-    return "na";
-  } else if(platform == "gamegear") {
-    return "25";
-  } else if(platform == "gb") {
-    return "10";
-  } else if(platform == "gba") {
-    return "12";
-  } else if(platform == "gbc") {
-    return "11";
-  } else if(platform == "gc") {
-    return "14";
-  } else if(platform == "genesis") {
-    return "16";
-  } else if(platform == "intellivision") {
-    return "30";
-  } else if(platform == "mame-advmame") {
-    return "na";
-  } else if(platform == "mame-libretro") {
-    return "na";
-  } else if(platform == "mame-mame4all") {
-    return "na";
-  } else if(platform == "mastersystem") {
-    return "26";
-  } else if(platform == "megacd") {
-    return "20";
-  } else if(platform == "megadrive") {
-    return "16";
-  } else if(platform == "msx") {
-    return "57";
-  } else if(platform == "n64") {
-    return "9";
-  } else if(platform == "nds") {
-    return "44";
-  } else if(platform == "neogeo") {
-    return "36";
-  } else if(platform == "nes") {
-    return "22";
-  } else if(platform == "ngp") {
-    return "52";
-  } else if(platform == "ngpc") {
-    return "53";
-  } else if(platform == "oric") {
-    return "111";
-  } else if(platform == "pc") {
-    return "na";
-  } else if(platform == "pc88") {
-    return "94";
-  } else if(platform == "pc98") {
-    return "95";
-  } else if(platform == "pcfx") {
-    return "59";
-  } else if(platform == "pcengine") {
-    return "na";
-  } else if(platform == "pokemini") {
-    return "152";
-  } else if(platform == "ports") {
-    return "na";
-  } else if(platform == "ps2") {
-    return "7";
-  } else if(platform == "psp") {
-    return "46";
-  } else if(platform == "psx") {
-    return "6";
-  } else if(platform == "saturn") {
-    return "23";
-  } else if(platform == "scummvm") {
-    return "na";
-  } else if(platform == "sega32x") {
-    return "21";
-  } else if(platform == "segacd") {
-    return "20";
-  } else if(platform == "sg-1000") {
-    return "114";
-  } else if(platform == "snes") {
-    return "15";
-  } else if(platform == "ti99") {
-    return "47";
-  } else if(platform == "trs-80") {
-    return "58";
-  } else if(platform == "vectrex") {
-    return "37";
-  } else if(platform == "vic20") {
-    return "43";
-  } else if(platform == "videopac") {
-    return "128";
-  } else if(platform == "virtualboy") {
-    return "38";
-  } else if(platform == "wii") {
-    return "82";
-  } else if(platform == "wonderswan") {
-    return "48";
-  } else if(platform == "wonderswancolor") {
-    return "49";
-  } else if(platform == "x68000") {
-    return "106";
-  } else if(platform == "x1") {
-    return "121";
-  } else if(platform == "zmachine") {
-    return "169";
-  } else if(platform == "zx81") {
-    return "119";
-  } else if(platform == "zxspectrum") {
-    return "41";
-  }
+  auto it = platformToId.find(platform);
+  if(it != platformToId.cend())
+      return QString::number(it.value());
+
   return "na";
+}
+
+void MobyGames::loadConfig(const QString& configPath)
+{
+  platformToId.clear();
+
+  QFile configFile(configPath);
+  if (!configFile.open(QIODevice::ReadOnly))
+    return;
+
+  QByteArray saveData = configFile.readAll();
+  QJsonDocument json(QJsonDocument::fromJson(saveData));
+
+  if(json.isNull() || json.isEmpty())
+    return;
+
+  QJsonArray platformsArray = json["platforms"].toArray();
+  for (int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
+    QJsonObject platformObject = platformsArray[platformIndex].toObject();
+
+    QString platformName = platformObject["platform_name"].toString().toLower();
+    int platformId = platformObject["platform_id"].toInt(-1);
+
+    if(platformId > 0)
+      platformToId[platformName] = platformId;
+  }
 }
 
 QString MobyGames::getRegionShort(const QString &region)

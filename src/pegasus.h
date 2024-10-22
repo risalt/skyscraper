@@ -48,13 +48,11 @@ public:
   QString getMarqueesFolder() override;
   QString getTexturesFolder() override;
   QString getVideosFolder() override;
+  QString getManualsFolder() override;
 
 private:
   QString makeAbsolute(const QString &filePath, const QString &inputFolder);
-  QString fromPreservedHeader(const QString &key, const QString &suggested);
-  void removePreservedHeader(const QString &key);
   QString toPegasusFormat(const QString &key, const QString &value);
-  QList<QPair<QString, QString> > headerPairs;
   QString tab = "  ";
 
 };

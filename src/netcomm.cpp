@@ -38,10 +38,12 @@ NetComm::NetComm(QSharedPointer<NetManager> manager)
   connect(&requestTimer, &QTimer::timeout, this, &NetComm::requestTimeout);
 }
 
-void NetComm::request(QString query, QString postData, QList<QPair<QString, QString> > headers)
+void NetComm::request(QString query, QString postData, QList<QPair<QString, QString> > headers, QByteArray operation)
 {
   QUrl url(query);
   QNetworkRequest request(url);
+/*  request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+  request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);*/
   request.setHeader(QNetworkRequest::UserAgentHeader, "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:74.0) Gecko/20100101 Firefox/74.0");
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
@@ -51,10 +53,18 @@ void NetComm::request(QString query, QString postData, QList<QPair<QString, QStr
     }
   }
 
-  if(postData.isNull()) {
-    reply = manager->getRequest(request);
-  } else {
-    reply = manager->postRequest(request, postData.toUtf8());
+  if (operation.isEmpty()) {
+    if(postData.isNull()) {
+      reply = manager->getRequest(request);
+    } else {
+      reply = manager->postRequest(request, postData.toUtf8());
+    }
+  }
+  else if (operation == "DELETE") {
+    reply = manager->deleteRequest(request);
+  }
+  else {
+    reply = manager->customRequest(request, postData.toUtf8(), operation);
   }
   connect(reply, &QNetworkReply::finished, this, &NetComm::replyReady);
   connect(reply, &QNetworkReply::downloadProgress, this, &NetComm::dataDownloaded);

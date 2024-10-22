@@ -39,20 +39,20 @@ QImage ImgTools::cropToFit(const QImage &image, bool cropBlack)
     QRgb *scanline = (QRgb *)image.scanLine(y);
     for(int x = 0; x < image.width(); ++x) {
       if(qAlpha(scanline[x]) > 0 &&
-	 (cropBlack?qRed(scanline[x]) > 0 ||
-	  qGreen(scanline[x]) > 0 ||
-	  qBlue(scanline[x]) > 0:true)) {
-	pixelsFound = true;
-	if(left > x) {
-	  left = x;
-	}
-	if(right < x) {
-	  right = x + 1;
-	}
-	if(top == 0) {
-	  top = y;
-	}
-	bottom = y + 1;
+         (cropBlack?qRed(scanline[x]) > 0 ||
+          qGreen(scanline[x]) > 0 ||
+          qBlue(scanline[x]) > 0:true)) {
+        pixelsFound = true;
+        if(left > x) {
+          left = x;
+        }
+        if(right < x) {
+          right = x + 1;
+        }
+        if(top == 0) {
+          top = y;
+        }
+        bottom = y + 1;
       }
     }
   }

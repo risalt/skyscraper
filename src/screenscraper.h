@@ -48,7 +48,7 @@ private:
   QEventLoop limiter;
   QList<QString> getSearchNames(const QFileInfo &info) override;
   void getSearchResults(QList<GameEntry> &gameEntries, QString searchName, QString) override;
-  void getGameData(GameEntry &game) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
@@ -57,6 +57,7 @@ private:
   void getRating(GameEntry &game) override;
   void getDescription(GameEntry &game) override;
   void getTags(GameEntry &game) override;
+  void getFranchises(GameEntry &game) override;
 
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
@@ -64,6 +65,7 @@ private:
   void getMarquee(GameEntry &game) override;
   void getTexture(GameEntry& game) override;
   void getVideo(GameEntry &game) override;
+  void getManual(GameEntry &game) override;
 
   QString getJsonText(QJsonArray array, int attr, QList<QString> types = QList<QString>());
 

@@ -41,15 +41,19 @@ constexpr int MARQUEE = 11;
 constexpr int AGES = 12;
 constexpr int TITLE = 13;
 constexpr int TEXTURE = 14;
+constexpr int FRANCHISES = 15;
+constexpr int MANUAL = 16;
+constexpr int CHIPTUNE = 17;
+constexpr int CUSTOMFLAGS = 18;
 
 #include <QImage>
 
 class GameEntry {
 public:
   GameEntry();
-  void calculateCompleteness(bool videoEnabled = false);
   int getCompleteness() const;
   void resetMedia();
+  // operator QString() const { return "TEST\n"; };
 
   QString id = "";
   QString path = "";
@@ -67,31 +71,52 @@ public:
   QString publisherSrc = "";
   QString tags = "";
   QString tagsSrc = "";
+  QString franchises = "";
+  QString franchisesSrc = "";
   QString players = "";
   QString playersSrc = "";
   QString ages = "";
   QString agesSrc = "";
   QString rating = "";
   QString ratingSrc = "";
+  bool completed = false;
+  bool favourite = false;
+  bool played = false;
+  unsigned int timesPlayed = 0;
+  unsigned int lastPlayed = 0;
+  unsigned int  firstPlayed = 0;
+  unsigned int timePlayed = 0;
 
   QByteArray coverData = QByteArray();
   QString coverFile = "";
   QString coverSrc = "";
+  QString coverRegion = "";
   QByteArray screenshotData = QByteArray();
   QString screenshotFile = "";
   QString screenshotSrc = "";
+  QString screenshotRegion = "";
   QByteArray wheelData = QByteArray();
   QString wheelFile = "";
   QString wheelSrc = "";
+  QString wheelRegion = "";
   QByteArray marqueeData = QByteArray();
   QString marqueeFile = "";
   QString marqueeSrc = "";
-  QByteArray videoData = "";
+  QString marqueeRegion = "";
   QByteArray textureData = QByteArray();
   QString textureFile = "";
   QString textureSrc = "";
+  QString textureRegion = "";
+  QByteArray videoData = "";
   QString videoFile = "";
   QString videoSrc = "";
+  QByteArray manualData = "";
+  QString manualFile = "";
+  QString manualSrc = "";
+  QString chiptuneId = "";
+  QString chiptuneIdSrc = "";
+  QString chiptunePath = "";
+  QString chiptunePathSrc = "";
 
   int searchMatch = 0;
   QString cacheId = "";
@@ -100,9 +125,11 @@ public:
   QString sqrNotes = "";
   QString parNotes = "";
   QString videoFormat = "";
+  QString manualFormat = "";
   QString baseName = "";
   QString absoluteFilePath = "";
   bool found = true;
+  bool emptyShell = false;
 
   QByteArray miscData = "";
 
@@ -130,8 +157,8 @@ public:
   // Pegasus specific metadata for preservation
   QList<QPair<QString, QString> > pSValuePairs;
 
-private:
-  double completeness = 0;
 };
+
+QDebug operator<<(QDebug dbg, const GameEntry &game);
 
 #endif // GAMEENTRY_H

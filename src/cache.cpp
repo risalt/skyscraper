@@ -26,6 +26,7 @@
 #include <iostream>
 
 #include <QFile>
+#include <QFileInfo>
 #include <QDir>
 #include <QXmlStreamReader>
 #include <QXmlStreamAttributes>
@@ -36,7 +37,9 @@
 #include <QProcess>
 
 #include "cache.h"
+#include "strtools.h"
 #include "nametools.h"
+#include "skyscraper.h"
 #include "queue.h"
 
 Cache::Cache(const QString &cacheFolder)
@@ -46,6 +49,7 @@ Cache::Cache(const QString &cacheFolder)
 
 bool Cache::createFolders(const QString &scraper)
 {
+  globalScraper = scraper;
   if(scraper != "cache") {
     if(!cacheDir.mkpath(cacheDir.absolutePath() + "/covers/" + scraper)) {
       return false;
@@ -65,12 +69,15 @@ bool Cache::createFolders(const QString &scraper)
     if(!cacheDir.mkpath(cacheDir.absolutePath() + "/videos/" + scraper)) {
       return false;
     }
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/manuals/" + scraper)) {
+      return false;
+    }
   }
 
   // Copy priorities.xml example file to cache folder if it doesn't already exist
   if(!QFileInfo::exists(cacheDir.absolutePath() + "/priorities.xml")) {
     QFile::copy("cache/priorities.xml.example",
-		cacheDir.absolutePath() + "/priorities.xml");
+                cacheDir.absolutePath() + "/priorities.xml");
   }
 
   return true;
@@ -79,27 +86,29 @@ bool Cache::createFolders(const QString &scraper)
 bool Cache::read()
 {
   QFile quickIdFile(cacheDir.absolutePath() + "/quickid.xml");
+  QMap<QString, bool> idHash;
   if(quickIdFile.open(QIODevice::ReadOnly)) {
     printf("Reading and parsing quick id xml, please wait... ");
     fflush(stdout);
     QXmlStreamReader xml(&quickIdFile);
     while(!xml.atEnd()) {
       if(xml.readNext() != QXmlStreamReader::StartElement) {
-	continue;
+        continue;
       }
       if(xml.name() != "quickid") {
-	continue;
+        continue;
       }
       QXmlStreamAttributes attribs = xml.attributes();
       if(!attribs.hasAttribute("filepath") ||
-	 !attribs.hasAttribute("timestamp") ||
-	 !attribs.hasAttribute("id")) {
-	continue;
+         !attribs.hasAttribute("timestamp") ||
+         !attribs.hasAttribute("id")) {
+        continue;
       }
 
       QPair<qint64, QString> pair;
       pair.first = attribs.value("timestamp").toULongLong();
       pair.second = attribs.value("id").toString();
+      idHash[pair.second] = true;
       quickIds[attribs.value("filepath").toString()] = pair;
     }
     printf("\033[1;32mDone!\033[0m\n");
@@ -107,66 +116,97 @@ bool Cache::read()
 
   QFile cacheFile(cacheDir.absolutePath() + "/db.xml");
   if(cacheFile.open(QIODevice::ReadOnly)) {
+    printf("Building file lookup cache, please wait... ");
+    fflush(stdout);
+
+    QSet<QString> fileEntries;
+    QStringList binTypes;
+    binTypes << "cover" << "screenshot" << "wheel" << "marquee" << "texture" << "video" << "manual";
+    for (auto const &t : binTypes) {
+      QDir dir(cacheDir.absolutePath() + "/" + t + "s", "*.*", QDir::Name,
+               QDir::Files);
+      QDirIterator it(dir.absolutePath(),
+                      QDir::Files | QDir::NoDotAndDotDot,
+                      QDirIterator::Subdirectories);
+      while (it.hasNext()) {
+        fileEntries.insert(it.next());
+      }
+    }
+    printf("\033[1;32mDone!\033[0m\n");
+    printf("Cached %d files\n\n", fileEntries.count());
+
     printf("Reading and parsing resource cache, please wait... ");
     fflush(stdout);
     QXmlStreamReader xml(&cacheFile);
     while(!xml.atEnd()) {
       if(xml.readNext() != QXmlStreamReader::StartElement) {
-	continue;
+        continue;
       }
       if(xml.name() != "resource") {
-	continue;
+        continue;
       }
       QXmlStreamAttributes attribs = xml.attributes();
       if(!attribs.hasAttribute("sha1") && !attribs.hasAttribute("id")) {
-	printf("Resource is missing unique id, skipping...\n");
-	continue;
+        printf("Resource is missing unique id, skipping...\n");
+        continue;
       }
 
       Resource resource;
       if(attribs.hasAttribute("sha1")) { // Obsolete, but needed for backwards compat
-	resource.cacheId = attribs.value("sha1").toString();
+        resource.cacheId = attribs.value("sha1").toString();
       } else {
-	resource.cacheId = attribs.value("id").toString();
+        if (idHash.contains(attribs.value("id").toString())) {
+          resource.cacheId = attribs.value("id").toString();
+        }
+        else {
+          printf("Resource with cache id '%s' has no reference in the quickid file, skipping...\n",
+                 attribs.value("id").toString().toStdString().c_str());
+          continue;
+        }
       }
 
       if(attribs.hasAttribute("source")) {
-	resource.source = attribs.value("source").toString();
+        resource.source = attribs.value("source").toString();
       } else {
-	resource.source = "generic";
+        resource.source = "generic";
       }
       if(attribs.hasAttribute("type")) {
-	resource.type = attribs.value("type").toString();
-	addToResCounts(resource.source, resource.type);
+        resource.type = attribs.value("type").toString();
+        addToResCounts(resource.source, resource.type);
       } else {
-	printf("Resource with cache id '%s' is missing 'type' attribute, skipping...\n",
-	       resource.cacheId.toStdString().c_str());
-	continue;
+        printf("Resource with cache id '%s' is missing 'type' attribute, skipping...\n",
+               resource.cacheId.toStdString().c_str());
+        continue;
       }
       if(attribs.hasAttribute("timestamp")) {
-	resource.timestamp = attribs.value("timestamp").toULongLong();
+        resource.timestamp = attribs.value("timestamp").toULongLong();
       } else {
-	printf("Resource with cache id '%s' is missing 'timestamp' attribute, skipping...\n",
-	       resource.cacheId.toStdString().c_str());
-	continue;
+        printf("Resource with cache id '%s' is missing 'timestamp' attribute, skipping...\n",
+               resource.cacheId.toStdString().c_str());
+        continue;
       }
       resource.value = xml.readElementText();
-      if(resource.type == "cover" || resource.type == "screenshot" ||
-	 resource.type == "wheel" || resource.type == "marquee" ||
-	 resource.type == "texture" || resource.type == "video") {
-	if(!QFileInfo::exists(cacheDir.absolutePath() + "/" + resource.value)) {
-	  printf("Source file '%s' missing, skipping entry...\n",
-		 resource.value.toStdString().c_str());
-	  continue;
-	}
+      if(resource.type == "cover"   || resource.type == "screenshot" ||
+         resource.type == "wheel"   || resource.type == "marquee"  ||
+         resource.type == "texture" || resource.type == "video"  ||
+         resource.type == "manual") {
+        if(!fileEntries.contains(cacheDir.absolutePath() + "/" + resource.value)) {
+          printf("Source file '%s' missing, skipping entry...\n",
+                 resource.value.toStdString().c_str());
+          continue;
+        }
       }
 
       resources.append(resource);
     }
+    
     cacheFile.close();
     resAtLoad = resources.length();
     printf("\033[1;32mDone!\033[0m\n");
     printf("Successfully parsed %d resources!\n\n", resources.length());
+    if (globalScraper == "customflags") {
+      purgeResources("m=customflags");
+    }
     return true;
   }
   return false;
@@ -179,32 +219,35 @@ void Cache::printPriorities(QString cacheId)
   fillBlanks(game);
   printf("\033[1;34mCurrent resource priorities for this rom:\033[0m\n");
   printf("Title:          '\033[1;32m%s\033[0m' (%s)\n",
-	 game.title.toStdString().c_str(),
-	 (game.titleSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.titleSrc).toStdString().c_str());
+         game.title.toStdString().c_str(),
+         (game.titleSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.titleSrc).toStdString().c_str());
   printf("Platform:       '\033[1;32m%s\033[0m' (%s)\n",
-	 game.platform.toStdString().c_str(),
-	 (game.platformSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.platformSrc).toStdString().c_str());
+         game.platform.toStdString().c_str(),
+         (game.platformSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.platformSrc).toStdString().c_str());
   printf("Release Date:   '\033[1;32m%s\033[0m' (%s)\n",
-	 game.releaseDate.toStdString().c_str(),
-	 (game.releaseDateSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.releaseDateSrc).toStdString().c_str());
+         game.releaseDate.toStdString().c_str(),
+         (game.releaseDateSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.releaseDateSrc).toStdString().c_str());
   printf("Developer:      '\033[1;32m%s\033[0m' (%s)\n",
-	 game.developer.toStdString().c_str(),
-	 (game.developerSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.developerSrc).toStdString().c_str());
+         game.developer.toStdString().c_str(),
+         (game.developerSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.developerSrc).toStdString().c_str());
   printf("Publisher:      '\033[1;32m%s\033[0m' (%s)\n",
-	 game.publisher.toStdString().c_str(),
-	 (game.publisherSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.publisherSrc).toStdString().c_str());
+         game.publisher.toStdString().c_str(),
+         (game.publisherSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.publisherSrc).toStdString().c_str());
   printf("Players:        '\033[1;32m%s\033[0m' (%s)\n",
-	 game.players.toStdString().c_str(),
-	 (game.playersSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.playersSrc).toStdString().c_str());
+         game.players.toStdString().c_str(),
+         (game.playersSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.playersSrc).toStdString().c_str());
   printf("Ages:           '\033[1;32m%s\033[0m' (%s)\n",
-	 game.ages.toStdString().c_str(),
-	 (game.agesSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.agesSrc).toStdString().c_str());
+         game.ages.toStdString().c_str(),
+         (game.agesSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.agesSrc).toStdString().c_str());
   printf("Tags:           '\033[1;32m%s\033[0m' (%s)\n",
-	 game.tags.toStdString().c_str(),
-	 (game.tagsSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.tagsSrc).toStdString().c_str());
+         game.tags.toStdString().c_str(),
+         (game.tagsSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.tagsSrc).toStdString().c_str());
+  printf("Franchises:     '\033[1;32m%s\033[0m' (%s)\n",
+         game.franchises.toStdString().c_str(),
+         (game.franchisesSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.franchisesSrc).toStdString().c_str());
   printf("Rating:         '\033[1;32m%s\033[0m' (%s)\n",
-	 game.rating.toStdString().c_str(),
-	 (game.ratingSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.ratingSrc).toStdString().c_str());
+         game.rating.toStdString().c_str(),
+         (game.ratingSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.ratingSrc).toStdString().c_str());
   printf("Cover:          '");
   if(game.coverSrc.isEmpty()) {
     printf("\033[1;31mNO\033[0m' ()\n");
@@ -233,8 +276,7 @@ void Cache::printPriorities(QString cacheId)
   if (game.textureSrc.isEmpty()) {
     printf("\033[1;31mNO\033[0m' ()\n");
   } else {
-    printf("\033[1;32mYES\033[0m' (%s)\n",
-           game.textureSrc.toStdString().c_str());
+    printf("\033[1;32mYES\033[0m' (%s)\n", game.textureSrc.toStdString().c_str());
   }
   printf("Video:          '");
   if(game.videoSrc.isEmpty()) {
@@ -242,31 +284,53 @@ void Cache::printPriorities(QString cacheId)
   } else {
     printf("\033[1;32mYES\033[0m' (%s)\n", game.videoSrc.toStdString().c_str());
   }
+  printf("Manual:          '");
+  if(game.manualSrc.isEmpty()) {
+    printf("\033[1;31mNO\033[0m' ()\n");
+  } else {
+    printf("\033[1;32mYES\033[0m' (%s)\n", game.manualSrc.toStdString().c_str());
+  }
+  printf("Chiptune:        '");
+  if(game.chiptuneIdSrc.isEmpty()) {
+    printf("\033[1;31mNO\033[0m' ()\n");
+  } else {
+    printf("\033[1;32mYES\033[0m' (%s)\n", game.chiptuneIdSrc.toStdString().c_str());
+  }
   printf("Description: (%s)\n'\033[1;32m%s\033[0m'",
-	 (game.descriptionSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.descriptionSrc).toStdString().c_str(),
-	 game.description.toStdString().c_str());
+         (game.descriptionSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.descriptionSrc).toStdString().c_str(),
+         game.description.toStdString().c_str());
   printf("\n\n");
 }
 
 void Cache::editResources(QSharedPointer<Queue> queue,
-			  const QString &command,
-			  const QString &type)
+                          const QString &command,
+                          const QString &type)
 {
   // Check sanity of command and parameters, if any
   if(!command.isEmpty()) {
     if(command == "new") {
       if(type != "title" &&
-	 type != "platform" &&
-	 type != "releasedate" &&
-	 type != "developer" &&
-	 type != "publisher" &&
-	 type != "players" &&
-	 type != "ages" &&
-	 type != "genres" &&
-	 type != "rating" &&
-	 type != "description") {
-	printf("Unknown resource type '%s', please specify any of the following: 'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', 'ages', 'genres', 'rating', 'description'.\n", type.toStdString().c_str());
-	return;
+         type != "platform" &&
+         type != "releasedate" &&
+         type != "developer" &&
+         type != "publisher" &&
+         type != "players" &&
+         type != "ages" &&
+         type != "genres" &&
+         type != "franchises" &&
+         type != "rating" &&
+         type != "chiptuneid" &&
+         type != "chiptunepath" &&
+         type != "completed" &&
+         type != "favourite" &&
+         type != "played" &&
+         type != "lastplayed" &&
+         type != "firstplayed" &&
+         type != "timesplayed" &&
+         type != "timeplayed" &&
+         type != "description") {
+        printf("Unknown resource type '%s', please specify any of the following: 'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', 'ages', 'genres', 'franchises', 'rating', 'description', 'chiptuneid', 'chiptunepath', 'completed', 'favourite', 'played', 'lastplayed', 'firstplayed', 'timesplayed' or 'timeplayed'.\n", type.toStdString().c_str());
+        return;
       }
     } else {
       printf("Unknown command '%s', please specify one of the following: 'new'.\n", command.toStdString().c_str());
@@ -289,327 +353,394 @@ void Cache::editResources(QSharedPointer<Queue> queue,
       printf("\033[0;32m#%d/%d\033[0m \033[1;33m\nCURRENT FILE: \033[0m\033[1;32m%s\033[0m\033[1;33m\033[0m\n", queueLength - queue->length(), queueLength, info.fileName().toStdString().c_str());
       std::string userInput = "";
       if(command.isEmpty()) {
-	printf("\033[1;34mWhat would you like to do?\033[0m (Press enter to continue to next rom in queue)\n");
-	printf("\033[1;33ms\033[0m) Show current resource priorities for this rom\n");
-	printf("\033[1;33mS\033[0m) Show all cached resources for this rom\n");
-	printf("\033[1;33mn\033[0m) Create new prioritized resource for this rom\n");
-	printf("\033[1;33md\033[0m) Remove specific resource connected to this rom\n");
-	printf("\033[1;33mD\033[0m) Remove ALL resources connected to this rom\n");
-	printf("\033[1;33mm\033[0m) Remove ALL resources connected to this rom from a specific module\n");
-	printf("\033[1;33mt\033[0m) Remove ALL resources connected to this rom of a specific type\n");
-	printf("\033[1;33mc\033[0m) Cancel all cache changes and exit\n");
-	printf("\033[1;33mq\033[0m) Save all cache changes and exit\n");
-	printf("> ");
-	getline(std::cin, userInput);
-	printf("\n");
+        printf("\033[1;34mWhat would you like to do?\033[0m (Press enter to continue to next rom in queue)\n");
+        printf("\033[1;33ms\033[0m) Show current resource priorities for this rom\n");
+        printf("\033[1;33mS\033[0m) Show all cached resources for this rom\n");
+        printf("\033[1;33mn\033[0m) Create new prioritized resource for this rom\n");
+        printf("\033[1;33md\033[0m) Remove specific resource connected to this rom\n");
+        printf("\033[1;33mD\033[0m) Remove ALL resources connected to this rom\n");
+        printf("\033[1;33mm\033[0m) Remove ALL resources connected to this rom from a specific module\n");
+        printf("\033[1;33mt\033[0m) Remove ALL resources connected to this rom of a specific type\n");
+        printf("\033[1;33mc\033[0m) Cancel all cache changes and exit\n");
+        printf("\033[1;33mq\033[0m) Save all cache changes and exit\n");
+        printf("> ");
+        getline(std::cin, userInput);
+        printf("\n");
       } else {
-	if(command == "new") {
-	  userInput = "n";
-	  doneEdit = true;
-	} else if(command == "quit") {
-	  userInput = "q";
-	}
+        if(command == "new") {
+          userInput = "n";
+          doneEdit = true;
+        } else if(command == "quit") {
+          userInput = "q";
+        }
       }
       if(userInput == "") {
-	doneEdit = true;
-	continue;
+        doneEdit = true;
+        continue;
       } else if(userInput == "s") {
-	printPriorities(cacheId);
+        printPriorities(cacheId);
       } else if(userInput == "S") {
-	printf("\033[1;34mResources connected to this rom:\033[0m\n");
-	bool found = false;
-	for(const auto &res: resources) {
-	  if(res.cacheId == cacheId) {
-	    printf("\033[1;33m%s\033[0m (%s): '\033[1;32m%s\033[0m'\n",
-		   res.type.toStdString().c_str(),
-		   res.source.toStdString().c_str(),
-		   res.value.toStdString().c_str());
-	    found = true;
-	  }
-	}
-	if(!found)
-	  printf("None\n");
-	printf("\n");
+        printf("\033[1;34mResources connected to this rom:\033[0m\n");
+        bool found = false;
+        for(const auto &res: resources) {
+          if(res.cacheId == cacheId) {
+            printf("\033[1;33m%s\033[0m (%s): '\033[1;32m%s\033[0m'\n",
+                   res.type.toStdString().c_str(),
+                   res.source.toStdString().c_str(),
+                   res.value.toStdString().c_str());
+            found = true;
+          }
+        }
+        if(!found)
+          printf("None\n");
+        printf("\n");
       } else if(userInput == "n") {
-	GameEntry game;
-	game.cacheId = cacheId;
-	fillBlanks(game);
-	std::string typeInput = "";
-	if(type.isEmpty()) {
-	  printf("\033[1;34mWhich resource type would you like to create?\033[0m (Enter to cancel)\n");
-	  printf("\033[1;33m0\033[0m) Title %s\n",
-		 QString((game.titleSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m1\033[0m) Platform %s\n",
-		 QString((game.platformSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m2\033[0m) Release date %s\n",
-		 QString((game.releaseDateSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m3\033[0m) Developer %s\n",
-		 QString((game.developerSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m4\033[0m) Publisher %s\n",
-		 QString((game.publisherSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m5\033[0m) Number of players %s\n",
-		 QString((game.playersSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m6\033[0m) Age rating %s\n",
-		 QString((game.agesSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m7\033[0m) Genres %s\n",
-		 QString((game.tagsSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m8\033[0m) Game rating %s\n",
-		 QString((game.ratingSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("\033[1;33m9\033[0m) Description %s\n",
-		 QString((game.descriptionSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-	  printf("> ");
-	  getline(std::cin, typeInput);
-	  printf("\n");
-	} else {
-	  if(type == "title") {
-	    typeInput = "0";
-	  } else if(type == "platform") {
-	    typeInput = "1";
-	  } else if(type == "releasedate") {
-	    typeInput = "2";
-	  } else if(type == "developer") {
-	    typeInput = "3";
-	  } else if(type == "publisher") {
-	    typeInput = "4";
-	  } else if(type == "players") {
-	    typeInput = "5";
-	  } else if(type == "ages") {
-	    typeInput = "6";
-	  } else if(type == "genres") {
-	    typeInput = "7";
-	  } else if(type == "rating") {
-	    typeInput = "8";
-	  } else if(type == "description") {
-	    typeInput = "9";
-	  }
-	}
-	if(typeInput == "") {
-	    printf("Resource creation cancelled...\n\n");
-	    continue;
-	} else {
-	  Resource newRes;
-	  newRes.cacheId = cacheId;
-	  newRes.source = "user";
-	  newRes.timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
-	  std::string valueInput = "";
-	  QString expression = ".+"; // Default, matches everything except empty
-	  if(typeInput == "0") {
-	    newRes.type = "title";
-	    printf("\033[1;34mPlease enter title:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else if(typeInput == "1") {
-	    newRes.type = "platform";
-	    printf("\033[1;34mPlease enter platform:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else if(typeInput == "2") {
-	    newRes.type = "releasedate";
-	    printf("\033[1;34mPlease enter a release date in the format 'yyyy-MM-dd':\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	    expression = "^[1-2]{1}[0-9]{3}-[0-1]{1}[0-9]{1}-[0-3]{1}[0-9]{1}$";
-	  } else if(typeInput == "3") {
-	    newRes.type = "developer";
-	    printf("\033[1;34mPlease enter developer:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else if(typeInput == "4") {
-	    newRes.type = "publisher";
-	    printf("\033[1;34mPlease enter publisher:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else if(typeInput == "5") {
-	    newRes.type = "players";
-	    printf("\033[1;34mPlease enter highest number of players such as '4':\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	    expression = "^[0-9]{1,2}$";
-	  } else if(typeInput == "6") {
-	    newRes.type = "ages";
-	    printf("\033[1;34mPlease enter lowest age this should be played at such as '10' which means 10+:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	    expression = "^[0-9]{1}[0-9]{0,1}$";
-	  } else if(typeInput == "7") {
-	    newRes.type = "tags";
-	    printf("\033[1;34mPlease enter comma-separated genres in the format 'Platformer, Sidescrolling':\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else if(typeInput == "8") {
-	    newRes.type = "rating";
-	    printf("\033[1;34mPlease enter game rating from 0.0 to 1.0:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	    expression = "^[0-1]{1}\\.{1}[0-9]{1}[0-9]{0,1}$";
-	  } else if(typeInput == "9") {
-	    newRes.type = "description";
-	    printf("\033[1;34mPlease enter game description. Type '\\n' for newlines:\033[0m (Enter to cancel)\n> ");
-	    getline(std::cin, valueInput);
-	  } else {
-	    printf("Invalid input, resource creation cancelled...\n\n");
-	    continue;
-	  }
-	  QString value = valueInput.c_str();
-	  printf("\n");
-	  value.replace("\\n", "\n");
-	  if(valueInput == "") {
-	    printf("Resource creation cancelled...\n\n");
-	    continue;
-	  } else if(!value.isEmpty() && QRegularExpression(expression).match(value).hasMatch()) {
-	    newRes.value = value;
-	    bool updated = false;
-	    QMutableListIterator<Resource> it(resources);
-	    while(it.hasNext()) {
-	      Resource res = it.next();
-	      if(res.cacheId == newRes.cacheId &&
-		 res.type == newRes.type &&
-		 res.source == newRes.source) {
-		it.remove();
-		updated = true;
-	      }
-	    }
-	    resources.append(newRes);
-	    if(updated) {
-	      printf(">>> Updated existing ");
-	    } else {
-	      printf(">>> Added ");
-	    }
-	    printf("resource with value '\033[1;32m%s\033[0m'\n\n", value.toStdString().c_str());
-	    continue;
-	  } else {
-	    printf("\033[1;31mWrong format, resource hasn't been added...\033[0m\n\n");
-	    continue;
-	  }
-	}
+        GameEntry game;
+        game.cacheId = cacheId;
+        fillBlanks(game);
+        std::string typeInput = "";
+        if(type.isEmpty()) {
+          printf("\033[1;34mWhich resource type would you like to create?\033[0m (Enter to cancel)\n");
+          printf("\033[1;33m0\033[0m) Title %s\n",
+                 QString((game.titleSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m1\033[0m) Platform %s\n",
+                 QString((game.platformSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m2\033[0m) Release date %s\n",
+                 QString((game.releaseDateSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m3\033[0m) Developer %s\n",
+                 QString((game.developerSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m4\033[0m) Publisher %s\n",
+                 QString((game.publisherSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m5\033[0m) Number of players %s\n",
+                 QString((game.playersSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m6\033[0m) Age rating %s\n",
+                 QString((game.agesSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m7\033[0m) Genres %s\n",
+                 QString((game.tagsSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m10\033[0m) Franchises %s\n",
+                 QString((game.franchisesSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m8\033[0m) Game rating %s\n",
+                 QString((game.ratingSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m9\033[0m) Description %s\n",
+                 QString((game.descriptionSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m9\033[0m) ChiptuneId %s\n",
+                 QString((game.chiptuneIdSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m9\033[0m) ChiptunePath %s\n",
+                 QString((game.chiptunePathSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("> ");
+          getline(std::cin, typeInput);
+          printf("\n");
+        } else {
+          if(type == "title") {
+            typeInput = "0";
+          } else if(type == "platform") {
+            typeInput = "1";
+          } else if(type == "releasedate") {
+            typeInput = "2";
+          } else if(type == "developer") {
+            typeInput = "3";
+          } else if(type == "publisher") {
+            typeInput = "4";
+          } else if(type == "players") {
+            typeInput = "5";
+          } else if(type == "ages") {
+            typeInput = "6";
+          } else if(type == "genres") {
+            typeInput = "7";
+          } else if(type == "franchises") {
+            typeInput = "10";
+          } else if(type == "rating") {
+            typeInput = "8";
+          } else if(type == "description") {
+            typeInput = "9";
+          } else if(type == "chiptuneid") {
+            typeInput = "11";
+          } else if(type == "chiptunepath") {
+            typeInput = "12";
+          } else if(type == "completed") {
+            typeInput = "13";
+          } else if(type == "favourite") {
+            typeInput = "14";
+          } else if(type == "played") {
+            typeInput = "15";
+          } else if(type == "timesplayed") {
+            typeInput = "16";
+          } else if(type == "lastplayed") {
+            typeInput = "17";
+          } else if(type == "firstplayed") {
+            typeInput = "18";
+          } else if(type == "timeplayed") {
+            typeInput = "19";
+          }
+        }
+        if(typeInput == "") {
+            printf("Resource creation cancelled...\n\n");
+            continue;
+        } else {
+          Resource newRes;
+          newRes.cacheId = cacheId;
+          newRes.source = "user";
+          newRes.timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+          std::string valueInput = "";
+          QString expression = ".+"; // Default, matches everything except empty
+          if(typeInput == "0") {
+            newRes.type = "title";
+            printf("\033[1;34mPlease enter title:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "1") {
+            newRes.type = "platform";
+            printf("\033[1;34mPlease enter platform:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "2") {
+            newRes.type = "releasedate";
+            printf("\033[1;34mPlease enter a release date in the format 'yyyy-MM-dd':\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+            expression = "^[1-2]{1}[0-9]{3}-[0-1]{1}[0-9]{1}-[0-3]{1}[0-9]{1}$";
+          } else if(typeInput == "3") {
+            newRes.type = "developer";
+            printf("\033[1;34mPlease enter developer:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "4") {
+            newRes.type = "publisher";
+            printf("\033[1;34mPlease enter publisher:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "5") {
+            newRes.type = "players";
+            printf("\033[1;34mPlease enter highest number of players such as '4':\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+            expression = "^[0-9]{1,2}$";
+          } else if(typeInput == "6") {
+            newRes.type = "ages";
+            printf("\033[1;34mPlease enter lowest age this should be played at such as '10' which means 10+:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+            expression = "^[0-9]{1}[0-9]{0,1}$";
+          } else if(typeInput == "7") {
+            newRes.type = "tags";
+            printf("\033[1;34mPlease enter comma-separated genres in the format 'Platformer, Sidescrolling':\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "10") {
+            newRes.type = "franchises";
+            printf("\033[1;34mPlease enter comma-separated franchises in the format 'Zelda, Mario':\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "8") {
+            newRes.type = "rating";
+            printf("\033[1;34mPlease enter game rating from 0.0 to 1.0:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+            expression = "^[0-1]{1}\\.{1}[0-9]{1}[0-9]{0,1}$";
+          } else if(typeInput == "9") {
+            newRes.type = "description";
+            printf("\033[1;34mPlease enter game description. Type '\\n' for newlines:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "11") {
+            newRes.type = "chiptuneid";
+            printf("\033[1;34mPlease enter a chiptune id (32 hexadecimal character string):\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "12") {
+            newRes.type = "chiptunepath";
+            printf("\033[1;34mPlease enter a chiptune file path:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "13") {
+            newRes.type = "completed";
+            printf("\033[1;34mPlease enter yes/no the game has been completed:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "14") {
+            newRes.type = "favourite";
+            printf("\033[1;34mPlease enter yes/no the game is a personal favourite:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "15") {
+            newRes.type = "played";
+            printf("\033[1;34mPlease enter yes/no the game has been played:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "16") {
+            newRes.type = "timesplayed";
+            printf("\033[1;34mPlease enter the amount of times the game has been played:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "17") {
+            newRes.type = "lastplayed";
+            printf("\033[1;34mPlease enter the date (seconds since the Epoch) the game was last played:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "18") {
+            newRes.type = "firstplayed";
+            printf("\033[1;34mPlease enter the date (seconds since the Epoch) the game was first played:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "19") {
+            newRes.type = "timeplayed";
+            printf("\033[1;34mPlease enter the total time played in the game (in seconds):\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else {
+            printf("Invalid input, resource creation cancelled...\n\n");
+            continue;
+          }
+          QString value = valueInput.c_str();
+          printf("\n");
+          value.replace("\\n", "\n");
+          if(valueInput == "") {
+            printf("Resource creation cancelled...\n\n");
+            continue;
+          } else if(!value.isEmpty() && QRegularExpression(expression).match(value).hasMatch()) {
+            newRes.value = value;
+            bool updated = false;
+            QMutableListIterator<Resource> it(resources);
+            while(it.hasNext()) {
+              Resource res = it.next();
+              if(res.cacheId == newRes.cacheId &&
+                 res.type == newRes.type &&
+                 res.source == newRes.source) {
+                it.remove();
+                updated = true;
+              }
+            }
+            resources.append(newRes);
+            if(updated) {
+              printf(">>> Updated existing ");
+            } else {
+              printf(">>> Added ");
+            }
+            printf("resource with value '\033[1;32m%s\033[0m'\n\n", value.toStdString().c_str());
+            continue;
+          } else {
+            printf("\033[1;31mWrong format, resource hasn't been added...\033[0m\n\n");
+            continue;
+          }
+        }
       } else if(userInput == "d") {
-	int b = 1;
-	QList<int> resIds;
-	printf("\033[1;34mWhich resource id would you like to remove?\033[0m (Enter to cancel)\n");
-	for(int a = 0; a < resources.length(); ++a) {
-	  if(resources.at(a).cacheId == cacheId &&
-	     resources.at(a).type != "screenshot" &&
-	     resources.at(a).type != "cover" &&
-	     resources.at(a).type != "wheel" &&
-	     resources.at(a).type != "marquee" &&
-	     resources.at(a).type != "texture" &&
-	     resources.at(a).type != "video") {
-	    printf("\033[1;33m%d\033[0m) \033[1;33m%s\033[0m (%s): '\033[1;32m%s\033[0m'\n", b, resources.at(a).type.toStdString().c_str(),
-		   resources.at(a).source.toStdString().c_str(),
-		   resources.at(a).value.toStdString().c_str());
-	    resIds.append(a);
-	    b++;
-	  }
-	}
-	if(b == 1) {
-	  printf("No resources found, cancelling...\n\n");
-	  continue;
-	}
-	printf("> ");
-	std::string typeInput = "";
-	getline(std::cin, typeInput);
-	printf("\n");
-	if(typeInput == "") {
-	  printf("Resource removal cancelled...\n\n");
-	  continue;
-	} else {
-	  int chosen = atoi(typeInput.c_str());
-	  if(chosen >= 1 && chosen <= resIds.length()) {
-	    resources.removeAt(resIds.at(chosen - 1)); // -1 because lists start at 0
-	    printf("<<< Removed resource id %d\n\n", chosen);
-	  } else {
-	    printf("Incorrect resource id, cancelling...\n\n");
-	  }
-	}
+        int b = 1;
+        QList<int> resIds;
+        printf("\033[1;34mWhich resource id would you like to remove?\033[0m (Enter to cancel)\n");
+        for(int a = 0; a < resources.length(); ++a) {
+          if(resources.at(a).cacheId == cacheId &&
+             resources.at(a).type != "screenshot" &&
+             resources.at(a).type != "cover" &&
+             resources.at(a).type != "wheel" &&
+             resources.at(a).type != "marquee" &&
+             resources.at(a).type != "texture" &&
+             resources.at(a).type != "video" &&
+             resources.at(a).type != "manual") {
+            printf("\033[1;33m%d\033[0m) \033[1;33m%s\033[0m (%s): '\033[1;32m%s\033[0m'\n", b, resources.at(a).type.toStdString().c_str(),
+                   resources.at(a).source.toStdString().c_str(),
+                   resources.at(a).value.toStdString().c_str());
+            resIds.append(a);
+            b++;
+          }
+        }
+        if(b == 1) {
+          printf("No resources found, cancelling...\n\n");
+          continue;
+        }
+        printf("> ");
+        std::string typeInput = "";
+        getline(std::cin, typeInput);
+        printf("\n");
+        if(typeInput == "") {
+          printf("Resource removal cancelled...\n\n");
+          continue;
+        } else {
+          int chosen = atoi(typeInput.c_str());
+          if(chosen >= 1 && chosen <= resIds.length()) {
+            resources.removeAt(resIds.at(chosen - 1)); // -1 because lists start at 0
+            printf("<<< Removed resource id %d\n\n", chosen);
+          } else {
+            printf("Incorrect resource id, cancelling...\n\n");
+          }
+        }
       } else if(userInput == "D") {
-	QMutableListIterator<Resource> it(resources);
-	bool found = false;
-	while(it.hasNext()) {
-	  Resource res = it.next();
-	  if(res.cacheId == cacheId) {
-	    printf("<<< Removed \033[1;33m%s\033[0m (%s) with value '\033[1;32m%s\033[0m'\n", res.type.toStdString().c_str(),
-		   res.source.toStdString().c_str(),
-		   res.value.toStdString().c_str());
-	    it.remove();
-	    found = true;
-	  }
-	}
-	if(!found)
-	  printf("No resources found for this rom...\n");
-	printf("\n");
+        QMutableListIterator<Resource> it(resources);
+        bool found = false;
+        while(it.hasNext()) {
+          Resource res = it.next();
+          if(res.cacheId == cacheId) {
+            printf("<<< Removed \033[1;33m%s\033[0m (%s) with value '\033[1;32m%s\033[0m'\n", res.type.toStdString().c_str(),
+                   res.source.toStdString().c_str(),
+                   res.value.toStdString().c_str());
+            it.remove();
+            found = true;
+          }
+        }
+        if(!found)
+          printf("No resources found for this rom...\n");
+        printf("\n");
       } else if(userInput == "m") {
-	printf("\033[1;34mResources from which module would you like to remove?\033[0m (Enter to cancel)\n");
-	QMap<QString, int> modules;
-	for(const auto &res: resources) {
-	  if(res.cacheId == cacheId) {
-	    modules[res.source] += 1;
-	  }
-	}
-	QMap<QString, int>::iterator it;
-	for(it = modules.begin(); it != modules.end(); ++it) {
-	  printf("'\033[1;33m%s\033[0m': %d resource(s) found\n", it.key().toStdString().c_str(), it.value());
-	}
-	if(modules.isEmpty()) {
-	  printf("No resources found, cancelling...\n\n");
-	  continue;
-	}
-	printf("> ");
-	std::string typeInput = "";
-	getline(std::cin, typeInput);
-	printf("\n");
-	if(typeInput == "") {
-	  printf("Resource removal cancelled...\n\n");
-	  continue;
-	} else if(modules.contains(QString(typeInput.c_str()))) {
-	  QMutableListIterator<Resource> it(resources);
-	  int removed = 0;
-	  while(it.hasNext()) {
-	    Resource res = it.next();
-	    if(res.cacheId == cacheId && res.source == QString(typeInput.c_str())) {
-	      it.remove();
-	      removed++;
-	    }
-	  }
-	  printf("<<< Removed %d resource(s) connected to rom from module '\033[1;32m%s\033[0m'\n\n", removed,
-		 typeInput.c_str());
-	} else {
-	  printf("No resources from module '\033[1;32m%s\033[0m' found, cancelling...\n\n", typeInput.c_str());
- 	}
+        printf("\033[1;34mResources from which module would you like to remove?\033[0m (Enter to cancel)\n");
+        QMap<QString, int> modules;
+        for(const auto &res: resources) {
+          if(res.cacheId == cacheId) {
+            modules[res.source] += 1;
+          }
+        }
+        QMap<QString, int>::iterator it;
+        for(it = modules.begin(); it != modules.end(); ++it) {
+          printf("'\033[1;33m%s\033[0m': %d resource(s) found\n", it.key().toStdString().c_str(), it.value());
+        }
+        if(modules.isEmpty()) {
+          printf("No resources found, cancelling...\n\n");
+          continue;
+        }
+        printf("> ");
+        std::string typeInput = "";
+        getline(std::cin, typeInput);
+        printf("\n");
+        if(typeInput == "") {
+          printf("Resource removal cancelled...\n\n");
+          continue;
+        } else if(modules.contains(QString(typeInput.c_str()))) {
+          QMutableListIterator<Resource> it(resources);
+          int removed = 0;
+          while(it.hasNext()) {
+            Resource res = it.next();
+            if(res.cacheId == cacheId && res.source == QString(typeInput.c_str())) {
+              it.remove();
+              removed++;
+            }
+          }
+          printf("<<< Removed %d resource(s) connected to rom from module '\033[1;32m%s\033[0m'\n\n", removed,
+                 typeInput.c_str());
+        } else {
+          printf("No resources from module '\033[1;32m%s\033[0m' found, cancelling...\n\n", typeInput.c_str());
+         }
       } else if(userInput == "t") {
-	printf("\033[1;34mResources of which type would you like to remove?\033[0m (Enter to cancel)\n");
-	QMap<QString, int> types;
-	for(const auto &res: resources) {
-	  if(res.cacheId == cacheId) {
-	    types[res.type] += 1;
-	  }
-	}
-	QMap<QString, int>::iterator it;
-	for(it = types.begin(); it != types.end(); ++it) {
-	  printf("'\033[1;33m%s\033[0m': %d resource(s) found\n", it.key().toStdString().c_str(), it.value());
-	}
-	if(types.isEmpty()) {
-	  printf("No resources found, cancelling...\n\n");
-	  continue;
-	}
-	printf("> ");
-	std::string typeInput = "";
-	getline(std::cin, typeInput);
-	printf("\n");
-	if(typeInput == "") {
-	  printf("Resource removal cancelled...\n\n");
-	  continue;
-	} else if(types.contains(QString(typeInput.c_str()))) {
-	  QMutableListIterator<Resource> it(resources);
-	  int removed = 0;
-	  while(it.hasNext()) {
-	    Resource res = it.next();
-	    if(res.cacheId == cacheId && res.type == QString(typeInput.c_str())) {
-	      it.remove();
-	      removed++;
-	    }
-	  }
-	  printf("<<< Removed %d resource(s) connected to rom of type '\033[1;32m%s\033[0m'\n\n", removed, typeInput.c_str());
-	} else {
-	  printf("No resources of type '\033[1;32m%s\033[0m' found, cancelling...\n\n", typeInput.c_str());
- 	}
+        printf("\033[1;34mResources of which type would you like to remove?\033[0m (Enter to cancel)\n");
+        QMap<QString, int> types;
+        for(const auto &res: resources) {
+          if(res.cacheId == cacheId) {
+            types[res.type] += 1;
+          }
+        }
+        QMap<QString, int>::iterator it;
+        for(it = types.begin(); it != types.end(); ++it) {
+          printf("'\033[1;33m%s\033[0m': %d resource(s) found\n", it.key().toStdString().c_str(), it.value());
+        }
+        if(types.isEmpty()) {
+          printf("No resources found, cancelling...\n\n");
+          continue;
+        }
+        printf("> ");
+        std::string typeInput = "";
+        getline(std::cin, typeInput);
+        printf("\n");
+        if(typeInput == "") {
+          printf("Resource removal cancelled...\n\n");
+          continue;
+        } else if(types.contains(QString(typeInput.c_str()))) {
+          QMutableListIterator<Resource> it(resources);
+          int removed = 0;
+          while(it.hasNext()) {
+            Resource res = it.next();
+            if(res.cacheId == cacheId && res.type == QString(typeInput.c_str())) {
+              it.remove();
+              removed++;
+            }
+          }
+          printf("<<< Removed %d resource(s) connected to rom of type '\033[1;32m%s\033[0m'\n\n", removed, typeInput.c_str());
+        } else {
+          printf("No resources of type '\033[1;32m%s\033[0m' found, cancelling...\n\n", typeInput.c_str());
+         }
       } else if(userInput == "c") {
-	printf("Exiting without saving changes.\n");
-	exit(0);
+        printf("Exiting without saving changes.\n");
+        Skyscraper::removeLockAndExit(0);
       } else if(userInput == "q") {
-	queue->clear();
-	doneEdit = true;
-	continue;
+        queue->clear();
+        doneEdit = true;
+        continue;
       }
     }
   }
@@ -641,17 +772,24 @@ bool Cache::purgeResources(QString purgeStr)
   while(it.hasNext()) {
     Resource res = it.next();
     bool remove = false;
-    if(res.source == module || res.type == type) {
-      remove = true;
+    if(!module.isEmpty() && !type.isEmpty()) {
+      if(res.source == module && res.type == type) {
+        remove = true;
+      }
+    } else {
+      if(res.source == module || res.type == type) {
+        remove = true;
+      }
     }
     if(remove) {
       if(res.type == "cover" || res.type == "screenshot" ||
-	 res.type == "wheel" || res.type == "marquee" ||
-	 res.type == "texture" || res.type == "video") {
-	if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
-	  printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
-	  continue;
-	}
+         res.type == "wheel" || res.type == "marquee" ||
+         res.type == "texture" || res.type == "video" ||
+         res.type == "manual") {
+        if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
+          printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
+          continue;
+        }
       }
       it.remove();
       purged++;
@@ -691,10 +829,11 @@ bool Cache::purgeAll(const bool unattend)
     Resource res = it.next();
     if(res.type == "cover" || res.type == "screenshot" ||
        res.type == "wheel" || res.type == "marquee" ||
-       res.type == "texture" || res.type == "video") {
+       res.type == "texture" || res.type == "video" ||
+       res.type == "manual") {
       if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
-	printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
-	continue;
+        printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
+        continue;
       }
     }
     it.remove();
@@ -717,9 +856,9 @@ QList<QFileInfo> Cache::getFileInfos(const QString &inputFolder, const QString &
   QStringList filters = filter.split(" ");
   if(filter.size() >= 2) {
     QDirIterator dirIt(inputFolder,
-		       filters,
-		       QDir::Files | QDir::NoDotAndDotDot,
-		       (subdirs?QDirIterator::Subdirectories:QDirIterator::NoIteratorFlags));
+                       filters,
+                       QDir::Files | QDir::NoDotAndDotDot,
+                       (subdirs?QDirIterator::Subdirectories:QDirIterator::NoIteratorFlags));
     while(dirIt.hasNext()) {
       dirIt.next();
       fileInfos.append(dirIt.fileInfo());
@@ -779,6 +918,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("players");
       resTypeList.append("ages");
       resTypeList.append("tags");
+      resTypeList.append("franchises");
       resTypeList.append("rating");
       resTypeList.append("releasedate");
       resTypeList.append("cover");
@@ -787,6 +927,9 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("marquee");
       resTypeList.append("texture");
       resTypeList.append("video");
+      resTypeList.append("manual");
+      resTypeList.append("chiptuneid");
+      resTypeList.append("chiptunepath");
     } else if(missingOption == "textual") {
       resTypeList.append("title");
       resTypeList.append("platform");
@@ -796,6 +939,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("players");
       resTypeList.append("ages");
       resTypeList.append("tags");
+      resTypeList.append("franchises");
       resTypeList.append("rating");
       resTypeList.append("releasedate");
     } else if(missingOption == "artwork") {
@@ -811,6 +955,9 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("marquee");
       resTypeList.append("texture");
       resTypeList.append("video");
+      resTypeList.append("manual");
+      resTypeList.append("chiptuneid");
+      resTypeList.append("chiptunepath");
     } else {
       resTypeList.append(missingOption); // If a single type is given
     }
@@ -824,6 +971,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
        resType != "ages" &&
        resType != "players" &&
        resType != "tags" &&
+       resType != "franchises" &&
        resType != "rating" &&
        resType != "releasedate" &&
        resType != "cover" &&
@@ -831,16 +979,19 @@ void Cache::assembleReport(const Settings &config, const QString filter)
        resType != "wheel" &&
        resType != "marquee" &&
        resType != "texture" &&
-       resType != "video") {
+       resType != "video" &&
+       resType != "chiptuneid" &&
+       resType != "chiptunepath" &&
+       resType != "manual") {
       if(resType != "help") {
-	printf("\033[1;31mUnknown resource type '%s'!\033[0m\n", resType.toStdString().c_str());
+        printf("\033[1;31mUnknown resource type '%s'!\033[0m\n", resType.toStdString().c_str());
       }
       printf("Please use one of the following:\n");
       printf("  \033[1;32mhelp\033[0m: Shows this help message\n");
       printf("  \033[1;32mall\033[0m: Creates reports for all resource types\n");
       printf("  \033[1;32mtextual\033[0m: Creates reports for all textual resource types\n");
-      printf("  \033[1;32martwork\033[0m: Creates reports for all artwork related resource types excluding 'video'\n");
-      printf("  \033[1;32mmedia\033[0m: Creates reports for all media resource types including 'video'\n");
+      printf("  \033[1;32martwork\033[0m: Creates reports for all artwork related resource types excluding 'video', 'chiptunepath', 'chiptuneid' and 'manual'\n");
+      printf("  \033[1;32mmedia\033[0m: Creates reports for all media resource types including 'video', 'chiptunepath', 'chiptuneid' and 'manual'\n");
       printf("  \033[1;32mtype1,type2,type3,...\033[0m: Creates reports for selected types. Example: 'developer,screenshot,rating'\n");
       printf("\nAvailable resource types:\n");
       printf("  \033[1;32mtitle\033[0m\n");
@@ -851,6 +1002,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       printf("  \033[1;32mplayers\033[0m\n");
       printf("  \033[1;32mages\033[0m\n");
       printf("  \033[1;32mtags\033[0m\n");
+      printf("  \033[1;32mfranchises\033[0m\n");
       printf("  \033[1;32mrating\033[0m\n");
       printf("  \033[1;32mreleasedate\033[0m\n");
       printf("  \033[1;32mcover\033[0m\n");
@@ -859,6 +1011,9 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       printf("  \033[1;32mmarquee\033[0m\n");
       printf("  \033[1;32mtexture\033[0m\n");
       printf("  \033[1;32mvideo\033[0m\n");
+      printf("  \033[1;32mmanual\033[0m\n");
+      printf("  \033[1;32mchiptuneid\033[0m\n");
+      printf("  \033[1;32mchiptunepath\033[0m\n");
       printf("\n");
       return;
     }
@@ -912,41 +1067,41 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       int dotMod = fileInfos.size() * 0.1 + 1;
       
       for(int a = 0; a < fileInfos.length(); ++a) {
-	if(dots % dotMod == 0) {
-	  printf(".");
-	  fflush(stdout);
-	}
-	dots++;
-	bool found = false;
-	for(const auto &res: resources) {
-	  if(res.cacheId == cacheIdList.at(a)) {
-	    if(res.type == resType) {
-	      found = true;
-	      break;
-	    }
-	  }
-	}
-	if(!found) {
-	  missing++;
-	  reportFile.write(fileInfos.at(a).absoluteFilePath().toUtf8() + "\n");
-	}
+        if(dots % dotMod == 0) {
+          printf(".");
+          fflush(stdout);
+        }
+        dots++;
+        bool found = false;
+        for(const auto &res: resources) {
+          if(res.cacheId == cacheIdList.at(a)) {
+            if(res.type == resType) {
+              found = true;
+              break;
+            }
+          }
+        }
+        if(!found) {
+          missing++;
+          reportFile.write(fileInfos.at(a).absoluteFilePath().toUtf8() + "\n");
+        }
       }
       reportFile.close();
       printf("\033[1;32m Done!\033[0m\n\033[1;33m%d file(s) is/are missing the '%s' resource.\033[0m\n\n", missing, resType.toStdString().c_str());
     } else {
-      printf("Report file could not be opened for writing, please check permissions of folder '/home/USER/.skyscraper', then try again...\n");
+      printf("Report file could not be opened for writing, please check permissions of folder '%s/.skyscraper', then try again...\n", QDir::homePath().toStdString().c_str());
       return;
     }
   }
-  printf("\033[1;32mAll done!\033[0m\nConsider using the '\033[1;33m--cache edit --fromfile <REPORTFILE>\033[0m' or the '\033[1;33m-s import\033[0m' module to add the missing resources. Check '\033[1;33m--help\033[0m' and '\033[1;33m--cache help\033[0m' for more information.\n\n");
+  printf("\033[1;32mAll done!\033[0m\nConsider using the '\033[1;33m--cache edit --includefrom <REPORTFILE>\033[0m' or the '\033[1;33m-s import\033[0m' module to add the missing resources. Check '\033[1;33m--help\033[0m' and '\033[1;33m--cache help\033[0m' for more information.\n\n");
 }
 
 bool Cache::vacuumResources(const QString inputFolder, const QString filter,
-			    const int verbosity, const bool unattend)
+                            const int verbosity, const bool unattend)
 {
   if(!unattend) {
     std::string userInput = "";
-    printf("\033[1;33mWARNING! Vacuuming your Skyscraper cache removes all resources that don't match your current romset (files located at '%s' or any of its subdirectories matching the suffixes supported by the platform and any extension(s) you might have added manually). Please consider making a backup of your Skyscraper cache before performing this action. The cache for this platform is listed under 'Cache folder' further up and is usually located under '/home/USER/.skyscraper/' unless you've set it manually.\033[0m\n\n", inputFolder.toStdString().c_str());
+    printf("\033[1;33mWARNING! Vacuuming your Skyscraper cache removes all resources that don't match your current romset (files located at '%s' or any of its subdirectories matching the suffixes supported by the platform and any extension(s) you might have added manually). Please consider making a backup of your Skyscraper cache before performing this action. The cache for this platform is listed under 'Cache folder' further up and is usually located under '%s/.skyscraper/' unless you've set it manually.\033[0m\n\n", inputFolder.toStdString().c_str(), QDir::homePath().toStdString().c_str());
     printf("\033[1;34mDo you wish to continue\033[0m (y/N)? ");
     getline(std::cin, userInput);
     if(userInput != "y") {
@@ -981,32 +1136,33 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
     QMutableListIterator<Resource> it(resources);
     while(it.hasNext()) {
       if(dots % dotMod == 0) {
-	printf(".");
-	fflush(stdout);
+        printf(".");
+        fflush(stdout);
       }
       dots++;
       Resource res = it.next();
       bool remove = true;
       for(const auto &cacheId: cacheIdList) {
-	if(res.cacheId == cacheId) {
-	  remove = false;
-	  break;
-	}
+        if(res.cacheId == cacheId) {
+          remove = false;
+          break;
+        }
       }
       if(remove) {
-	if(res.type == "cover" || res.type == "screenshot" ||
-	   res.type == "wheel" || res.type == "marquee" ||
-	   res.type == "texture" || res.type == "video") {
-	  if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
-	    printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
-	    continue;
-	  }
-	}
-	if(verbosity > 1)
-	  printf("Purged resource for '%s' with value '%s'...\n", res.cacheId.toStdString().c_str(),
-		 res.value.toStdString().c_str());
-	it.remove();
-	vacuumed++;
+        if(res.type == "cover" || res.type == "screenshot" ||
+           res.type == "wheel" || res.type == "marquee" ||
+           res.type == "texture" || res.type == "video" ||
+           res.type == "manual") {
+          if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
+            printf("Couldn't purge media file '%s', skipping...\n", res.value.toStdString().c_str());
+            continue;
+          }
+        }
+        if(verbosity > 1)
+          printf("Purged resource for '%s' with value '%s'...\n", res.cacheId.toStdString().c_str(),
+                 res.value.toStdString().c_str());
+        it.remove();
+        vacuumed++;
       }
     }
   }
@@ -1018,6 +1174,186 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
     printf("Successfully vacuumed %d resources from the resource cache.\n", vacuumed);
   }
   printf("\n");
+  return true;
+}
+
+bool Cache::detectScrapingErrors(const Settings &config)
+{
+  if(config.platform.isEmpty()) {
+    printf("Please provide platform to conduct the analysis.\n");
+    return false;
+  }
+
+  QMultiMap <QString, Resource> filesTitleResources;
+  int possibleErrorsCount = 0;
+  QString possibleErrors;
+  
+  printf("Detecting possible scraping mistakes, this can take several minutes, please wait...\n");
+
+  for(const auto &fileName: quickIds.keys()) {
+    QString id =  quickIds[fileName].second;
+    for(const auto &res: resources) {
+      if(res.cacheId == id && res.type == "title") {
+        filesTitleResources.insert(fileName, res);
+      }
+    }
+  }
+
+  // TODO: Try to refactor this code with the one in the scrapers/scraperworker.  
+  // Loop on filesTitleResources to check key (filename) against title (res.value)
+  // updating possibleErrors and possibleErrorsCount.
+  foreach (const QString &name, filesTitleResources.uniqueKeys()) {
+    // Normalize name
+    QStringList fileMatching;
+    QString baseName = QFileInfo(name).completeBaseName();
+    QString longName = baseName;
+    if (Platform::get().getFamily(config.platform) == "arcade") {
+      // Convert filename from short mame-style to regular one
+      longName = baseName.toLower();
+      if (config.mameMap.contains(longName)) {
+        longName = config.mameMap.value(longName);
+        printf("INFO: 1 Short Mame-style name '%s' converted to '%s'.\n",
+               baseName.toStdString().c_str(),
+               longName.toStdString().c_str());
+        baseName = longName;
+      }
+    }
+    if(config.verbosity >= 3)
+      qDebug() << "1" << baseName;
+    fileMatching.append(baseName.toLower());
+    if(config.verbosity >= 3)
+      qDebug() << "2" << baseName.toLower();
+    fileMatching.append(StrTools::sanitizeName(baseName));
+    if(config.verbosity >= 3)
+      qDebug() << "3" << StrTools::sanitizeName(baseName);
+    fileMatching.append(StrTools::sanitizeName(baseName, true));
+    if(config.verbosity >= 3)
+      qDebug() << "4" << StrTools::sanitizeName(baseName, true);
+    baseName = baseName.replace("&", " and ").remove("'");
+    if(config.verbosity >= 3)
+      qDebug() << "5" << baseName;
+    baseName = NameTools::convertToIntegerNumeral(baseName);
+    if(config.verbosity >= 3)
+      qDebug() << "6" << baseName;
+    QString baseNameMain = baseName;
+    if(config.verbosity >= 3)
+      qDebug() << "7" << baseNameMain;
+    baseName = NameTools::getUrlQueryName(NameTools::removeArticle(baseName), -1, " ");
+    if(config.verbosity >= 3)
+      qDebug() << "8" << baseName;
+    baseName = StrTools::sanitizeName(baseName, true);
+    if(config.verbosity >= 3)
+      qDebug() << "9" << baseName;
+    baseNameMain = NameTools::getUrlQueryName(NameTools::removeArticle(baseNameMain), -1, " ", true);
+    if(config.verbosity >= 3)
+      qDebug() << "A" << baseNameMain;
+    baseNameMain = StrTools::sanitizeName(baseNameMain, true);
+    if(config.verbosity >= 3)
+      qDebug() << "B" << baseNameMain;
+    fileMatching.append(baseName);
+    if(config.verbosity >= 2) {
+      qDebug() << "fileMatching:" << fileMatching << baseNameMain;
+    }
+    foreach (Resource title, filesTitleResources.values(name)) {
+      // Normalize title.value
+      QStringList titleMatching;
+      QString titleName = title.value;
+      titleMatching.append(titleName.toLower());
+      titleMatching.append(StrTools::sanitizeName(titleName));
+      titleMatching.append(StrTools::sanitizeName(titleName, true));
+      titleName = titleName.replace("&", " and ").remove("'");
+      titleName = NameTools::convertToIntegerNumeral(titleName);
+      QString titleNameMain = titleName;
+      titleName = NameTools::getUrlQueryName(NameTools::removeArticle(titleName), -1, " ");
+      titleName = StrTools::sanitizeName(titleName, true);
+      titleNameMain = NameTools::getUrlQueryName(NameTools::removeArticle(titleNameMain), -1, " ", true);
+      titleNameMain = StrTools::sanitizeName(titleNameMain, true);
+      titleMatching.append(titleName);
+      if(config.verbosity >= 2) {
+        qDebug() << "nameMatching (" + title.source + "):" << titleMatching << titleNameMain;
+      }
+      // Compare normalized title.value and key
+      bool match = false;
+      for(const auto& option : titleMatching) {
+        if(fileMatching.contains(option)) {
+          match = true;
+          break;
+        }
+      }
+      // Try harder
+      if(!match && config.fuzzySearch) {
+        if(titleName.size() >= 6 || baseName.size() >= 6) {
+          int maxDistance = config.fuzzySearch;
+          if((baseName.size() <= 10) || (maxDistance < 0)) {
+            maxDistance = 1;
+          }
+          if(StrTools::onlyNumbers(baseName) == StrTools::onlyNumbers(titleName)) {
+            int distance = StrTools::distanceBetweenStrings(titleName, baseName);
+            if(distance <= maxDistance) {
+              match = true;
+              if(config.verbosity >= 1) {
+                printf("FuzzySearch: Found %s = %s (distance %d)!\n", titleName.toStdString().c_str(),
+                       baseName.toStdString().c_str(), distance);
+              }
+            }
+          }
+        }
+      }
+      // Benevolent and risky checks
+      if(!match) {
+        int maxDistance = config.fuzzySearch;
+        if(config.fuzzySearch && (titleNameMain >= 6 || baseNameMain >= 6)) {
+          if((baseNameMain.size() <= 10) || (maxDistance < 0)) {
+            maxDistance = 1;
+          }
+        } else {
+          maxDistance = 0;
+        }
+        if((titleNameMain != titleName && baseName == baseNameMain) ||
+           (titleNameMain == titleName && baseName != baseNameMain)) {
+          int distance = StrTools::distanceBetweenStrings(titleNameMain, baseNameMain);
+          if(distance <= maxDistance) {
+            match = true;
+            if(config.verbosity >= 1) {
+              printf("Main title fuzzySearch: Found %s = %s (distance %d)!\n",
+                     titleNameMain.toStdString().c_str(),
+                     baseNameMain.toStdString().c_str(), distance);
+            }
+          }
+        }
+      }
+      // If not matching, add info to output string and update error counter
+      if(!match) {
+        possibleErrorsCount++;
+        possibleErrors.append(title.cacheId + '\t' + title.source + '\t' + name + '\t' +
+                              longName + '\t' + title.value + '\n');
+      }
+    }
+  }
+
+  printf("Detected %d possible scraping mistakes to be reviewed.\n\n", possibleErrorsCount);
+  // Create the reports folder
+  QDir reportsDir(QDir::currentPath() + "/reports");
+  if(!reportsDir.exists()) {
+    if(!reportsDir.mkpath(".")) {
+      printf("Couldn't create reports folder '%s'. Please check permissions then try again...\n",
+             reportsDir.absolutePath().toStdString().c_str());
+      return false;
+    }
+  }
+  QString dateTime = QDateTime::currentDateTime().toString("yyyyMMdd");
+  QFile reportFile(reportsDir.absolutePath() + "/report-" + config.platform + "-possible_mistakes-" + dateTime + ".txt");
+  printf("Report filename: '\033[1;32m%s\033[0m'\nAssembling report, please wait...",
+         reportFile.fileName().toStdString().c_str());
+  if(reportFile.open(QIODevice::WriteOnly)) {
+    reportFile.write(possibleErrors.toUtf8());
+    reportFile.close();
+  } else {
+    printf("Report file could not be opened for writing, please check permissions of folder '%s/.skyscraper', then try again...\n",
+           QDir::homePath().toStdString().c_str());
+    return false;
+  }
+
   return true;
 }
 
@@ -1033,6 +1369,7 @@ void Cache::showStats(int verbosity)
     int players = 0;
     int ages = 0;
     int tags = 0;
+    int franchises = 0;
     int ratings = 0;
     int releaseDates = 0;
     int covers = 0;
@@ -1041,8 +1378,10 @@ void Cache::showStats(int verbosity)
     int marquees = 0;
     int textures = 0;
     int videos = 0;
+    int manuals = 0;
+    int chiptunes = 0;
     for(QMap<QString, ResCounts>::iterator it = resCountsMap.begin();
-	it != resCountsMap.end(); ++it) {
+        it != resCountsMap.end(); ++it) {
       titles += it.value().titles;
       platforms += it.value().platforms;
       descriptions += it.value().descriptions;
@@ -1051,6 +1390,7 @@ void Cache::showStats(int verbosity)
       players += it.value().players;
       ages += it.value().ages;
       tags += it.value().tags;
+      franchises += it.value().franchises;
       ratings += it.value().ratings;
       releaseDates += it.value().releaseDates;
       covers += it.value().covers;
@@ -1059,6 +1399,8 @@ void Cache::showStats(int verbosity)
       marquees += it.value().marquees;
       textures += it.value().textures;
       videos += it.value().videos;
+      manuals += it.value().manuals;
+      chiptunes += it.value().chiptunes;
     }
     printf("  Titles       : %d\n", titles);
     printf("  Platforms    : %d\n", platforms);
@@ -1068,6 +1410,7 @@ void Cache::showStats(int verbosity)
     printf("  Players      : %d\n", players);
     printf("  Ages         : %d\n", ages);
     printf("  Tags         : %d\n", tags);
+    printf("  Franchises   : %d\n", franchises);
     printf("  Ratings      : %d\n", ratings);
     printf("  ReleaseDates : %d\n", releaseDates);
     printf("  Covers       : %d\n", covers);
@@ -1076,9 +1419,11 @@ void Cache::showStats(int verbosity)
     printf("  Marquees     : %d\n", marquees);
     printf("  textures     : %d\n", textures);
     printf("  Videos       : %d\n", videos);
+    printf("  Manuals      : %d\n", manuals);
+    printf("  Chiptunes    : %d\n", chiptunes);
   } else if(verbosity > 1) {
     for(QMap<QString, ResCounts>::iterator it = resCountsMap.begin();
-	it != resCountsMap.end(); ++it) {
+        it != resCountsMap.end(); ++it) {
       printf("'\033[1;32m%s\033[0m' module\n", it.key().toStdString().c_str());
       printf("  Titles       : %d\n", it.value().titles);
       printf("  Platforms    : %d\n", it.value().platforms);
@@ -1087,6 +1432,7 @@ void Cache::showStats(int verbosity)
       printf("  Developers   : %d\n", it.value().developers);
       printf("  Ages         : %d\n", it.value().ages);
       printf("  Tags         : %d\n", it.value().tags);
+      printf("  Franchises   : %d\n", it.value().franchises);
       printf("  Ratings      : %d\n", it.value().ratings);
       printf("  ReleaseDates : %d\n", it.value().releaseDates);
       printf("  Covers       : %d\n", it.value().covers);
@@ -1095,6 +1441,8 @@ void Cache::showStats(int verbosity)
       printf("  Marquees     : %d\n", it.value().marquees);
       printf("  textures     : %d\n", it.value().textures);
       printf("  Videos       : %d\n", it.value().videos);
+      printf("  Manuals      : %d\n", it.value().manuals);
+      printf("  Chiptunes    : %d\n", it.value().chiptunes);
     }
   }
   printf("\n");
@@ -1118,6 +1466,8 @@ void Cache::addToResCounts(const QString source, const QString type)
     resCountsMap[source].ages++;
   } else if(type == "tags") {
     resCountsMap[source].tags++;
+  } else if(type == "franchises") {
+    resCountsMap[source].franchises++;
   } else if(type == "rating") {
     resCountsMap[source].ratings++;
   } else if(type == "releasedate") {
@@ -1134,6 +1484,10 @@ void Cache::addToResCounts(const QString source, const QString type)
     resCountsMap[source].textures++;
   } else if(type == "video") {
     resCountsMap[source].videos++;
+  } else if(type == "manual") {
+    resCountsMap[source].manuals++;
+  } else if(type == "chiptuneid") {
+    resCountsMap[source].chiptunes++;
   }
 }
 
@@ -1170,7 +1524,7 @@ void Cache::readPriorities()
     QDomNodeList sourceNodes = orderNodes.at(a).childNodes();
     if(sourceNodes.isEmpty()) {
       printf("'source' node(s) missing for type '%s' in priorities.xml, skipping...\n",
-	     type.toStdString().c_str());
+             type.toStdString().c_str());
       errors++;
       continue;
     }
@@ -1218,7 +1572,7 @@ bool Cache::write(const bool onlyQuickId)
   QFile cacheFile(cacheDir.absolutePath() + "/db.xml");
   if(cacheFile.open(QIODevice::WriteOnly)) {
     printf("Writing %d (%d new) resources to cache, please wait... ",
-	   resources.length(), resources.length() - resAtLoad);
+           resources.length(), resources.length() - resAtLoad);
     fflush(stdout);
     QXmlStreamWriter xml(&cacheFile);
     xml.setAutoFormatting(true);
@@ -1260,30 +1614,35 @@ void Cache::validate()
   QDir marqueesDir(cacheDir.absolutePath() + "/marquees", "*.*", QDir::Name, QDir::Files);
   QDir texturesDir(cacheDir.absolutePath() + "/textures", "*.*", QDir::Name, QDir::Files);
   QDir videosDir(cacheDir.absolutePath() + "/videos", "*.*", QDir::Name, QDir::Files);
+  QDir manualsDir(cacheDir.absolutePath() + "/manuals", "*.*", QDir::Name, QDir::Files);
 
   QDirIterator coversDirIt(coversDir.absolutePath(),
-			   QDir::Files | QDir::NoDotAndDotDot,
-			   QDirIterator::Subdirectories);
+                           QDir::Files | QDir::NoDotAndDotDot,
+                           QDirIterator::Subdirectories);
 
   QDirIterator screenshotsDirIt(screenshotsDir.absolutePath(),
-				QDir::Files | QDir::NoDotAndDotDot,
-				QDirIterator::Subdirectories);
+                                QDir::Files | QDir::NoDotAndDotDot,
+                                QDirIterator::Subdirectories);
 
   QDirIterator wheelsDirIt(wheelsDir.absolutePath(),
-			   QDir::Files | QDir::NoDotAndDotDot,
-			   QDirIterator::Subdirectories);
+                           QDir::Files | QDir::NoDotAndDotDot,
+                           QDirIterator::Subdirectories);
 
   QDirIterator marqueesDirIt(marqueesDir.absolutePath(),
-			     QDir::Files | QDir::NoDotAndDotDot,
-			     QDirIterator::Subdirectories);
+                             QDir::Files | QDir::NoDotAndDotDot,
+                             QDirIterator::Subdirectories);
 
   QDirIterator texturesDirIt(texturesDir.absolutePath(),
                              QDir::Files | QDir::NoDotAndDotDot,
                              QDirIterator::Subdirectories);
 
   QDirIterator videosDirIt(videosDir.absolutePath(),
-			   QDir::Files | QDir::NoDotAndDotDot,
-			   QDirIterator::Subdirectories);
+                           QDir::Files | QDir::NoDotAndDotDot,
+                           QDirIterator::Subdirectories);
+
+  QDirIterator manualsDirIt(manualsDir.absolutePath(),
+                           QDir::Files | QDir::NoDotAndDotDot,
+                           QDirIterator::Subdirectories);
 
   int filesDeleted = 0;
   int filesNoDelete = 0;
@@ -1294,6 +1653,7 @@ void Cache::validate()
   verifyFiles(marqueesDirIt, filesDeleted, filesNoDelete, "marquee");
   verifyFiles(texturesDirIt, filesDeleted, filesNoDelete, "texture");
   verifyFiles(videosDirIt, filesDeleted, filesNoDelete, "video");
+  verifyFiles(manualsDirIt, filesDeleted, filesNoDelete, "manual");
 
   if(filesDeleted == 0 && filesNoDelete == 0) {
     printf("No inconsistencies found in the database. :)\n\n");
@@ -1320,13 +1680,13 @@ void Cache::verifyFiles(QDirIterator &dirIt, int &filesDeleted, int &filesNoDele
     QFileInfo fileInfo(dirIt.next());
     if(!resFileNames.contains(fileInfo.absoluteFilePath())) {
       printf("No resource entry for file '%s', deleting... ",
-	     fileInfo.absoluteFilePath().toStdString().c_str());
+             fileInfo.absoluteFilePath().toStdString().c_str());
       if(QFile::remove(fileInfo.absoluteFilePath())) {
-	printf("OK!\n");
-	filesDeleted++;
+        printf("OK!\n");
+        filesDeleted++;
       } else {
-	printf("ERROR! File couldn't be deleted :/\n");
-	filesNoDelete++;
+        printf("ERROR! File couldn't be deleted :/\n");
+        filesNoDelete++;
       }
     }
   }
@@ -1349,40 +1709,42 @@ void Cache::merge(Cache &mergeCache, bool overwrite, const QString &mergeCacheFo
     while(it.hasNext()) {
       Resource res = it.next();
       if(res.cacheId == mergeResource.cacheId &&
-	 res.type == mergeResource.type &&
-	 res.source == mergeResource.source) {
-	if(overwrite) {
-	  if(res.type == "cover" || res.type == "screenshot" ||
-	     res.type == "wheel" || res.type == "marquee" ||
-	     res.type == "texture" || res.type == "video") {
-	    if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
-	      printf("Couldn't remove media file '%s' for updating, skipping...\n", res.value.toStdString().c_str());
-	      continue;
-	    }
-	    
-	  }
-	  it.remove();
-	} else {
-	  resExists = true;
-	  break;
-	}
+         res.type == mergeResource.type &&
+         res.source == mergeResource.source) {
+        if(overwrite) {
+          if(res.type == "cover" || res.type == "screenshot" ||
+             res.type == "wheel" || res.type == "marquee" ||
+             res.type == "texture" || res.type == "video" ||
+             res.type == "manual") {
+            if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
+              printf("Couldn't remove media file '%s' for updating, skipping...\n", res.value.toStdString().c_str());
+              continue;
+            }
+            
+          }
+          it.remove();
+        } else {
+          resExists = true;
+          break;
+        }
       }
     }
     if(!resExists) {
       if(mergeResource.type == "cover" || mergeResource.type == "screenshot" ||
-	 mergeResource.type == "wheel" || mergeResource.type == "marquee" ||
-	 mergeResource.type == "texture" || mergeResource.type == "video") {
-	cacheDir.mkpath(QFileInfo(cacheDir.absolutePath() + "/" + mergeResource.value).absolutePath());
-	if(!QFile::copy(mergeCacheDir.absolutePath() + "/" + mergeResource.value,
-			cacheDir.absolutePath() + "/" + mergeResource.value)) {
-	  printf("Couldn't copy media file '%s', skipping...\n",  mergeResource.value.toStdString().c_str());
-	  continue;
-	}
+         mergeResource.type == "wheel" || mergeResource.type == "marquee" ||
+         mergeResource.type == "texture" || mergeResource.type == "video" ||
+         mergeResource.type == "manual") {
+        cacheDir.mkpath(QFileInfo(cacheDir.absolutePath() + "/" + mergeResource.value).absolutePath());
+        if(!QFile::copy(mergeCacheDir.absolutePath() + "/" + mergeResource.value,
+                        cacheDir.absolutePath() + "/" + mergeResource.value)) {
+          printf("Couldn't copy media file '%s', skipping...\n",  mergeResource.value.toStdString().c_str());
+          continue;
+        }
       }
       if(overwrite) {
-	resUpdated++;
+        resUpdated++;
       } else {
-	resMerged++;
+        resMerged++;
       }
       resources.append(mergeResource);
     }
@@ -1402,10 +1764,9 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
 
   if(entry.source.isEmpty()) {
     printf("Something is wrong, resource with cache id '%s' has no source, exiting...\n",
-	   entry.cacheId.toStdString().c_str());
-    exit(1);
+           entry.cacheId.toStdString().c_str());
+    Skyscraper::removeLockAndExit(1);
   }
-
   if(entry.cacheId != "") {
     Resource resource;
     resource.cacheId = entry.cacheId;
@@ -1451,6 +1812,11 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
       resource.value = entry.tags;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
+    if(entry.franchises != "") {
+      resource.type = "franchises";
+      resource.value = entry.franchises;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
     if(entry.rating != "") {
       resource.type = "rating";
       resource.value = entry.rating;
@@ -1464,6 +1830,54 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
     if(entry.videoData != "" && entry.videoFormat != "") {
       resource.type = "video";
       resource.value = "videos/" + entry.source + "/" + entry.cacheId + "." + entry.videoFormat;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.manualData != "" && entry.manualFormat != "") {
+      resource.type = "manual";
+      resource.value = "manuals/" + entry.source + "/" + entry.cacheId + "." + entry.manualFormat;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.chiptuneId != "" && entry.chiptunePath != "") {
+      resource.type = "chiptuneid";
+      resource.value = entry.chiptuneId;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.type = "chiptunepath";
+      resource.value = entry.chiptunePath;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.completed) {
+      resource.type = "completed";
+      resource.value = "true";
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.favourite) {
+      resource.type = "favourite";
+      resource.value = "true";
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.played) {
+      resource.type = "played";
+      resource.value = "true";
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.timesPlayed) {
+      resource.type = "timesplayed";
+      resource.value = QString::number(entry.timesPlayed);
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.lastPlayed) {
+      resource.type = "lastplayed";
+      resource.value = QString::number(entry.lastPlayed);
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.firstPlayed) {
+      resource.type = "firstplayed";
+      resource.value = QString::number(entry.firstPlayed);
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.timePlayed) {
+      resource.type = "timeplayed";
+      resource.value = QString::number(entry.timePlayed);
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
     if(!entry.coverData.isNull() && config.cacheCovers) {
@@ -1495,10 +1909,10 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
 }
 
 void Cache::addResource(Resource &resource,
-			GameEntry &entry,
-			const QString &cacheAbsolutePath,
-			const Settings &config,
-			QString &output)
+                        GameEntry &entry,
+                        const QString &cacheAbsolutePath,
+                        const Settings &config,
+                        QString &output)
 {
   QMutexLocker locker(&cacheMutex);
   bool notFound = true;
@@ -1510,9 +1924,9 @@ void Cache::addResource(Resource &resource,
        res.type == resource.type &&
        res.source == resource.source) {
       if(config.refresh) {
-	it.remove();
+        it.remove();
       } else {
-	notFound = false;
+        notFound = false;
       }
       break;
     }
@@ -1528,116 +1942,130 @@ void Cache::addResource(Resource &resource,
        resource.type == "texture") {
       QByteArray *imageData = nullptr;
       if(resource.type == "cover") {
-	imageData = &entry.coverData;
+        imageData = &entry.coverData;
       } else if(resource.type == "screenshot") {
-	imageData = &entry.screenshotData;
+        imageData = &entry.screenshotData;
       } else if(resource.type == "wheel") {
-	imageData = &entry.wheelData;
+        imageData = &entry.wheelData;
       } else if(resource.type == "marquee") {
-	imageData = &entry.marqueeData;
+        imageData = &entry.marqueeData;
       } else if(resource.type == "texture") {
-	imageData = &entry.textureData;
+        imageData = &entry.textureData;
       }
       if(config.cacheResize) {
-	QImage image;
-	if(imageData->size() > 0 &&
-	   image.loadFromData(*imageData) &&
-	   !image.isNull()) {
-	  int max = 800;
-	  if(image.width() > max || image.height() > max) {
-	    image = image.scaled(max, max, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-	  }
-	  QByteArray resizedData;
-	  QBuffer b(&resizedData);
-	  b.open(QIODevice::WriteOnly);
-	  if((image.hasAlphaChannel() && hasAlpha(image)) || resource.type == "screenshot") {
-	    okToAppend = image.save(&b, "png");
-	  } else {
-	    okToAppend = image.save(&b, "jpg", config.jpgQuality);
-	  }
-	  b.close();
-	  if(imageData->size() > resizedData.size()) {
-	    if(config.verbosity >= 3) {
-	      printf("%s: '%d' > '%d', choosing resize for optimal result!\n",
-		     resource.type.toStdString().c_str(),
-		     imageData->size(),
-		     resizedData.size());
-	    }
-	    *imageData = resizedData;
-	  }
-	} else {
-	  okToAppend = false;
-	}
+        QImage image;
+        if(imageData->size() > 0 &&
+           image.loadFromData(*imageData) &&
+           !image.isNull()) {
+          int max = 1000;
+          if(image.width() > (max*2) || image.height() > max) {
+            image = image.scaled(max, max, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+          }
+          QByteArray resizedData;
+          QBuffer b(&resizedData);
+          b.open(QIODevice::WriteOnly);
+          if((image.hasAlphaChannel() && hasAlpha(image)) || resource.type == "screenshot") {
+            okToAppend = image.save(&b, "png");
+          } else {
+            okToAppend = image.save(&b, "jpg", config.jpgQuality);
+          }
+          b.close();
+          if(imageData->size() > resizedData.size()) {
+            if(config.verbosity >= 3) {
+              printf("%s: '%d' > '%d', choosing resize for optimal result!\n",
+                     resource.type.toStdString().c_str(),
+                     imageData->size(),
+                     resizedData.size());
+            }
+            *imageData = resizedData;
+          }
+        } else {
+          okToAppend = false;
+        }
       }
       if(okToAppend) {
-	QFile f(cacheFile);
-	if(f.open(QIODevice::WriteOnly)) {
-	  f.write(*imageData);
-	  f.close();
-	} else {
-	  output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
-	  okToAppend = false;
-	}
+        QFile f(cacheFile);
+        if(f.open(QIODevice::WriteOnly)) {
+          f.write(*imageData);
+          f.close();
+        } else {
+          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+          okToAppend = false;
+        }
       } else {
-	// Image was faulty and could not be saved to cache so we clear
-	// the QByteArray data in game entry to make sure we get a "NO"
-	// in the terminal output from scraperworker.cpp.
-	imageData->clear();
+        // Image was faulty and could not be saved to cache so we clear
+        // the QByteArray data in game entry to make sure we get a "NO"
+        // in the terminal output from scraperworker.cpp.
+        imageData->clear();
       }
     } else if(resource.type == "video") {
       if(entry.videoData.size() <= config.videoSizeLimit) {
-	QFile f(cacheFile);
-	if(f.open(QIODevice::WriteOnly)) {
-	  f.write(entry.videoData);
-	  f.close();
-	  if(!config.videoConvertCommand.isEmpty()) {
-	    output.append("Video conversion: ");
-	    if(doVideoConvert(resource,
-			      cacheFile,
-			      cacheAbsolutePath,
-			      config,
-			      output)) {
-	      output.append("\033[1;32mSuccess!\033[0m");
-	    } else {
-	      output.append("\033[1;31mFailed!\033[0m (set higher '--verbosity N' level for more info)");
-	      f.remove();
-	      okToAppend = false;
-	    }
-	  }
-	} else {
-	  output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
-	  okToAppend = false;
-	}
+        QFile f(cacheFile);
+        if(f.open(QIODevice::WriteOnly)) {
+          f.write(entry.videoData);
+          f.close();
+          if(!config.videoConvertCommand.isEmpty()) {
+            output.append("Video conversion: ");
+            if(doVideoConvert(resource,
+                              cacheFile,
+                              cacheAbsolutePath,
+                              config,
+                              output)) {
+              output.append("\033[1;32mSuccess!\033[0m");
+            } else {
+              output.append("\033[1;31mFailed!\033[0m (set higher '--verbosity N' level for more info)");
+              f.remove();
+              okToAppend = false;
+            }
+          }
+        } else {
+          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+          okToAppend = false;
+        }
       } else {
-	output.append("Video exceeds maximum size of " + QString::number(config.videoSizeLimit / 1024 / 1024) + " MB. Adjust this limit with the 'videoSizeLimit' variable in '/home/USER/.skyscraper/config.ini.'");
-	okToAppend = false;
+        output.append("Video exceeds maximum size of " + QString::number(config.videoSizeLimit / 1024 / 1024) + " MB. Adjust this limit with the 'videoSizeLimit' variable in '" + QDir::homePath() + "/.skyscraper/config.ini.'");
+        okToAppend = false;
+      }
+    } else if(resource.type == "manual") {
+      if(entry.manualData.size() <= config.manualSizeLimit) {
+        QFile f(cacheFile);
+        if(f.open(QIODevice::WriteOnly)) {
+          f.write(entry.manualData);
+          f.close();
+        } else {
+          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+          okToAppend = false;
+        }
+      } else {
+        output.append("Manual exceeds maximum size of " + QString::number(config.manualSizeLimit / 1024 / 1024) + " MB. Adjust this limit with the 'manualSizeLimit' variable in '" + QDir::homePath() + "/.skyscraper/config.ini.'");
+        okToAppend = false;
       }
     }
 
     if(okToAppend) {
       if(resource.type == "cover" ||
-	 resource.type == "screenshot" ||
-	 resource.type == "wheel" ||
-	 resource.type == "marquee" ||
-	 resource.type == "texture") {
-	// Remove old style cache image if it exists
-	if(QFile::exists(cacheFile + ".png")) {
-	  QFile::remove(cacheFile + ".png");
-	}
+         resource.type == "screenshot" ||
+         resource.type == "wheel" ||
+         resource.type == "marquee" ||
+         resource.type == "texture") {
+        // Remove old style cache image if it exists
+        if(QFile::exists(cacheFile + ".png")) {
+          QFile::remove(cacheFile + ".png");
+        }
       }
       resources.append(resource);
     } else {
-      printf("\033[1;33mWarning! Couldn't add resource to cache. Have you run out of disk space?\n\033[0m");
+      printf("\033[1;33mWarning! Couldn't add resource to cache. Resource size limit exceeded or error writing the file.\n\033[0m");
     }
     
   }
 }
 
 bool Cache::doVideoConvert(Resource &resource,
-			   QString &cacheFile,
-			   const QString &cacheAbsolutePath,
-			   const Settings &config,
-			   QString &output)
+                           QString &cacheFile,
+                           const QString &cacheAbsolutePath,
+                           const Settings &config,
+                           QString &output)
 {
   if(config.verbosity >= 2) {
     output.append("\n");
@@ -1686,8 +2114,8 @@ bool Cache::doVideoConvert(Resource &resource,
     cacheFile.replace("tmpfile_", "");
     if(QFile::exists(cacheFile)) {
       if(!QFile::remove(cacheFile)) {
-	output.append("'" + cacheFile + "' already exists and can't be removed.\n");
-	return false;
+        output.append("'" + cacheFile + "' already exists and can't be removed.\n");
+        return false;
       }
     }
     if(QFile::rename(tmpCacheFile, cacheFile)) {
@@ -1731,8 +2159,9 @@ void Cache::addQuickId(const QFileInfo &info, const QString &cacheId) {
 
 QString Cache::getQuickId(const QFileInfo &info) {
   QMutexLocker locker(&quickIdMutex);
-  if(quickIds.contains(info.absoluteFilePath()) &&
-     info.lastModified().toMSecsSinceEpoch() <= quickIds[info.absoluteFilePath()].first) {
+  if(quickIds.contains(info.absoluteFilePath()) /* &&
+     // We don't care if the file was modified since the last scraping, as only the filename is used
+     info.lastModified().toMSecsSinceEpoch() <= quickIds[info.absoluteFilePath()].first */ ) {
     return quickIds[info.absoluteFilePath()].second;
   }
   return QString();
@@ -1744,11 +2173,47 @@ bool Cache::hasEntries(const QString &cacheId, const QString scraper)
   for(const auto &res: resources) {
     if(scraper.isEmpty()) {
       if(res.cacheId == cacheId) {
-	return true;
+        return true;
       }
     } else {
       if(res.cacheId == cacheId && res.source == scraper) {
-	return true;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper)
+{
+  QMutexLocker locker(&cacheMutex);
+  for(const auto &res: resources) {
+    if(scraper.isEmpty() || res.source == scraper) {
+      if(res.cacheId == cacheId && res.type != "title" &&
+                                   res.type != "platform" &&
+                                   res.type != "completed" &&
+                                   res.type != "favourite" &&
+                                   res.type != "played" &&
+                                   res.type != "timesplayed" &&
+                                   res.type != "lastplayed" &&
+                                   res.type != "firstplayed" &&
+                                   res.type != "timeplayed" &&
+                                   res.type != "chiptuneid" &&
+                                   res.type != "chiptunepath") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool Cache::hasEntriesOfType(const QString &cacheId, const QString &type, const QString scraper)
+{
+  QMutexLocker locker(&cacheMutex);
+  for(const auto &res: resources) {
+    if(scraper.isEmpty() || res.source == scraper) {
+      if(res.cacheId == cacheId && res.type == type) {
+        return true;
       }
     }
   }
@@ -1763,11 +2228,11 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
   for(const auto &resource: resources) {
     if(scraper.isEmpty()) {
       if(entry.cacheId == resource.cacheId) {
-	matchingResources.append(resource);
+        matchingResources.append(resource);
       }
     } else {
       if(entry.cacheId == resource.cacheId && resource.source == scraper) {
-	matchingResources.append(resource);
+        matchingResources.append(resource);
       }
     }
   }
@@ -1845,6 +2310,15 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     }
   }
   {
+    QString type = "franchises";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.franchises = result;
+      entry.franchisesSrc = source;
+    }
+  }
+  {
     QString type = "rating";
     QString result = "";
     QString source = "";
@@ -1863,14 +2337,88 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     }
   }
   {
+    QString type = "chiptuneid";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.chiptuneId = result;
+      entry.chiptuneIdSrc = source;
+    }
+  }
+  {
+    QString type = "chiptunepath";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.chiptunePath = result;
+      entry.chiptunePathSrc = source;
+    }
+  }
+  {
+    QString type = "completed";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.completed = (result=="true") ? true : false;
+    }
+  }
+  {
+    QString type = "favourite";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.favourite = (result=="true") ? true : false;
+    }
+  }
+  {
+    QString type = "played";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.played = (result=="true") ? true : false;
+    }
+  }
+  {
+    QString type = "timesplayed";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.timesPlayed = result.toUInt();
+    }
+  }
+  {
+    QString type = "lastplayed";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.lastPlayed = result.toUInt();
+    }
+  }
+  {
+    QString type = "firstplayed";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.firstPlayed = result.toUInt();
+    }
+  }
+  {
+    QString type = "timeplayed";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.timePlayed = result.toUInt();
+    }
+  }
+  {
     QString type = "cover";
     QString result = "";
     QString source = "";
     if(fillType(type, matchingResources, result, source)) {
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
-	entry.coverData = f.readAll();
-	f.close();
+        entry.coverData = f.readAll();
+        f.close();
       }
       entry.coverSrc = source;
     }
@@ -1882,8 +2430,8 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     if(fillType(type, matchingResources, result, source)) {
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
-	entry.screenshotData = f.readAll();
-	f.close();
+        entry.screenshotData = f.readAll();
+        f.close();
       }
       entry.screenshotSrc = source;
     }
@@ -1895,8 +2443,8 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     if(fillType(type, matchingResources, result, source)) {
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
-	entry.wheelData = f.readAll();
-	f.close();
+        entry.wheelData = f.readAll();
+        f.close();
       }
       entry.wheelSrc = source;
     }
@@ -1908,8 +2456,8 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     if(fillType(type, matchingResources, result, source)) {
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
-	entry.marqueeData = f.readAll();
-	f.close();
+        entry.marqueeData = f.readAll();
+        f.close();
       }
       entry.marqueeSrc = source;
     }
@@ -1935,18 +2483,34 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFileInfo info(cacheDir.absolutePath() + "/" + result);
       QFile f(info.absoluteFilePath());
       if(f.open(QIODevice::ReadOnly)) {
-	entry.videoData = f.readAll();
-	f.close();
-	entry.videoFormat = info.suffix();
-	entry.videoFile = info.absoluteFilePath();
-	entry.videoSrc = source;
+        entry.videoData = f.readAll();
+        f.close();
+        entry.videoFormat = info.suffix();
+        entry.videoFile = info.absoluteFilePath();
+        entry.videoSrc = source;
+      }
+    }
+  }
+  {
+    QString type = "manual";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      QFileInfo info(cacheDir.absolutePath() + "/" + result);
+      QFile f(info.absoluteFilePath());
+      if(f.open(QIODevice::ReadOnly)) {
+        entry.manualData = f.readAll();
+        f.close();
+        entry.manualFormat = info.suffix();
+        entry.manualFile = info.absoluteFilePath();
+        entry.manualSrc = source;
       }
     }
   }
 }
 
 bool Cache::fillType(QString &type, QList<Resource> &matchingResources,
-		     QString &result, QString &source)
+                     QString &result, QString &source)
 {
   QList<Resource> typeResources;
   for(const auto &resource: matchingResources) {
@@ -1957,18 +2521,47 @@ bool Cache::fillType(QString &type, QList<Resource> &matchingResources,
   if(typeResources.isEmpty()) {
     return false;
   }
-  if(prioMap.contains(type)) {
-    for(int a = 0; a < prioMap.value(type).length(); ++a) {
-      for(const auto &resource: typeResources) {
-	if(resource.source == prioMap.value(type).at(a)) {
-	  result = resource.value;
-	  source = resource.source;
-	  return true;
-	}
+  if(type == "description") {
+    int descriptionLength = 0;
+    QString longDescriptionValue;
+    QString longDescriptionSource;
+    for(const auto &resource: typeResources) {
+      // Avoid extremely long descriptions if possible (typically GiantBomb):
+      if(resource.value.length() > descriptionLength && resource.value.length() < 2048) {
+        result = resource.value;
+        source = resource.source;
+        descriptionLength = resource.value.length();
+      } else if(resource.value.length() < 2048) {
+        longDescriptionValue = resource.value;
+        longDescriptionSource = resource.source;
+      }
+    }
+    if(!descriptionLength && !longDescriptionValue.isEmpty()) {
+        result = longDescriptionValue;
+        source = longDescriptionSource;
+        return true;
+    } else {
+      if(descriptionLength) {
+        return true;
+      }
+    }
+  }
+  else {
+    if(prioMap.contains(type)) {
+      for(int a = 0; a < prioMap.value(type).length(); ++a) {
+        for(const auto &resource: typeResources) {
+          if(resource.source == prioMap.value(type).at(a)) {
+            result = resource.value;
+            source = resource.source;
+            return true;
+          }
+        }
       }
     }
   }
   qint64 newest = 0;
+  // If there is no priority set for the resource type nor it is a Description,
+  // then the most recently scraped resource is selected:
   for(const auto &resource: typeResources) {
     if(resource.timestamp >= newest) {
       newest = resource.timestamp;

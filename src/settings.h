@@ -27,10 +27,14 @@
 #define SETTINGS_H
 
 #include <QMap>
+#include <QPair>
+#include <QList>
+#include <QString>
 
 struct Settings {
-  QString currentDir = "";
 
+  QString currentDir = "";
+  bool waitIfConcurrent = false;
   QString cacheFolder = "";
   QString gameListFileString = "";
   QString skippedFileString = "";
@@ -40,7 +44,16 @@ struct Settings {
   QString platform = "";
   QString scraper = "";
   QString userCreds = "";
+  QString dbServer = "";
+  QString koiDb = "";
+  QString dbUser = "";
+  QString dbPassword = "";
+  QString giantBombDb = "";
+  QString mobygamesDb = "";
+  QString launchBoxDb = "";
+  QString launchBoxMameDb = "";
   QString igdbToken = "";
+  QString apiKey = "";
   QString inputFolder = "";
   QString gameListFolder = "";
   QString mediaFolder = "";
@@ -51,6 +64,7 @@ struct Settings {
   QString marqueesFolder = "";
   QString texturesFolder = "";
   QString videosFolder = "";
+  QString manualsFolder = "";
   QString importFolder = "import";
   QString nameTemplate = "";
   int doneThreads = 0;
@@ -96,6 +110,8 @@ struct Settings {
   bool gameListBackup = false;
   bool preserveOldGameList = true;
   bool spaceCheck = true;
+  bool keepSubtitle = true;
+  int fuzzySearch = 0;
   QString scummIni = "";
 
   int romLimit = -1;
@@ -103,10 +119,13 @@ struct Settings {
   bool videos = false;
   bool videoPreferNormalized = true;
   int videoSizeLimit = 100*1024*1024;
+  bool manuals = false;
+  int manualSizeLimit = 100*1024*1024;
   QString videoConvertCommand = "";
   QString videoConvertExtension = "";
   bool symlink = false;
   bool skipExistingVideos = false;
+  bool skipExistingManuals = false;
   bool cacheCovers = true;
   bool skipExistingCovers = false;
   bool cacheScreenshots = true;
@@ -118,6 +137,10 @@ struct Settings {
   bool skipExistingMarquees = false;
   bool skipExistingTextures = false;
   bool cacheTextures = true;
+  bool getMissingResources = false;
+  bool chiptunes = false;
+  QString navidromeDb = "";
+  bool cacheGb = false;
   
   QString user = "";
   QString password = "";

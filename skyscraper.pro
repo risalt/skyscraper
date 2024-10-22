@@ -2,16 +2,19 @@ TEMPLATE = app
 TARGET = Skyscraper
 DEPENDPATH += .
 INCLUDEPATH += .
+CONFIG -= debug
 CONFIG += release
 win32:CONFIG += console
-QT += core network xml
-QMAKE_CXXFLAGS += -std=c++11
+QT += core network xml sql widgets
+# QTPLUGIN.platforms = qoffscreen
+
+QMAKE_CXXFLAGS += -std=c++17
 
 unix:target.path=/usr/local/bin
 unix:target.files=Skyscraper Skyscraper.app/Contents/MacOS/Skyscraper
 
 unix:examples.path=/usr/local/etc/skyscraper
-unix:examples.files=config.ini.example README.md hints.xml artwork.xml artwork.xml.example1 artwork.xml.example2 artwork.xml.example3 artwork.xml.example4 aliasMap.csv mameMap.csv docs/ARTWORK.md tgdb_developers.json tgdb_publishers.json platforms.json screenscraper.json
+unix:examples.files=config.ini.example README.md hints.xml artwork.xml artwork.xml.example1 artwork.xml.example2 artwork.xml.example3 artwork.xml.example4 aliasMap.csv mameMap.csv docs/ARTWORK.md tgdb_developers.json tgdb_publishers.json platforms.json screenscraper.json mobygames.json giantbombdb.json
 
 unix:cacheexamples.path=/usr/local/etc/skyscraper/cache
 unix:cacheexamples.files=cache/priorities.xml.example docs/CACHE.md
@@ -47,13 +50,20 @@ HEADERS += src/skyscraper.h \
            src/retrobat.h \
            src/attractmode.h \
            src/pegasus.h \
+           src/xmlexport.h \
+           src/koillection.h \
            src/openretro.h \
            src/thegamesdb.h \
+           src/launchbox.h \
+           src/chiptune.h \
+           src/customflags.h \
            src/worldofspectrum.h \
            src/screenscraper.h \
            src/crc32.h \
            src/mobygames.h \
+           src/offlinemobygames.h \
            src/igdb.h \
+           src/giantbomb.h \
            src/arcadedb.h \
            src/scripter.h \
            src/platform.h \
@@ -97,13 +107,20 @@ SOURCES += src/main.cpp \
            src/retrobat.cpp \
            src/attractmode.cpp \
            src/pegasus.cpp \
+           src/xmlexport.cpp \
+           src/koillection.cpp \
            src/openretro.cpp \
            src/thegamesdb.cpp \
+           src/launchbox.cpp \
+           src/chiptune.cpp \
+           src/customflags.cpp \
            src/worldofspectrum.cpp \
            src/screenscraper.cpp \
            src/crc32.cpp \
            src/mobygames.cpp \
+           src/offlinemobygames.cpp \
            src/igdb.cpp \
+           src/giantbomb.cpp \
            src/arcadedb.cpp \
            src/scripter.cpp \
            src/platform.cpp \

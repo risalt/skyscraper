@@ -38,8 +38,8 @@ public:
 private:
   QList<QString> getSearchNames(const QFileInfo &info) override;
   void getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
-			QString platform) override;
-  void getGameData(GameEntry &game) override;
+                        QString platform) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   QByteArray loadImageData(const QString fileName);
   void loadVideoData(GameEntry &game, const QString fileName);
   QString getAbsoluteFileName(const QString fileName);

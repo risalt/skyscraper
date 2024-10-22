@@ -45,16 +45,21 @@ private:
   QList<QPair<QString, QString > > headers;
   
   void getSearchResults(QList<GameEntry> &gameEntries,
-			QString searchName, QString platform) override;
-  void getGameData(GameEntry &game) override;
+                        QString searchName, QString platform) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
+  void getFranchises(GameEntry &game) override;
   void getAges(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
   void getDescription(GameEntry &game) override;
   void getRating(GameEntry &game) override;
+  void getCover(GameEntry &game) override;
+  void getScreenshot(GameEntry &game) override;
+  void getMarquee(GameEntry &game) override;
+  void getVideo(GameEntry &game) override;
 
   QList<QString> getSearchNames(const QFileInfo &info) override;
 

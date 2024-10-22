@@ -38,6 +38,8 @@ public:
   NetManager();
   QNetworkReply *getRequest(const QNetworkRequest &request);
   QNetworkReply *postRequest(const QNetworkRequest &request, const QByteArray &data);
+  QNetworkReply *deleteRequest(const QNetworkRequest &request);
+  QNetworkReply *customRequest(const QNetworkRequest &request, const QByteArray &data, QByteArray operation);
 
 private:
   QMutex requestMutex;

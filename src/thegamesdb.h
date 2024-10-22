@@ -40,8 +40,8 @@ public:
 
 private:
   void getSearchResults(QList<GameEntry> &gameEntries,
-			QString searchName, QString platform) override;
-  void getGameData(GameEntry &game) override;
+                        QString searchName, QString platform) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
@@ -54,6 +54,8 @@ private:
   void getScreenshot(GameEntry &game) override;
   void getWheel(GameEntry &game) override;
   void getMarquee(GameEntry &game) override;
+  void getTexture(GameEntry &game) override;
+  void getVideo(GameEntry &game) override;
 
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;

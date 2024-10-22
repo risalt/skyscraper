@@ -24,11 +24,12 @@
  */
 
 #include <QDir>
+#include <QRegularExpression>
 
 #include "importscraper.h"
 
 ImportScraper::ImportScraper(Settings *config,
-			     QSharedPointer<NetManager> manager)
+                             QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
   fetchOrder.append(TITLE);
@@ -46,26 +47,35 @@ ImportScraper::ImportScraper(Settings *config,
   fetchOrder.append(AGES);
   fetchOrder.append(RATING);
   fetchOrder.append(DESCRIPTION);
+  fetchOrder.append(FRANCHISES);
+  fetchOrder.append(MANUAL);
 
   covers = QDir(config->importFolder + "/covers", "*.*",
-		QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+                QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   screenshots = QDir(config->importFolder + "/screenshots", "*.*",
-	       QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+               QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   wheels = QDir(config->importFolder + "/wheels", "*.*",
-		QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+                QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   marquees = QDir(config->importFolder + "/marquees", "*.*",
-		  QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+                  QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   textures = QDir(config->importFolder + "/textures", "*.*",
                   QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   videos = QDir(config->importFolder + "/videos", "*.*",
-		QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+                QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+  manuals = QDir(config->importFolder + "/manuals", "*.*",
+                QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   textual = QDir(config->importFolder + "/textual", "*.*",
-		 QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
+                 QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
   loadDefinitions();
 }
 
-void ImportScraper::getGameData(GameEntry &game)
+void ImportScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   // Always reset game title at this point, to avoid saving the dummy title in cache
   game.title = "";
 
@@ -106,6 +116,10 @@ void ImportScraper::getGameData(GameEntry &game)
       getTags(game);
       data = dataOrig;
       break;
+    case FRANCHISES:
+      getFranchises(game);
+      data = dataOrig;
+      break;
     case RELEASEDATE:
       getReleaseDate(game);
       data = dataOrig;
@@ -126,8 +140,13 @@ void ImportScraper::getGameData(GameEntry &game)
       getTexture(game);
       break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        getVideo(game);
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        getVideo(game);
       }
       break;
     default:
@@ -144,7 +163,9 @@ void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &in
   coverFile = "";
   wheelFile = "";
   marqueeFile = "";
+  textureFile = "";
   videoFile = "";
+  manualFile = "";
   GameEntry game;
   bool textualFound = checkType(info.completeBaseName(), textual, textualFile);
   bool screenshotFound = checkType(info.completeBaseName(), screenshots, screenshotFile);
@@ -153,7 +174,9 @@ void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &in
   bool marqueeFound = checkType(info.completeBaseName(), marquees, marqueeFile);
   bool textureFound = checkType(info.completeBaseName(), textures, textureFile);
   bool videoFound = checkType(info.completeBaseName(), videos, videoFile);
-  if(textualFound || screenshotFound || coverFound || wheelFound || marqueeFound || textureFound || videoFound) {
+  bool manualFound = checkType(info.completeBaseName(), manuals, manualFile);
+  if(textualFound || screenshotFound || coverFound || wheelFound || marqueeFound ||
+     textureFound || videoFound || manualFound) {
     game.title = info.completeBaseName();
     game.platform = config->platform;
     gameEntries.append(game);
@@ -209,7 +232,8 @@ void ImportScraper::getMarquee(GameEntry &game)
   }
 }
 
-void ImportScraper::getTexture(GameEntry &game) {
+void ImportScraper::getTexture(GameEntry &game)
+{
   if (!textureFile.isEmpty()) {
     QFile f(textureFile);
     if (f.open(QIODevice::ReadOnly)) {
@@ -232,6 +256,19 @@ void ImportScraper::getVideo(GameEntry &game)
   }
 }
 
+void ImportScraper::getManual(GameEntry &game)
+{
+  if(!manualFile.isEmpty()) {
+    QFile f(manualFile);
+    if(f.open(QIODevice::ReadOnly)) {
+      QFileInfo i(manualFile);
+      game.manualData = f.readAll();
+      game.manualFormat = i.suffix();
+      f.close();
+    }
+  }
+}
+
 void ImportScraper::getTitle(GameEntry &game)
 {
   if(titlePre.isEmpty()) {
@@ -246,6 +283,45 @@ void ImportScraper::getTitle(GameEntry &game)
     nomNom(nom);
   }
   game.title = data.left(data.indexOf(titlePost.toUtf8())).simplified();
+}
+
+void ImportScraper::getRating(GameEntry &game)
+{
+  if(ratingPre.isEmpty()) {
+    return;
+  }
+  for(const auto &nom: ratingPre) {
+    if(!checkNom(nom)) {
+      return;
+    }
+  }
+  for(const auto &nom: ratingPre) {
+    nomNom(nom);
+  }
+  game.rating = data.left(data.indexOf(ratingPost.toUtf8()));
+
+  // check for 0, 0.5, 1, 1.5, ... 5
+  QRegularExpression re("^[0-5](\\.5)?$");
+  QRegularExpressionMatch m = re.match(game.rating);
+  if (m.hasMatch()) {
+    double rating = game.rating.toDouble();
+    if (rating <= 5.0) {
+      game.rating = QString::number(rating / 5.0);
+    } else {
+      game.rating = "";
+    }
+    return;
+  }
+
+  // check for 0.0 ... 1.0
+  // known limitation: to catch 0.5 here enter it as '.5'
+  bool toDoubleOk = false;
+  double rating = game.rating.toDouble(&toDoubleOk);
+  if(toDoubleOk && rating >= 0.0 && rating <= 1.0) {
+    game.rating = QString::number(rating);
+  } else {
+    game.rating = "";
+  }
 }
 
 void ImportScraper::loadData()
@@ -278,6 +354,7 @@ bool ImportScraper::loadDefinitions()
       checkForTag(agesPre, agesPost, agesTag, line);
       checkForTag(ratingPre, ratingPost, ratingTag, line);
       checkForTag(tagsPre, tagsPost, tagsTag, line);
+      checkForTag(franchisesPre, franchisesPost, franchisesTag, line);
       checkForTag(releaseDatePre, releaseDatePost, releaseDateTag, line);
       checkForTag(descriptionPre, descriptionPost, descriptionTag, line);
     }

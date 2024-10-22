@@ -28,14 +28,15 @@
 #include "thegamesdb.h"
 #include "strtools.h"
 
+
 TheGamesDb::TheGamesDb(Settings *config,
-		       QSharedPointer<NetManager> manager)
+                       QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
+  incrementalScraping = true;  
   loadMaps();
 
   baseUrl = "https://api.thegamesdb.net/v1";
-
   searchUrlPre = "https://api.thegamesdb.net/v1/Games/ByGameName?apikey=";
 
   fetchOrder.append(RELEASEDATE);
@@ -45,20 +46,21 @@ TheGamesDb::TheGamesDb(Settings *config,
   fetchOrder.append(AGES);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
-  //fetchOrder.append(RATING);
   fetchOrder.append(COVER);
   fetchOrder.append(SCREENSHOT);
   fetchOrder.append(WHEEL);
   fetchOrder.append(MARQUEE);
+  fetchOrder.append(TEXTURE);
+  fetchOrder.append(VIDEO);
 }
 
 void TheGamesDb::getSearchResults(QList<GameEntry> &gameEntries,
-				  QString searchName, QString platform)
+                                  QString searchName, QString platform)
 {
-  netComm->request(searchUrlPre + StrTools::unMagic("187;161;217;126;172;149;202;122;163;197;163;219;162;171;203;197;139;151;215;173;122;206;161;162;200;216;217;123;124;215;200;170;171;132;158;155;215;120;149;169;140;164;122;154;178;174;160;172;157;131;210;161;203;137;159;117;205;166;162;139;171;169;210;163") + "&name="+ searchName);
+  netComm->request(searchUrlPre + config->userCreds + "&name="+ searchName);
   q.exec();
   data = netComm->getData();
-
+  // printf(data);
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
     return;
@@ -83,7 +85,7 @@ void TheGamesDb::getSearchResults(QList<GameEntry> &gameEntries,
     GameEntry game;
     // https://api.thegamesdb.net/v1/Games/ByGameID?id=88&apikey=XXX&fields=game_title,players,release_date,developer,publisher,genres,overview,rating,platform
     game.id = QString::number(jsonGame["id"].toInt());
-    game.url = "https://api.thegamesdb.net/v1/Games/ByGameID?id=" + game.id + "&apikey=" + StrTools::unMagic("187;161;217;126;172;149;202;122;163;197;163;219;162;171;203;197;139;151;215;173;122;206;161;162;200;216;217;123;124;215;200;170;171;132;158;155;215;120;149;169;140;164;122;154;178;174;160;172;157;131;210;161;203;137;159;117;205;166;162;139;171;169;210;163") + "&fields=game_title,players,release_date,developers,publishers,genres,overview,rating";
+    game.url = "https://api.thegamesdb.net/v1/Games/ByGameID?id=" + game.id + "&apikey=" + config->userCreds + "&fields=game_title,players,release_date,developers,publishers,genres,overview,rating,youtube";
     game.title = jsonGame["game_title"].toString();
     // Remove anything at the end with a parentheses. 'thegamesdb' has a habit of adding
     // for instance '(1993)' to the name.
@@ -96,8 +98,13 @@ void TheGamesDb::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-void TheGamesDb::getGameData(GameEntry &game)
+void TheGamesDb::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   netComm->request(game.url);
   q.exec();
   data = netComm->getData();
@@ -139,32 +146,59 @@ void TheGamesDb::getGameData(GameEntry &game)
     case TAGS:
       getTags(game);
       break;
+    case FRANCHISES:
+      getFranchises(game);
+      break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
     case COVER:
       if(config->cacheCovers) {
-	getCover(game);
+        if ((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
       }
       break;
     case SCREENSHOT:
       if(config->cacheScreenshots) {
-	getScreenshot(game);
+        if ((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
       }
       break;
     case WHEEL:
       if(config->cacheWheels) {
-	getWheel(game);
+        if ((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
       }
       break;
     case MARQUEE:
       if(config->cacheMarquees) {
-	getMarquee(game);
+        if ((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
+      }
+      break;
+    case TEXTURE:
+      if (config->cacheTextures) {
+        if ((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
       }
       break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        if ((!cache) || (cache && cache->videoData == "")) {
+          getVideo(game);
+        }
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        if ((!cache) || (cache && cache->manualData == "")) {
+          getManual(game);
+        }
       }
       break;
     default:
@@ -225,8 +259,13 @@ void TheGamesDb::getTags(GameEntry &game)
 
 void TheGamesDb::getCover(GameEntry &game)
 {
-  netComm->request("https://cdn.thegamesdb.net/images/original/boxart/front/" + game.id + "-1.jpg");
+  QString request = "https://cdn.thegamesdb.net/images/original/boxart/front/" + game.id + "-1";
+  netComm->request(request + ".jpg");
   q.exec();
+  if (netComm->getError() != QNetworkReply::NoError) {
+    netComm->request(request + ".png");
+    q.exec();
+  }  
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
@@ -236,8 +275,22 @@ void TheGamesDb::getCover(GameEntry &game)
 
 void TheGamesDb::getScreenshot(GameEntry &game)
 {
-  netComm->request("https://cdn.thegamesdb.net/images/original/screenshots/" + game.id + "-1.jpg");
+  QString request = "https://cdn.thegamesdb.net/images/original/screenshots/" + game.id + "-1";
+  netComm->request(request + ".jpg");
   q.exec();
+  if (netComm->getError() != QNetworkReply::NoError) {
+    netComm->request(request + ".png");
+    q.exec();
+  }  
+  if (netComm->getError() != QNetworkReply::NoError) {
+    request = "https://cdn.thegamesdb.net/images/original/screenshot/" + game.id + "-1";
+    netComm->request(request + ".jpg");
+    q.exec();
+    if (netComm->getError() != QNetworkReply::NoError) {
+      netComm->request(request + ".png");
+      q.exec();
+    }
+  }
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
@@ -247,8 +300,13 @@ void TheGamesDb::getScreenshot(GameEntry &game)
 
 void TheGamesDb::getWheel(GameEntry &game)
 {
-  netComm->request("https://cdn.thegamesdb.net/images/original/clearlogo/" + game.id + ".png");
+  QString request = "https://cdn.thegamesdb.net/images/original/titlescreen/" + game.id + "-1";
+  netComm->request(request + ".jpg");
   q.exec();
+  if (netComm->getError() != QNetworkReply::NoError) {
+    netComm->request(request + ".png");
+    q.exec();
+  }  
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
@@ -258,13 +316,47 @@ void TheGamesDb::getWheel(GameEntry &game)
 
 void TheGamesDb::getMarquee(GameEntry &game)
 {
-  netComm->request("https://cdn.thegamesdb.net/images/original/graphical/" + game.id + "-g.jpg");
+  QString request = "https://cdn.thegamesdb.net/images/original/fanart/" + game.id + "-1";
+  netComm->request(request + ".jpg");
   q.exec();
+  if (netComm->getError() != QNetworkReply::NoError) {
+    netComm->request(request + ".png");
+    q.exec();
+  }  
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
     game.marqueeData = netComm->getData();
   }
+}
+
+void TheGamesDb::getTexture(GameEntry &game)
+{
+  QString request = "https://cdn.thegamesdb.net/images/original/boxart/back/" + game.id + "-1";
+  netComm->request(request + ".jpg");
+  q.exec();
+  if (netComm->getError() != QNetworkReply::NoError) {
+    netComm->request(request + ".png");
+    q.exec();
+  }  
+  QImage image;
+  if(netComm->getError() == QNetworkReply::NoError &&
+     image.loadFromData(netComm->getData())) {
+    game.textureData = netComm->getData();
+  }/* else {
+    netComm->request("https://cdn.thegamesdb.net/images/original/clearlogo/" + game.id + ".png");
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.textureData = netComm->getData();
+    }
+  }*/
+}
+
+void TheGamesDb::getVideo(GameEntry &game)
+{
+  getOnlineVideo(jsonObj["youtube"].toString(), game);
 }
 
 void TheGamesDb::loadMaps()
@@ -296,6 +388,7 @@ void TheGamesDb::loadMaps()
   platformMap[4911] = "Amiga";
   platformMap[4947] = "Amiga CD32";
   platformMap[4914] = "Amstrad CPC";
+  platformMap[4999] = "Amstrad GX4000";
   platformMap[4916] = "Android";
   platformMap[4969] = "APF MP-1000";
   platformMap[4942] = "Apple II";
@@ -310,6 +403,8 @@ void TheGamesDb::loadMaps()
   platformMap[4937] = "Atari ST";
   platformMap[30] = "Atari XE";
   platformMap[4968] = "Bally Astrocade";
+  platformMap[5013] = "BBC Micro";
+  platformMap[4991] = "Casio Loopy";
   platformMap[4964] = "Casio PV-1000";
   platformMap[4970] = "Coleco Telstar Arcade";
   platformMap[31] = "Colecovision";
@@ -329,7 +424,10 @@ void TheGamesDb::loadMaps()
   platformMap[4962] = "Gakken Compact Vision";
   platformMap[4950] = "Game & Watch";
   platformMap[4940] = "Game.com";
+  platformMap[5015] = "Game Park 32";
   platformMap[4951] = "Handheld Electronic Games (LCD)";
+  platformMap[4988] = "V.Smile";
+  platformMap[5005] = "CreatiVision";
   platformMap[32] = "Intellivision";
   platformMap[4915] = "iOS";
   platformMap[37] = "Mac OS";
@@ -360,6 +458,7 @@ void TheGamesDb::loadMaps()
   platformMap[9] = "Nintendo Wii";
   platformMap[38] = "Nintendo Wii U";
   platformMap[4935] = "Nuon";
+  platformMap[4986] = "Oric 1/Atmos";
   platformMap[4921] = "Ouya";
   platformMap[1] = "PC";
   platformMap[4933] = "PC-88";
@@ -367,6 +466,7 @@ void TheGamesDb::loadMaps()
   platformMap[4930] = "PC-FX";
   platformMap[4917] = "Philips CD-i";
   platformMap[4975] = "Pioneer LaserActive";
+  platformMap[5016] = "Playdate";
   platformMap[4967] = "RCA Studio II";
   platformMap[4979] = "SAM Coup\u00e9";
   platformMap[33] = "Sega 32X";
@@ -381,6 +481,7 @@ void TheGamesDb::loadMaps()
   platformMap[4949] = "SEGA SG-1000";
   platformMap[4977] = "Sharp X1";
   platformMap[4931] = "Sharp X68000";
+  platformMap[5010] = "Sinclair ZX81";
   platformMap[4913] = "Sinclair ZX Spectrum";
   platformMap[10] = "Sony Playstation";
   platformMap[11] = "Sony Playstation 2";
@@ -404,7 +505,7 @@ void TheGamesDb::loadMaps()
     if(jsonFile.open(QIODevice::ReadOnly)) {
       QJsonObject jsonDevs = QJsonDocument::fromJson(jsonFile.readAll()).object()["data"].toObject()["developers"].toObject();
       for(QJsonObject::iterator it = jsonDevs.begin(); it != jsonDevs.end(); ++it) {
-	developerMap[it.value().toObject()["id"].toInt()] = it.value().toObject()["name"].toString();
+        developerMap[it.value().toObject()["id"].toInt()] = it.value().toObject()["name"].toString();
       }
       jsonFile.close();
     }
@@ -414,7 +515,7 @@ void TheGamesDb::loadMaps()
     if(jsonFile.open(QIODevice::ReadOnly)) {
       QJsonObject jsonPubs = QJsonDocument::fromJson(jsonFile.readAll()).object()["data"].toObject()["publishers"].toObject();
       for(QJsonObject::iterator it = jsonPubs.begin(); it != jsonPubs.end(); ++it) {
-	publisherMap[it.value().toObject()["id"].toInt()] = it.value().toObject()["name"].toString();
+        publisherMap[it.value().toObject()["id"].toInt()] = it.value().toObject()["name"].toString();
       }
       jsonFile.close();
     }

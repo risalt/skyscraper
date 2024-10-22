@@ -50,9 +50,9 @@ QImage FxContrast::applyEffect(const QImage &src, const Layer &layer)
     for(int x = 0; x < canvas.width(); ++x) {
       
       line[x] = qPremultiply(qRgba(index[qRed(line[x])],
-				   index[qGreen(line[x])],
-				   index[qBlue(line[x])],
-				   qAlpha(line[x])));
+                                   index[qGreen(line[x])],
+                                   index[qBlue(line[x])],
+                                   qAlpha(line[x])));
     }
   }
 

@@ -26,13 +26,17 @@
 #include "openretro.h"
 #include "nametools.h"
 #include "strtools.h"
-
-#include <QRegularExpression>
+#include "platform.h"
 
 OpenRetro::OpenRetro(Settings *config,
-		     QSharedPointer<NetManager> manager)
+                     QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
+  connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
+  limitTimer.setInterval(500); // OpenRetro seems to get tired after a few minutes of high-speed scraping...
+  limitTimer.setSingleShot(false);
+  limitTimer.start();
+
   baseUrl = "https://openretro.org";
 
   searchUrlPre = "https://openretro.org";
@@ -62,6 +66,12 @@ OpenRetro::OpenRetro(Settings *config,
   coverPre.append(">front_sha1</td>");
   coverPre.append("<div><a href=\"");
   coverPost = "\">";
+  wheelPre.append(">title_sha1</td>");
+  wheelPre.append("<div><a href=\"");
+  wheelPost = "\">";
+  texturePre.append(">__back_sha1</td>");
+  texturePre.append("<div><a href=\"");
+  texturePost = "\">";
   playersPre.append(">players</td>");
   playersPre.append("<td style='color: black;'><div>");
   playersPost = "</div></td>";
@@ -76,6 +86,13 @@ OpenRetro::OpenRetro(Settings *config,
   releaseDatePre.append("<td style='color: black;'><div>");
   releaseDatePost = "</div></td>";
   tagsPre.append(">tags</td>");
+  ratingPre.append("<div class='game-review'>");
+  ratingPre.append("<span class='score'>");
+  ratingPre.append("<div class='score'>Score: ");
+  ratingPost = "</";
+  manualPre.append("var doc_sha1 = \"");
+  manualPre.append("var page_size = ");
+  manualPost = ";";
 
   fetchOrder.append(MARQUEE);
   fetchOrder.append(DESCRIPTION);
@@ -85,20 +102,37 @@ OpenRetro::OpenRetro(Settings *config,
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(SCREENSHOT);
   fetchOrder.append(TAGS);
+  fetchOrder.append(WHEEL);
   fetchOrder.append(RELEASEDATE);
+  fetchOrder.append(TEXTURE);
+  fetchOrder.append(RATING);
+  fetchOrder.append(MANUAL);
 }
 
 void OpenRetro::getSearchResults(QList<GameEntry> &gameEntries,
-				 QString searchName, QString platform)
+                                 QString searchName, QString platform)
 {
-  netComm->request(searchUrlPre + searchName + (searchName.left(6) == "/game/"?"":searchUrlPost));
+  bool hasWhdlUuid = searchName.left(6) == "/game/";
+  QString lookupReq = QString(searchUrlPre);
+  if(hasWhdlUuid) {
+    lookupReq = lookupReq + searchName;
+  } else {
+    lookupReq = lookupReq + "/browse?q=" + searchName + searchUrlPost;
+  }
+  limiter.exec();
+  netComm->request(lookupReq);
   q.exec();
+
+  GameEntry game;
+
   while(!netComm->getRedirUrl().isEmpty()) {
-    netComm->request(netComm->getRedirUrl());
+    game.url = netComm->getRedirUrl();
+    limiter.exec();
+    netComm->request(game.url);
     q.exec();
   }
-  data = netComm->getData();
 
+  data = netComm->getData();
   if(data.isEmpty())
     return;
 
@@ -106,9 +140,7 @@ void OpenRetro::getSearchResults(QList<GameEntry> &gameEntries,
      data.contains("Error: 404 Not Found"))
     return;
 
-  GameEntry game;
-
-  if(searchName.left(6) == "/game/") {
+  if(hasWhdlUuid) {
     QByteArray tempData = data;
     nomNom("<td style='width: 180px; color: black;'>game_name</td>");
     nomNom("<td style='color: black;'><div>");
@@ -127,38 +159,44 @@ void OpenRetro::getSearchResults(QList<GameEntry> &gameEntries,
       
       // Digest until url
       for(const auto &nom: urlPre) {
-	nomNom(nom);
+        nomNom(nom);
       }
       game.url = baseUrl + "/" + data.left(data.indexOf(urlPost.toUtf8())) + "/edit";
       
       // Digest until title
       for(const auto &nom: titlePre) {
-	nomNom(nom);
+        nomNom(nom);
       }
       // Remove AGA, we already add this automatically in StrTools::addSqrBrackets
       game.title = data.left(data.indexOf(titlePost.toUtf8())).replace("[AGA]", "").simplified();
       
       // Digest until platform
       for(const auto &nom: platformPre) {
-	nomNom(nom);
+        nomNom(nom);
       }
       game.platform = data.left(data.indexOf(platformPost.toUtf8())).replace("&nbsp;", " ");
       
       if(platformMatch(game.platform, platform)) {
-	gameEntries.append(game);
+        gameEntries.append(game);
       }
     }
   }
 }
 
-void OpenRetro::getGameData(GameEntry &game)
+void OpenRetro::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   if(!game.url.isEmpty()) {
+    limiter.exec();
     netComm->request(game.url);
     q.exec();
     data = netComm->getData();
   }
-
+printf("%s\n", game.url.toStdString().c_str());
   // Remove all the variants so we don't choose between their screenshots
   data = data.left(data.indexOf("</table></div><div id='"));
 
@@ -176,11 +214,17 @@ void OpenRetro::getGameData(GameEntry &game)
     case PLAYERS:
       getPlayers(game);
       break;
+    case AGES:
+      getAges(game);
+      break;
     case RATING:
       getRating(game);
       break;
     case TAGS:
       getTags(game);
+      break;
+    case FRANCHISES:
+      getFranchises(game);
       break;
     case RELEASEDATE:
       getReleaseDate(game);
@@ -197,9 +241,17 @@ void OpenRetro::getGameData(GameEntry &game)
     case MARQUEE:
       getMarquee(game);
       break;
+    case TEXTURE:
+      getTexture(game);
+      break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        getVideo(game);
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        getManual(game);
       }
       break;
     default:
@@ -219,19 +271,24 @@ void OpenRetro::getDescription(GameEntry &game)
     // If description
     nomNom(descriptionPre.at(0));
     nomNom(descriptionPre.at(1));
-  } else if(data.indexOf(descriptionPre.at(2).toUtf8()) != -1) {
+    game.description = data.left(data.indexOf(descriptionPost.toUtf8()));
+    // Revert data back to pre-description
+    data = tempData;
+  }
+  if(data.indexOf(descriptionPre.at(2).toUtf8()) != -1) {
     // If __long_description
     nomNom(descriptionPre.at(2));
     nomNom(descriptionPre.at(3));
+    game.description += '\n';
+    game.description += data.left(data.indexOf(descriptionPost.toUtf8()));
+    // Revert data back to pre-description
+    data = tempData;
   } else {
     return;
   }
 
-  game.description = data.left(data.indexOf(descriptionPost.toUtf8())).replace("&lt;", "<").replace("&gt;", ">");
-  // Revert data back to pre-description
-  data = tempData;
-
   // Remove all html tags within description
+  game.description.replace("&lt;", "<").replace("&gt;", ">");
   game.description = StrTools::stripHtmlTags(game.description);
 }
 
@@ -259,108 +316,136 @@ void OpenRetro::getTags(GameEntry &game)
   game.tags = tags;
 }
 
-void OpenRetro::getCover(GameEntry &game)
+void OpenRetro::getManual(GameEntry &game)
 {
-  if(coverPre.isEmpty()) {
+  limiter.exec();
+  netComm->request(game.url + "/docs");
+  q.exec();
+  data = netComm->getData();
+  
+  if(data.isEmpty() ||
+     data.contains("Error: 500 Internal Server Error") ||
+     data.contains("Error: 404 Not Found")) {
     return;
   }
-  for(const auto &nom: coverPre) {
-    if(!checkNom(nom)) {
-      return;
+  
+  QString docId, pageSize;
+  if (checkNom(manualPre.at(0))) {
+    nomNom(manualPre.at(0));
+    docId = data.left(data.indexOf("\""));
+    if (checkNom(manualPre.at(1))) {
+      nomNom(manualPre.at(1));
+      pageSize = data.left(data.indexOf(manualPost.toUtf8()));
+    } else {
+      printf("ERROR: (2) OpenRetro docs interface may have changed!\n");
     }
+  } else {
+    printf("ERROR: (1) OpenRetro docs interface may have changed!\n");
   }
-  for(const auto &nom: coverPre) {
-    nomNom(nom);
-  }
-  QString coverUrl = data.left(data.indexOf(coverPost.toUtf8())).replace("&amp;", "&") + "?s=512";
-  if(coverUrl.left(4) != "http") {
-    coverUrl.prepend(baseUrl + (coverUrl.left(1) == "/"?"":"/"));
-  }
-  netComm->request(coverUrl);
-  q.exec();
-  QImage image;
-  if(netComm->getError() == QNetworkReply::NoError &&
-     image.loadFromData(netComm->getData())) {
-    game.coverData = netComm->getData();
+  if (!pageSize.isEmpty() && !docId.isEmpty()) {
+    QString manualUrl = baseUrl + "/image/" + docId + "?s=" + pageSize + "&f=pdf";
+    limiter.exec();
+    netComm->request(manualUrl);
+    q.exec();
+    if(netComm->getError() == QNetworkReply::NoError) {
+      game.manualData = netComm->getData();
+      game.manualFormat = "pdf";
+    }
   }
 }
 
-void OpenRetro::getMarquee(GameEntry &game)
+void OpenRetro::getRating(GameEntry &game)
 {
-  if(marqueePre.isEmpty()) {
+  game.url.chop(5); // remove trailing '/edit'
+  limiter.exec();
+  netComm->request(game.url);
+  q.exec();
+  data = netComm->getData();
+
+  bool ratingDecimal = true;
+
+  if(checkNom(ratingPre.at(0))) {
+    // "0 ... 100%" or "n/d" (from mags/ext. websites)
+    nomNom(ratingPre.at(0));
+    nomNom(ratingPre.at(1));
+    ratingDecimal = false;
+  } else if(checkNom(ratingPre.at(2))) {
+    // 1.0 ... 10.0 (from Openretro)
+    nomNom(ratingPre.at(2));
+  } else {
+    game.rating = "";
     return;
   }
-  for(const auto &nom: marqueePre) {
+
+  bool toDoubleOk = false;
+  game.rating = data.left(data.indexOf(ratingPost.toUtf8()));
+
+  if(!ratingDecimal) {
+    if(game.rating.endsWith("%")) {
+      game.rating.chop(1);
+    } else if(game.rating.contains("/")) {
+      QStringList parts = game.rating.split("/");
+      double num = parts.value(0).toDouble(&toDoubleOk);
+      if(toDoubleOk) {
+        double den = parts.value(1).toDouble(&toDoubleOk);
+        if(toDoubleOk && den > 0.0) {
+          game.rating = QString::number(num/den);
+          return;
+        }
+      }
+      game.rating = "";
+    } else  {
+      game.rating = "";
+    }
+  }
+
+  double rating = game.rating.toDouble(&toDoubleOk);
+  if(toDoubleOk) {
+    game.rating = QString::number(rating / (ratingDecimal ? 10.0 : 1.0));
+  } else {
+    game.rating = "";
+  }
+}
+
+void OpenRetro::getScreenshot(GameEntry &game)
+{
+  if(screenshotPre.isEmpty()) {
+    return;
+  }
+  for(const auto &nom: screenshotPre) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: marqueePre) {
+  for(const auto &nom: screenshotPre) {
     nomNom(nom);
   }
-  QString marqueeUrl = data.left(data.indexOf(marqueePost.toUtf8())).replace("&amp;", "&") + "?s=512";
-  if(marqueeUrl.left(4) != "http") {
-    marqueeUrl.prepend(baseUrl + (marqueeUrl.left(1) == "/"?"":"/"));
+  QString screenshotUrl = data.left(data.indexOf(screenshotPost.toUtf8())).replace("&amp;", "&");
+  if(screenshotUrl.left(4) != "http") {
+    screenshotUrl.prepend(baseUrl + (screenshotUrl.left(1) == "/"?"":"/"));
   }
-  netComm->request(marqueeUrl);
+  limiter.exec();
+  netComm->request(screenshotUrl);
   q.exec();
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
-    game.marqueeData = netComm->getData();
+    game.screenshotData = netComm->getData();
   }
 }
 
 QList<QString> OpenRetro::getSearchNames(const QFileInfo &info)
 {
   QString baseName = info.completeBaseName();
-  QList<QString> searchNames;
-  bool isAga = false;
-  // Look for '_aga_' or '[aga]' with the last char optional
-  if(QRegularExpression("[_[]{1}(Aga|AGA)[_\\]]{0,1}").match(baseName).hasMatch()) {
-    isAga = true;
-  }
+  QList<QString> searchNames = AbstractScraper::getSearchNames(info);
 
   if(config->scraper != "import") {
-    if(!config->aliasMap[baseName].isEmpty()) {
-      baseName = config->aliasMap[baseName];
-    } else if(info.suffix() == "lha") {
-      // Pass 1 is uuid from whdload_db.xml 
+    if(config->platform == "amiga") {
+      // Pass 1 is uuid from whdload_db.xml
       if(!config->whdLoadMap[baseName].second.isEmpty()) {
-	searchNames.append("/game/" + config->whdLoadMap[baseName].second);
+        searchNames.prepend("/game/" + config->whdLoadMap[baseName].second);
       }
-      // Pass 2 is either from <name> tag in whdload_db.xml or by adding spaces
-      QString nameWithSpaces = config->whdLoadMap[baseName].first;
-      if(nameWithSpaces.isEmpty()) {
-	baseName = NameTools::getNameWithSpaces(baseName);
-      } else {
-	baseName = nameWithSpaces;
-      }
-    } else if(config->platform == "scummvm") {
-      baseName = NameTools::getScummName(baseName, config->scummIni);
-    } else if((config->platform == "neogeo" ||
-	       config->platform == "arcade" ||
-	       config->platform == "mame-advmame" ||
-	       config->platform == "mame-libretro" ||
-	       config->platform == "mame-mame4all" ||
-	       config->platform == "fba") && !config->mameMap[baseName].isEmpty()) {
-      baseName = config->mameMap[baseName];
     }
-  }
-
-  baseName = NameTools::getUrlQueryName(baseName, 2);
-
-  if(!baseName.isEmpty()) {
-    if(isAga) {
-      searchNames.append("/browse?q=" + baseName + "+aga");
-    }
-    searchNames.append("/browse?q=" + baseName);
-  }
-
-  if(baseName.indexOf(":") != -1 || baseName.indexOf("-") != -1) {
-    baseName = baseName.left(baseName.indexOf(":")).simplified();
-    baseName = baseName.left(baseName.indexOf("-")).simplified();
-    searchNames.append("/browse?q=" + baseName);
   }
 
   return searchNames;

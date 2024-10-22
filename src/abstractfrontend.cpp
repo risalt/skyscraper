@@ -43,22 +43,22 @@ void AbstractFrontend::sortEntries(QList<GameEntry> &gameEntries)
   printf("Sorting entries...");
   int dots = 0;
   std::sort(gameEntries.begin(), gameEntries.end(),
-	[&dots](const GameEntry a, const GameEntry b) -> bool {
-	  if(dots % 1000 == 0) {
-	    printf(".");
-	    fflush(stdout);
-	  }
-	  dots++;
-	  QString firstTitle = a.title.toLower();
-	  QString secondTitle = b.title.toLower();
-	  if(firstTitle.left(4) == "the ") {
-	    firstTitle.remove(0, 4);
-	  }
-	  if(secondTitle.left(4) == "the ") {
-	    secondTitle.remove(0, 4);
-	  }
+        [&dots](const GameEntry a, const GameEntry b) -> bool {
+          if(dots % 1000 == 0) {
+            printf(".");
+            fflush(stdout);
+          }
+          dots++;
+          QString firstTitle = a.title.toLower();
+          QString secondTitle = b.title.toLower();
+          if(firstTitle.left(4) == "the ") {
+            firstTitle.remove(0, 4);
+          }
+          if(secondTitle.left(4) == "the ") {
+            secondTitle.remove(0, 4);
+          }
 
-	  return firstTitle < secondTitle;
-	});
+          return firstTitle < secondTitle;
+        });
   printf(" \033[1;32mDone!\033[0m\n");
 }

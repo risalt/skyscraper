@@ -28,13 +28,18 @@
 #include "nametools.h"
 #include "strtools.h"
 
+#include <unistd.h>
 #include <QRegularExpression>
 #include <QDomDocument>
+#include <QFile>
+#include <QProcess>
+#include <QTemporaryFile>
 
 AbstractScraper::AbstractScraper(Settings *config,
-				 QSharedPointer<NetManager> manager)
+                                 QSharedPointer<NetManager> manager)
   : config(config)
 {
+  incrementalScraping = false;
   netComm = new NetComm(manager);
   connect(netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
 }
@@ -44,8 +49,15 @@ AbstractScraper::~AbstractScraper()
   delete netComm;
 }
 
+bool AbstractScraper::supportsIncrementalScraping()
+{
+  return incrementalScraping;
+}
+
+// Queries the scraping service with searchName and generates a skeleton
+// game in gameEntries for each candidate returned.
 void AbstractScraper::getSearchResults(QList<GameEntry> &gameEntries,
-				       QString searchName, QString platform)
+                                       QString searchName, QString platform)
 {
   netComm->request(searchUrlPre + searchName + searchUrlPost);
   q.exec();
@@ -80,8 +92,14 @@ void AbstractScraper::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-void AbstractScraper::getGameData(GameEntry &game)
+// Fill in the game skeleton with the data from the scraper service.
+void AbstractScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   netComm->request(game.url);
   q.exec();
   data = netComm->getData();
@@ -111,6 +129,9 @@ void AbstractScraper::getGameData(GameEntry &game)
     case TAGS:
       getTags(game);
       break;
+    case FRANCHISES:
+      getFranchises(game);
+      break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
@@ -130,9 +151,22 @@ void AbstractScraper::getGameData(GameEntry &game)
       getTexture(game);
       break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        getVideo(game);
       }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        getManual(game);
+      }
+      break;
+    case CHIPTUNE:
+      if(config->chiptunes) {
+        getChiptune(game);
+      }
+      break;
+    case CUSTOMFLAGS:
+      getCustomFlags(game);
       break;
     default:
       ;
@@ -238,6 +272,22 @@ void AbstractScraper::getTags(GameEntry &game)
   game.tags = data.left(data.indexOf(tagsPost.toUtf8()));
 }
 
+void AbstractScraper::getFranchises(GameEntry &game)
+{
+  if(franchisesPre.isEmpty()) {
+    return;
+  }
+  for(const auto &nom: franchisesPre) {
+    if(!checkNom(nom)) {
+      return;
+    }
+  }
+  for(const auto &nom: franchisesPre) {
+    nomNom(nom);
+  }
+  game.franchises = data.left(data.indexOf(franchisesPost.toUtf8()));
+}
+
 void AbstractScraper::getRating(GameEntry &game)
 {
   if(ratingPre.isEmpty()) {
@@ -313,7 +363,7 @@ void AbstractScraper::getScreenshot(GameEntry &game)
   if(screens >= 1) {
     for(int a = 0; a < screens - (screens / 2); a++) {
       for(const auto &nom: screenshotPre) {
-	nomNom(nom);
+        nomNom(nom);
       }
     }
     QString screenshotUrl = data.left(data.indexOf(screenshotPost.toUtf8())).replace("&amp;", "&");
@@ -436,11 +486,46 @@ void AbstractScraper::getVideo(GameEntry &game)
   }
 }
 
+void AbstractScraper::getManual(GameEntry &game)
+{
+  if(manualPre.isEmpty()) {
+    return;
+  }
+  for(const auto &nom: manualPre) {
+    if(!checkNom(nom)) {
+      return;
+    }
+  }
+  for(const auto &nom: manualPre) {
+    nomNom(nom);
+  }
+  QString manualUrl = data.left(data.indexOf(manualPost.toUtf8())).replace("&amp;", "&");
+  if(manualUrl.left(4) != "http") {
+    manualUrl.prepend(baseUrl + (manualUrl.left(1) == "/"?"":"/"));
+  }
+  netComm->request(manualUrl);
+  q.exec();
+  if(netComm->getError() == QNetworkReply::NoError) {
+    game.manualData = netComm->getData();
+    game.manualFormat = manualUrl.right(3);
+  }
+}
+
+void AbstractScraper::getChiptune(GameEntry &)
+{
+}
+
+void AbstractScraper::getCustomFlags(GameEntry &)
+{
+}
+
+// Consume text in data until finding nom.
 void AbstractScraper::nomNom(const QString nom, bool including)
 {
   data.remove(0, data.indexOf(nom.toUtf8()) + (including?nom.length():0));
 }
 
+// Detects if nom is present in the non-consumed part of data.
 bool AbstractScraper::checkNom(const QString nom)
 {
   if(data.indexOf(nom.toUtf8()) != -1) {
@@ -449,6 +534,14 @@ bool AbstractScraper::checkNom(const QString nom)
   return false;
 }
 
+// Applies alias/scummvm/amiga/mame filename to name conversion.
+// Applies getUrlQuery conversion to the outcome, including space to
+// the special character needed by the scraping service.
+// Adds three variations: without subtitles, converting the first numeral
+// to arabic or roman format, and both without subtitles and converting
+// the first numeral.
+// Returns the full list of up to four possibilities, that will be checked
+// in order against the scraping service until a match is found.
 QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
 {
   QString baseName = info.completeBaseName();
@@ -456,22 +549,22 @@ QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
   if(config->scraper != "import") {
     if(!config->aliasMap[baseName].isEmpty()) {
       baseName = config->aliasMap[baseName];
-    } else if(info.suffix() == "lha") {
+    } else if(Platform::get().getFamily(config->platform) == "amiga") {
       QString nameWithSpaces = config->whdLoadMap[baseName].first;
       if(nameWithSpaces.isEmpty()) {
-	baseName = NameTools::getNameWithSpaces(baseName);
+        baseName = NameTools::getNameWithSpaces(baseName);
       } else {
-	baseName = nameWithSpaces;
+        baseName = nameWithSpaces;
       }
     } else if(config->platform == "scummvm") {
       baseName = NameTools::getScummName(baseName, config->scummIni);
-    } else if((config->platform == "neogeo" ||
-	       config->platform == "arcade" ||
-	       config->platform == "mame-advmame" ||
-	       config->platform == "mame-libretro" ||
-	       config->platform == "mame-mame4all" ||
-	       config->platform == "fba") && !config->mameMap[baseName].isEmpty()) {
-      baseName = config->mameMap[baseName];
+    } else if(Platform::get().getFamily(config->platform) == "arcade" &&
+              !config->mameMap[baseName.toLower()].isEmpty()) {
+      QString original = baseName;
+      baseName = config->mameMap[baseName.toLower()];
+      printf("INFO: 1 Short Mame-style name '%s' converted to '%s'.\n",
+             original.toStdString().c_str(),
+             baseName.toStdString().c_str());
     }
   }
 
@@ -480,14 +573,19 @@ QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
   if(baseName.isEmpty())
     return searchNames;
 
-  searchNames.append(NameTools::getUrlQueryName(baseName));
+  QString separator = "+";
+  if (config->scraper == "igdb" || config->scraper == "screenscraper") {
+    separator = " ";
+  }
 
-  if(baseName.contains(":") || baseName.contains(" - ")) {
-    QString noSubtitle = baseName.left(baseName.indexOf(":")).simplified();
-    noSubtitle = noSubtitle.left(noSubtitle.indexOf(" - ")).simplified();
-    // Only add if longer than 3. We don't want to search for "the" for instance
-    if(noSubtitle.length() > 3)
-      searchNames.append(NameTools::getUrlQueryName(noSubtitle));
+  searchNames.append(NameTools::getUrlQueryName(baseName, -1, separator));
+
+  bool hasSubtitle;
+  if(!config->keepSubtitle) {
+    QString noSubtitle = NameTools::removeSubtitle(baseName, hasSubtitle);
+    if(hasSubtitle) {
+      searchNames.append(NameTools::getUrlQueryName(noSubtitle, -1, separator));
+    }
   }
 
   if(NameTools::hasRomanNumeral(baseName) || NameTools::hasIntegerNumeral(baseName)) {
@@ -496,20 +594,22 @@ QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
     } else if(NameTools::hasIntegerNumeral(baseName)) {
       baseName = NameTools::convertToRomanNumeral(baseName);
     }
-    searchNames.append(NameTools::getUrlQueryName(baseName));
+    searchNames.append(NameTools::getUrlQueryName(baseName, -1, separator));
 
-    if(baseName.contains(":") || baseName.contains(" - ")) {
-      QString noSubtitle = baseName.left(baseName.indexOf(":")).simplified();
-      noSubtitle = noSubtitle.left(noSubtitle.indexOf(" - ")).simplified();
-      // Only add if longer than 3. We don't want to search for "the" for instance
-      if(noSubtitle.length() > 3)
-	searchNames.append(NameTools::getUrlQueryName(noSubtitle));
+    if(!config->keepSubtitle) {
+      QString noSubtitle = NameTools::removeSubtitle(baseName, hasSubtitle);
+      if(hasSubtitle) {
+        searchNames.append(NameTools::getUrlQueryName(noSubtitle, -1, separator));
+      }
     }
   }
 
   return searchNames;
 }
 
+// Generates the name for the game until a scraper provides an official one.
+// This is used to calculate the search names and calculate the best entry and
+// the distance to the official name.
 QString AbstractScraper::getCompareTitle(QFileInfo info)
 {
   QString baseName = info.completeBaseName();
@@ -517,21 +617,17 @@ QString AbstractScraper::getCompareTitle(QFileInfo info)
   if(config->scraper != "import") {
     if(!config->aliasMap[baseName].isEmpty()) {
       baseName = config->aliasMap[baseName];
-    } else if(info.suffix() == "lha") {
+    } else if(Platform::get().getFamily(config->platform) == "amiga") {
       QString nameWithSpaces = config->whdLoadMap[baseName].first;
       if(nameWithSpaces.isEmpty()) {
-	baseName = NameTools::getNameWithSpaces(baseName);
+        baseName = NameTools::getNameWithSpaces(baseName);
       } else {
-	baseName = nameWithSpaces;
+        baseName = nameWithSpaces;
       }
     } else if(config->platform == "scummvm") {
       baseName = NameTools::getScummName(baseName, config->scummIni);
-    } else if((config->platform == "neogeo" ||
-	       config->platform == "arcade" ||
-	       config->platform == "mame-advmame" ||
-	       config->platform == "mame-libretro" ||
-	       config->platform == "mame-mame4all" ||
-	       config->platform == "fba") && !config->mameMap[baseName].isEmpty()) {
+    } else if(Platform::get().getFamily(config->platform) == "arcade" &&
+              !config->mameMap[baseName].isEmpty()) {
       baseName = config->mameMap[baseName];
     }
   }
@@ -539,15 +635,12 @@ QString AbstractScraper::getCompareTitle(QFileInfo info)
   // Now create actual compareTitle
   baseName = baseName.replace("_", " ").left(baseName.indexOf("(")).left(baseName.indexOf("[")).simplified();
 
-  QRegularExpressionMatch match;
-
   // Always move ", The" to the beginning of the name
-  match = QRegularExpression(", [Tt]he").match(baseName);
-  if(match.hasMatch()) {
-    baseName = baseName.replace(match.captured(0), "").prepend(match.captured(0).right(3) + " ");
-  }
+  // Three digit articles in English, German, French, Spanish:
+  baseName = NameTools::moveArticle(baseName, true);
 
   // Remove "vX.XXX" versioning string if one is found
+  QRegularExpressionMatch match;
   match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$").match(baseName);
   if(match.hasMatch() && match.capturedStart(0) != -1) {
     baseName = baseName.left(match.capturedStart(0)).simplified();
@@ -556,23 +649,45 @@ QString AbstractScraper::getCompareTitle(QFileInfo info)
   return baseName;
 }
 
+// Tries to identify the region of the game from the filename. Calls getSearchNames and with
+// the outcome, executes the getSearchResults in sequence until a search name is successful.
 void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &output, QString &debug)
 {
   // Reset region priorities to original list from Settings
   regionPrios = config->regionPrios;
   // Autodetect region and append to region priorities
-  if(info.fileName().indexOf("(") != -1 && config->region.isEmpty()) {
-    QString regionString = info.fileName().toLower().mid(info.fileName().indexOf("("), info.fileName().length());
-    if(regionString.contains("europe") || regionString.contains("(e)")) {
+  if((info.fileName().indexOf("(") != -1 || info.fileName().indexOf("[") != -1 ) && config->region.isEmpty()) {
+    QString regionString = info.fileName().toLower();
+    if(regionString.contains("(europe)") ||
+       regionString.contains("[europe]") ||
+       regionString.contains("(e)") ||
+       regionString.contains("[e]") ||
+       regionString.contains("(eu)") ||
+       regionString.contains("[eu]") ||
+       regionString.contains("(eur)") ||
+       regionString.contains("[eur]")) {
       regionPrios.prepend("eu");
     }
-    if(regionString.contains("usa") || regionString.contains("(u)")) {
+    if(regionString.contains("(usa)") ||
+       regionString.contains("[usa]") ||
+       regionString.contains("(us)") ||
+       regionString.contains("[us]") ||
+       regionString.contains("(u)") ||
+       regionString.contains("[u]")) {
       regionPrios.prepend("us");
     }
-    if(regionString.contains("world")) {
+    if(regionString.contains("(world)") ||
+       regionString.contains("[world]")) {
       regionPrios.prepend("wor");
     }
-    if(regionString.contains("japan") || regionString.contains("(j)")) {
+    if(regionString.contains("(japan)") ||
+      regionString.contains("[japan]") ||
+      regionString.contains("(ja)") ||
+      regionString.contains("[ja]") ||
+      regionString.contains("(jap)") ||
+      regionString.contains("[jap]") ||
+      regionString.contains("(j)") ||
+      regionString.contains("[j]")) {
       regionPrios.prepend("jp");
     }
     if(regionString.contains("brazil")) {
@@ -630,7 +745,6 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
   if(searchNames.isEmpty()) {
     return;
   }
-
   for(int pass = 1; pass <= searchNames.size(); ++pass) {
     output.append("\033[1;35mPass " + QString::number(pass) + "\033[0m ");
     getSearchResults(gameEntries, searchNames.at(pass - 1), config->platform);
@@ -642,16 +756,65 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
   }
 }
 
+// Detects if found is a valid name for platform platform.
 bool AbstractScraper::platformMatch(QString found, QString platform) {
   for(const auto &p: Platform::get().getAliases(platform)) {
-    if(found.toLower() == p) {
+    if(found.toLower() == p.toLower()) {
       return true;
     }
   }
   return false;
 }
 
+// Returns the scraping service id for the platform.
 QString AbstractScraper::getPlatformId(const QString)
 {
   return "na";
+}
+
+void AbstractScraper::getOnlineVideo(QString videoUrl, GameEntry &game)
+{
+  game.videoData = "";
+  if (!videoUrl.isEmpty()) {
+    QString tempFile;
+    {
+      QTemporaryFile video;
+      video.setAutoRemove(false);
+      video.open();
+      tempFile = video.fileName();
+    }
+    if (!tempFile.isEmpty()) {
+      QProcess youtubeDL;
+      QString command("yt-dlp");
+      QStringList commandArgs;
+      commandArgs << "--no-playlist"
+                  << "-q" 
+                  << "--verbose"
+                  << "--force-overwrites"
+                  << "-f" << "mp4"
+                  << "-o" << tempFile
+                  << "--max-filesize" << QString::number(config->videoSizeLimit)
+                  << "--download-sections" << "*-0:40--0:10"
+                  << videoUrl;
+      youtubeDL.start(command, commandArgs, QIODevice::ReadOnly);
+      youtubeDL.waitForFinished(60000);
+      // printf("%s\n", youtubeDL.readAllStandardError().toStdString().c_str());
+      youtubeDL.close();
+      QFile video(tempFile);
+      if (video.open(QIODevice::ReadOnly)) {
+        game.videoData = video.readAll();
+        if (game.videoData.size() > 4096) {
+          game.videoFormat = "mp4";
+        }
+        video.remove();
+      }
+      else {
+        printf("ERROR: Error %d accessing the temporary file.\n", video.error());
+        return;
+      }
+    }
+    else {
+      printf("ERROR: Error when creating a temporary file to download a video.\n");
+    }
+  }
 }

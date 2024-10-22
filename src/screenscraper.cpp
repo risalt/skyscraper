@@ -27,17 +27,21 @@
 #include <QProcess>
 #include <QJsonDocument>
 
+#include "platform.h"
+#include "queue.h"
 #include "screenscraper.h"
 #include "strtools.h"
 #include "crc32.h"
 
-constexpr int RETRIESMAX = 4;
+constexpr int RETRIESMAX = 3;
 constexpr int MINARTSIZE = 256;
+constexpr int MINTEXTURESIZE = 16384;
 
 ScreenScraper::ScreenScraper(Settings *config,
-			     QSharedPointer<NetManager> manager)
+                             QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
+  incrementalScraping = true;
   loadConfig("screenscraper.json");
   
   connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
@@ -55,16 +59,18 @@ ScreenScraper::ScreenScraper(Settings *config,
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(TAGS);
-  fetchOrder.append(SCREENSHOT);
+  fetchOrder.append(FRANCHISES);
   fetchOrder.append(COVER);
+  fetchOrder.append(SCREENSHOT);
   fetchOrder.append(WHEEL);
   fetchOrder.append(MARQUEE);
   fetchOrder.append(TEXTURE);
   fetchOrder.append(VIDEO);
+  fetchOrder.append(MANUAL);
 }
 
 void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
-				     QString searchName, QString)
+                                     QString searchName, QString)
 {
   QString platformId = getPlatformId(config->platform);
   if(platformId == "na") {
@@ -73,10 +79,17 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     return;
   }
 
-  QString gameUrl = "https://www.screenscraper.fr/api2/jeuInfos.php?devid=muldjord&devpassword=" + StrTools::unMagic("204;198;236;130;203;181;203;126;191;167;200;198;192;228;169;156") + "&softname=skyscraper" VERSION + (config->user.isEmpty()?"":"&ssid=" + config->user) + (config->password.isEmpty()?"":"&sspassword=" + config->password) + (platformId.isEmpty()?"":"&systemeid=" + platformId) + "&output=json&" + searchName;
+  QString gameUrl = "https://www.screenscraper.fr/api2/jeuInfos.php?devid=muldjord&devpassword=" +
+                    config->apiKey + "&softname=skyscraper" VERSION +
+                    (config->user.isEmpty()?"":"&ssid=" + config->user) +
+                    (config->password.isEmpty()?"":"&sspassword=" + config->password) +
+                    (platformId.isEmpty()?"":"&systemeid=" + platformId) + "&output=json&" +
+                    searchName;
+//  printf(gameUrl.toStdString().c_str()); printf("\n"); printf("\n");
 
   for(int retries = 0; retries < RETRIESMAX; ++retries) {
     limiter.exec();
+    printf("1");
     netComm->request(gameUrl);
     q.exec();
     data = netComm->getData();
@@ -101,35 +114,40 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
       reqRemaining = 0;
       return;
     } else if(headerData.contains("API fermé pour les non membres") ||
-	      headerData.contains("API closed for non-registered members") ||
-	      headerData.contains("****T****h****e**** ****m****a****x****i****m****u****m**** ****t****h****r****e****a****d****s**** ****a****l****l****o****w****e****d**** ****t****o**** ****l****e****e****c****h****e****r**** ****u****s****e****r****s**** ****i****s**** ****a****l****r****e****a****d****y**** ****u****s****e****d****")) {
-      printf("\033[1;31mThe screenscraper service is currently closed or too busy to handle requests from unregistered and inactive users. Sign up for an account at https://www.screenscraper.fr and contribute to gain more threads. Then use the credentials with Skyscraper using the '-u user:pass' command line option or by setting 'userCreds=\"user:pass\"' in '/home/USER/.skyscraper/config.ini'.\033[0m\n\n");
+              headerData.contains("API closed for non-registered members") ||
+              headerData.contains("****T****h****e**** ****m****a****x****i****m****u****m**** ****t****h****r****e****a****d****s**** ****a****l****l****o****w****e****d**** ****t****o**** ****l****e****e****c****h****e****r**** ****u****s****e****r****s**** ****i****s**** ****a****l****r****e****a****d****y**** ****u****s****e****d****")) {
+      printf("\033[1;31mThe screenscraper service is currently closed or too busy to handle requests from unregistered and inactive users. Sign up for an account at https://www.screenscraper.fr and contribute to gain more threads. Then use the credentials with Skyscraper using the '-u user:pass' command line option or by setting 'userCreds=\"user:pass\"' in '%s/.skyscraper/config.ini'.\033[0m\n\n", QDir::homePath().toStdString().c_str());
       if(retries == RETRIESMAX - 1) {
-	reqRemaining = 0;
-	return;
+        reqRemaining = 0;
+        return;
       } else {
-	continue;
+        continue;
       }
     }
 
     // Fix faulty JSON that is sometimes received back from ScreenScraper
     data.replace("],\n\t\t}", "]\n\t\t}");
+    //printf("\n%s\n",data.toStdString().c_str());
 
     // Now parse the JSON
     jsonObj = QJsonDocument::fromJson(data).object();
+    //QJsonDocument doc;
+    //doc.setArray(jsonObj[medias].toArray());
+    //printf("1 %s\n",doc.toJson().toStdString().c_str());
+    //exit(0);
 
     // Check if we got a valid JSON document back
     if(jsonObj.isEmpty()) {
       printf("\033[1;31mScreenScraper APIv2 returned invalid / empty Json. Their servers are probably down. Please try again later or use a different scraping module with '-s MODULE'. Check 'Skyscraper --help' for more information.\033[0m\n");
-      data.replace(StrTools::unMagic("204;198;236;130;203;181;203;126;191;167;200;198;192;228;169;156"), "****");
+      data.replace(config->apiKey.toUtf8(), "****");
       data.replace(config->password.toUtf8(), "****");
       QFile jsonErrorFile("./screenscraper_error.json");
       if(jsonErrorFile.open(QIODevice::WriteOnly)) {
-	if(data.length() > 64) {
-	  jsonErrorFile.write(data);
-	  printf("The erroneous answer was written to '/home/USER/.skyscraper/screenscraper_error.json'. If this file contains game data, please consider filing a bug report at 'https://github.com/detain/skyscraper/issues' and attach that file.\n");
-	}
-	jsonErrorFile.close();
+        if(data.length() > 64) {
+          jsonErrorFile.write(data);
+          printf("The erroneous answer was written to '%s/.skyscraper/screenscraper_error.json'. If this file contains game data, please consider filing a bug report at 'https://github.com/detain/skyscraper/issues' and attach that file.\n", QDir::homePath().toStdString().c_str());
+        }
+        jsonErrorFile.close();
       }
       break; // DON'T try again! If we don't get a valid JSON document, something is very wrong with the API
     }
@@ -137,8 +155,8 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     // Check if the request was successful
     if(jsonObj["header"].toObject()["success"].toString() != "true") {
       printf("Request returned a success state of '%s'. Error was:\n%s\n",
-	     jsonObj["header"].toObject()["success"].toString().toStdString().c_str(),
-	     jsonObj["header"].toObject()["error"].toString().toStdString().c_str());
+             jsonObj["header"].toObject()["success"].toString().toStdString().c_str(),
+             jsonObj["header"].toObject()["error"].toString().toStdString().c_str());
       // Try again. We handle important errors above, so something weird is going on here
       continue;
     }
@@ -147,7 +165,7 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     if(!jsonObj["response"].toObject()["ssuser"].toObject()["requeststoday"].toString().isEmpty() && !jsonObj["response"].toObject()["ssuser"].toObject()["maxrequestsperday"].toString().isEmpty()) {
       reqRemaining = jsonObj["response"].toObject()["ssuser"].toObject()["maxrequestsperday"].toString().toInt() - jsonObj["response"].toObject()["ssuser"].toObject()["requeststoday"].toString().toInt();
       if(reqRemaining <= 0) {
-	printf("\033[1;31mYour daily ScreenScraper request limit has been reached, exiting nicely...\033[0m\n\n");
+        printf("\033[1;31mYour daily ScreenScraper request limit has been reached, exiting nicely...\033[0m\n\n");
       }
     }
 
@@ -184,8 +202,13 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     gameEntries.append(game);
 }
 
-void ScreenScraper::getGameData(GameEntry &game)
+void ScreenScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
     case DESCRIPTION:
@@ -209,37 +232,59 @@ void ScreenScraper::getGameData(GameEntry &game)
     case TAGS:
       getTags(game);
       break;
+    case FRANCHISES:
+      getFranchises(game);
+      break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
     case COVER:
       if(config->cacheCovers) {
-	getCover(game);
+        if ((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
       }
       break;
     case SCREENSHOT:
       if(config->cacheScreenshots) {
-	getScreenshot(game);
+        if ((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
       }
       break;
     case WHEEL:
       if(config->cacheWheels) {
-	getWheel(game);
+        if ((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
       }
       break;
     case MARQUEE:
       if(config->cacheMarquees) {
-	getMarquee(game);
+        if ((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
       }
       break;
     case TEXTURE:
       if (config->cacheTextures) {
-        getTexture(game);
+        if ((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
       }
       break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        if ((!cache) || (cache && cache->videoData == "")) {
+          getVideo(game);
+        }
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        if ((!cache) || (cache && cache->manualData == "")) {
+          getManual(game);
+        }
       }
       break;
     default:
@@ -288,8 +333,8 @@ void ScreenScraper::getAges(GameEntry &game)
   for(const auto &ageBoard: ageBoards) {
     for(int a = 0; a < jsonAges.size(); ++a) {
       if(jsonAges.at(a).toObject()["type"].toString() == ageBoard) {
-	game.ages = jsonAges.at(a).toObject()["text"].toString();
-	return;
+        game.ages = jsonAges.at(a).toObject()["text"].toString();
+        return;
       }
     }
   }
@@ -324,124 +369,149 @@ void ScreenScraper::getTags(GameEntry &game)
   game.tags = game.tags.left(game.tags.length() - 2);
 }
 
+void ScreenScraper::getFranchises(GameEntry &game)
+{
+  if(!jsonObj["familles"].isArray())
+    return;
+
+  QJsonArray jsonFranchises = jsonObj["familles"].toArray();
+
+  for(int a = 0; a < jsonFranchises.size(); ++a) {
+    QString franchise = getJsonText(jsonFranchises.at(a).toObject()["noms"].toArray(), LANGUE);
+    if(!franchise.isEmpty()) {
+      game.franchises.append(franchise + ", ");
+    }
+  }
+
+  game.franchises = game.franchises.left(game.franchises.length() - 2);
+}
+
 void ScreenScraper::getCover(GameEntry &game)
 {
   QString url = "";
-  if(config->platform == "arcade" ||
-     config->platform == "fba" ||
-     config->platform == "mame-advmame" ||
-     config->platform == "mame-libretro" ||
-     config->platform == "mame-mame4all") {
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     config->platform != "gameandwatch") {
     url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"flyer"}));
   } else {
-    url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"box-2D"}));
+    url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"box-2D", "box-2d", "flyer", "box-texture"}));
   }
+  //printf("1 %s\n",url.toStdString().c_str());
+  //QJsonDocument doc;
+  //doc.setArray(jsonObj["medias"].toArray());
+  //printf("1 %s\n",doc.toJson().toStdString().c_str());
+  //exit(0);
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("2");
       netComm->request(url);
       q.exec();
       QImage image;
       if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-	 netComm->getData().size() >= MINARTSIZE &&
-	 image.loadFromData(netComm->getData())) {
-	game.coverData = netComm->getData();
+         netComm->getData().size() >= MINARTSIZE &&
+         image.loadFromData(netComm->getData())) {
+        game.coverData = netComm->getData();
       } else {
-	moveOn = false;
+        moveOn = false;
       }
       if(moveOn)
-	break;
+        break;
     }
   }
 }
 
 void ScreenScraper::getScreenshot(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"ss", "sstitle"}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"ss"}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("3");
       netComm->request(url);
       q.exec();
       QImage image;
       if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-	 netComm->getData().size() >= MINARTSIZE &&
-	 image.loadFromData(netComm->getData())) {
-	game.screenshotData = netComm->getData();
+         netComm->getData().size() >= MINARTSIZE &&
+         image.loadFromData(netComm->getData())) {
+        game.screenshotData = netComm->getData();
       } else {
-	moveOn = false;
+        moveOn = false;
       }
       if(moveOn)
-	break;
+        break;
     }
   }
 }
 
 void ScreenScraper::getWheel(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"wheel", "wheel-hd"}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"sstitle"/*, "wheel", "wheel-hd"*/}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("4");
       netComm->request(url);
       q.exec();
       QImage image;
       if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-	 netComm->getData().size() >= MINARTSIZE &&
-	 image.loadFromData(netComm->getData())) {
-	game.wheelData = netComm->getData();
+         netComm->getData().size() >= MINARTSIZE &&
+         image.loadFromData(netComm->getData())) {
+        game.wheelData = netComm->getData();
       } else {
-	moveOn = false;
+        moveOn = false;
       }
       if(moveOn)
-	break;
+        break;
     }
   }
 }
 
 void ScreenScraper::getMarquee(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"screenmarquee"}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QList<QString>({"fanart-hd", "fanart"/*, "support-2D", "support-2d", "support-texture", "marquee", "screenmarquee"*/}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("5");
       netComm->request(url);
       q.exec();
       QImage image;
       if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-	 netComm->getData().size() >= MINARTSIZE &&
-	 image.loadFromData(netComm->getData())) {
-	game.marqueeData = netComm->getData();
+         netComm->getData().size() >= MINARTSIZE &&
+         image.loadFromData(netComm->getData())) {
+        game.marqueeData = netComm->getData();
       } else {
-	moveOn = false;
+        moveOn = false;
       }
       if(moveOn)
-	break;
+        break;
     }
   }
 }
 
 void ScreenScraper::getTexture(GameEntry &game) {
-  QString url = getJsonText(
-      jsonObj["medias"].toArray(), REGION,
-      QList<QString>({"support-2D", "support-2d", "support-texture"}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
+      QList<QString>({"box-2D-back", "box-2d-back", "support-2D", "support-2d", "support-texture"}));
   if (!url.isEmpty()) {
-    bool moveOn = true;
+    bool moveOn = false;
     for (int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("6");
       netComm->request(url);
       q.exec();
       QImage image;
-      if (netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-          netComm->getData().size() >= MINARTSIZE &&
-          image.loadFromData(netComm->getData())) {
-        game.textureData = netComm->getData();
-      } else {
-        moveOn = false;
+      if (netComm->getError(config->verbosity) == QNetworkReply::NoError) {
+        int imgSize = netComm->getData().size();
+        if (imgSize > MINARTSIZE && image.loadFromData(netComm->getData())) {
+          if (imgSize > MINTEXTURESIZE) {
+            game.textureData = netComm->getData();
+          }
+          moveOn = true;
+        }
       }
       if (moveOn) break;
     }
@@ -460,125 +530,131 @@ void ScreenScraper::getVideo(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
+      printf("7");
       netComm->request(url);
       q.exec();
       game.videoData = netComm->getData();
       // Make sure received data is actually a video file
       QByteArray contentType = netComm->getContentType();
       if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-	 contentType.contains("video/") &&
-	 game.videoData.size() > 4096) {
-	game.videoFormat = contentType.mid(contentType.indexOf("/") + 1,
-					   contentType.length() - contentType.indexOf("/") + 1);
+         contentType.contains("video/") && game.videoData.size() > 4096) {
+        game.videoFormat = contentType.mid(contentType.indexOf("/") + 1,
+                                           contentType.length() - contentType.indexOf("/") + 1);
       } else {
-	game.videoData = "";
-	moveOn = false;
+        game.videoData = "";
+        moveOn = false;
       }
       if(moveOn)
-	break;
+        break;
+    }
+  }
+}
+
+void ScreenScraper::getManual(GameEntry &game)
+{
+  QStringList types;
+  types.append("manuel");
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, types);
+  if(!url.isEmpty()) {
+    bool moveOn = true;
+    for(int retries = 0; retries < RETRIESMAX; ++retries) {
+      limiter.exec();
+      printf("8");
+      netComm->request(url);
+      q.exec();
+      game.manualData = netComm->getData();
+      // Make sure received the data is not empty and has a type
+      QByteArray contentType = netComm->getContentType();
+      if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
+         !contentType.isEmpty() && game.manualData.size() > 4096) {
+        game.manualFormat = contentType.mid(contentType.indexOf("/") + 1,
+                                            contentType.length() - contentType.indexOf("/") + 1);
+        if (game.manualFormat.length()>4) {
+          game.manualFormat = "pdf";
+        }
+      } else {
+        game.manualData = "";
+        moveOn = false;
+      }
+      if(moveOn)
+        break;
     }
   }
 }
 
 QList<QString> ScreenScraper::getSearchNames(const QFileInfo &info)
 {
-  QList<QString> hashList;
-  QCryptographicHash md5(QCryptographicHash::Md5);
-  QCryptographicHash sha1(QCryptographicHash::Sha1);
-  Crc32 crc;
-  crc.initInstance(1);
+  QList<QString> searchNames;
 
   bool unpack = config->unpack;
 
-  if(unpack) {
-    // Size limit for "unpack" is set to 8 megs to ensure the pi doesn't run out of memory
-    if((info.suffix() == "7z" || info.suffix() == "zip") && info.size() < 81920000) {
-      // For 7z (7z, zip) unpacked file reading
-      {
-	QProcess decProc;
-	decProc.setReadChannel(QProcess::StandardOutput);
-	decProc.start("7z", QStringList({"l", "-so", info.absoluteFilePath()}));
-	if(decProc.waitForFinished(30000)) {
-	  if(decProc.exitStatus() != QProcess::NormalExit) {
-	    printf("Getting file list from compressed file failed, falling back...\n");
-	    unpack = false;
-	  } else if(!decProc.readAllStandardOutput().contains(" 1 files")) {
-	    printf("Compressed file contains more than 1 file, falling back...\n");
-	    unpack = false;
-	  }
-	} else {
-	  printf("Getting file list from compressed file timed out or failed, falling back...\n");
-	  unpack = false;
-	}
-      }
-
-      if(unpack) {
-	QProcess decProc;
-	decProc.setReadChannel(QProcess::StandardOutput);
-
-	decProc.start("7z", QStringList({"x", "-so", info.absoluteFilePath()}));
-	if(decProc.waitForFinished(30000)) {
-	  if(decProc.exitStatus() == QProcess::NormalExit) {
-	    QByteArray allData = decProc.readAllStandardOutput();
-	    md5.addData(allData);
-	    sha1.addData(allData);
-	    crc.pushData(1, allData.data(), allData.length());
-	  } else {
-	    printf("Something went wrong when decompressing file to stdout, falling back...\n");
-	    unpack = false;
-	  }
-	} else {
-	  printf("Decompression process timed out or failed, falling back...\n");
-	  unpack = false;
-	}
+  if (unpack) {
+    // For 7z (7z, zip) unpacked file reading
+    if (info.suffix() == "7z" || info.suffix() == "zip")  {
+      // Size limit for "unpack" is set to 800 megs to ensure the pi doesn't run out of memory
+      if (info.size() < 819200000) {
+        QProcess decProc;
+        decProc.setReadChannel(QProcess::StandardOutput);
+        decProc.start("7z", QStringList({"l", "-so", "-slt", "-ba", info.absoluteFilePath()}));
+        if(decProc.waitForFinished(30000)) {
+          if(decProc.exitStatus() != QProcess::NormalExit) {
+            printf("Getting file list from compressed file failed, falling back...\n");
+            unpack = false;
+          } else {
+            QList<QByteArray> output7z = decProc.readAllStandardOutput().split('\n');
+            QString formats = Platform::get().getFormats(config->platform, config->extensions, config->addExtensions);
+            QSharedPointer<Queue> queue = QSharedPointer<Queue>(new Queue());
+            QList<QFileInfo> infoList{};
+            for (int i = 0; i < output7z.size(); i++) {
+              if (output7z.at(i).startsWith("Path = ")) {
+                QFileInfo compressedFile(QString(output7z.at(i)).remove(0, 7));
+                QString suffix(compressedFile.suffix());
+                if (formats.contains(suffix) && suffix != "7z" && suffix != "zip") {
+                  infoList.append(compressedFile);
+                }
+              }
+            }
+            queue->append(infoList);
+            if(!config->excludePattern.isEmpty()) {
+              queue->filterFiles(config->excludePattern);
+            }
+            if(!config->includePattern.isEmpty()) {
+              queue->filterFiles(config->includePattern, true);
+            }
+            while(queue->hasEntry()) {
+              QFileInfo info = queue->takeEntry();
+              searchNames.append("romnom=" + QUrl::toPercentEncoding(info.completeBaseName(), "()"));
+              if (info.completeBaseName() != StrTools::stripBrackets(info.completeBaseName())) {
+                searchNames.append("romnom=" + QUrl::toPercentEncoding(StrTools::stripBrackets(info.completeBaseName()), "()"));
+              }
+            }
+          }
+        } else {
+          printf("Getting file list from compressed file timed out or failed, falling back...\n");
+          unpack = false;
+        }
+      } else {
+        printf("Compressed file exceeds 800 meg size limit, falling back...\n");
+        unpack = false;
       }
     } else {
-      printf("File either not a compressed file or exceeds 8 meg size limit, falling back...\n");
       unpack = false;
     }
   }
 
   if(!unpack) {
-    // For normal file reading
-    QFile romFile(info.absoluteFilePath());
-    romFile.open(QIODevice::ReadOnly);
-    while(!romFile.atEnd()) {
-
-      QByteArray dataSeg = romFile.read(1024);
-      md5.addData(dataSeg);
-      sha1.addData(dataSeg);
-      crc.pushData(1, dataSeg.data(), dataSeg.length());
+    QList<QString> searchNamesRaw = AbstractScraper::getSearchNames(info);
+    QListIterator<QString> listNames(searchNamesRaw);
+    while (listNames.hasNext()) {
+      // printf("%s\n", listNames.next().toStdString().c_str());
+      searchNames.append("romnom=" + QUrl::toPercentEncoding(listNames.next(), "()"));
     }
-    romFile.close();
+    /*searchNames.append("romnom=" + QUrl::toPercentEncoding(info.completeBaseName(), "()"));
+    if (info.completeBaseName() != StrTools::stripBrackets(info.completeBaseName())) {
+      searchNames.append("romnom=" + QUrl::toPercentEncoding(StrTools::stripBrackets(info.completeBaseName()), "()"));
+    }*/
   }
-
-  QString crcResult = QString::number(crc.releaseInstance(1), 16);
-  while(crcResult.length() < 8) {
-    crcResult.prepend("0");
-  }
-  QString md5Result = md5.result().toHex();
-  while(md5Result.length() < 32) {
-    md5Result.prepend("0");
-  }
-  QString sha1Result = sha1.result().toHex();
-  while(sha1Result.length() < 40) {
-    sha1Result.prepend("0");
-  }
-
-  // For some reason the APIv2 example from their website does not url encode '(' and ')'
-  // so I've excluded them
-  hashList.append(QUrl::toPercentEncoding(info.fileName(), "()"));
-  hashList.append(crcResult.toUpper());
-  hashList.append(md5Result.toUpper());
-  hashList.append(sha1Result.toUpper());
-
-  QList<QString> searchNames;
-  if(info.size() != 0) {
-    searchNames.append("crc=" + hashList.at(1) + "&md5=" + hashList.at(2) + "&sha1=" + hashList.at(3) + "&romnom=" + hashList.at(0) + "&romtaille=" + QString::number(info.size()));
-  } else {
-    searchNames.append("romnom=" + hashList.at(0));
-  }
-
+  
   return searchNames;
 }
 
@@ -587,68 +663,76 @@ QString ScreenScraper::getJsonText(QJsonArray jsonArr, int attr, QList<QString> 
   if(attr == NONE && !types.isEmpty()) {
     for(const auto &type: types) {
       for(const auto &jsonVal: jsonArr) {
-	if(jsonVal.toObject()["type"].toString() == type) {
-	  if(jsonVal.toObject()["url"].isString()) {
-	    return jsonVal.toObject()["url"].toString();
-	  } else {
-	    return jsonVal.toObject()["text"].toString();
-	  }
-	}
+        if(jsonVal.toObject()["type"].toString() == type) {
+          if(jsonVal.toObject()["url"].isString()) {
+            return jsonVal.toObject()["url"].toString();
+          } else {
+            return jsonVal.toObject()["text"].toString();
+          }
+        }
       }
     }
   } else if(attr == REGION) {
     // Not using the config->regionPrios since they might have changed due to region autodetection. So using temporary internal one instead.
-    for(const auto &region: regionPrios) {
-      if(types.isEmpty()) {
-	for(const auto &jsonVal: jsonArr) {
-	  if(jsonVal.toObject()["region"].toString() == region) {
-	    if(jsonVal.toObject()["url"].isString()) {
-	      return jsonVal.toObject()["url"].toString();
-	    } else {
-	      return jsonVal.toObject()["text"].toString();
-	    }
-	  }
-	}
-      } else {
-	for(const auto &type: types) {
-	  for(const auto &jsonVal: jsonArr) {
-	    if(jsonVal.toObject()["region"].toString() == region &&
-	       jsonVal.toObject()["type"].toString() == type) {
-	      if(jsonVal.toObject()["url"].isString()) {
-		return jsonVal.toObject()["url"].toString();
-	      } else {
-		return jsonVal.toObject()["text"].toString();
-	      }
-	    }
-	  }
-	}
+    if(types.isEmpty()) {
+      for(const auto &region: regionPrios) {
+        for(const auto &jsonVal: jsonArr) {
+          if(jsonVal.toObject()["region"].toString() == region ||
+             jsonVal.toObject()["region"].toString().isEmpty()) {
+            if(jsonVal.toObject()["url"].isString()) {
+              return jsonVal.toObject()["url"].toString();
+            } else {
+              return jsonVal.toObject()["text"].toString();
+            }
+          }
+        }
+      }
+    } else {
+      for(const auto &type: types) {
+        for(const auto &region: regionPrios) {
+          for(const auto &jsonVal: jsonArr) {
+            if((jsonVal.toObject()["region"].toString() == region ||
+               jsonVal.toObject()["region"].toString().isEmpty()) &&
+               jsonVal.toObject()["type"].toString() == type) {
+              if(jsonVal.toObject()["url"].isString()) {
+                return jsonVal.toObject()["url"].toString();
+              } else {
+                return jsonVal.toObject()["text"].toString();
+              }
+            }
+          }
+        }
       }
     }
   } else if(attr == LANGUE) {
-    for(const auto &lang: config->langPrios) {
-      if(types.isEmpty()) {
-	for(const auto &jsonVal: jsonArr) {
-	  if(jsonVal.toObject()["langue"].toString() == lang) {
-	    if(jsonVal.toObject()["url"].isString()) {
-	      return jsonVal.toObject()["url"].toString();
-	    } else {
-	      return jsonVal.toObject()["text"].toString();
-	    }
-	  }
-	}
-      } else {
-	for(const auto &type: types) {
-	  for(const auto &jsonVal: jsonArr) {
-	    if(jsonVal.toObject()["langue"].toString() == lang &&
-	       jsonVal.toObject()["type"].toString() == type) {
-	      if(jsonVal.toObject()["url"].isString()) {
-		return jsonVal.toObject()["url"].toString();
-	      } else {
-		return jsonVal.toObject()["text"].toString();
-	      }
-	    }
-	  }
-	}
+    if(types.isEmpty()) {
+      for(const auto &lang: config->langPrios) {
+        for(const auto &jsonVal: jsonArr) {
+          if(jsonVal.toObject()["langue"].toString() == lang ||
+             jsonVal.toObject()["langue"].toString().isEmpty()) {
+            if(jsonVal.toObject()["url"].isString()) {
+              return jsonVal.toObject()["url"].toString();
+            } else {
+              return jsonVal.toObject()["text"].toString();
+            }
+          }
+        }
+      }
+    } else {
+      for(const auto &type: types) {
+        for(const auto &lang: config->langPrios) {
+          for(const auto &jsonVal: jsonArr) {
+            if((jsonVal.toObject()["langue"].toString() == lang ||
+               jsonVal.toObject()["langue"].toString().isEmpty()) &&
+               jsonVal.toObject()["type"].toString() == type) {
+              if(jsonVal.toObject()["url"].isString()) {
+                return jsonVal.toObject()["url"].toString();
+              } else {
+                return jsonVal.toObject()["text"].toString();
+              }
+            }
+          }
+        }
       }
     }
   }

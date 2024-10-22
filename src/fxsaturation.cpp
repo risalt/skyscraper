@@ -43,7 +43,7 @@ QImage FxSaturation::applyEffect(const QImage &src, const Layer &layer)
     for(int x = 0; x < canvas.width(); ++x) {
       QColor color(line[x]);
       color.setHsl(color.hue(), truncate(color.hslSaturation() + saturation), color.lightness(),
-		   qAlpha(line[x]));
+                   qAlpha(line[x]));
       line[x] = qPremultiply(color.rgba());
     }
   }

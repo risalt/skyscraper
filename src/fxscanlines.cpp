@@ -67,7 +67,7 @@ QImage FxScanlines::applyEffect(const QImage &src, const Layer &layer, Settings 
       bool isDouble = false;
       layer.scaling.toDouble(&isDouble);
       if(isDouble)
-	scaling = layer.scaling.toDouble();
+        scaling = layer.scaling.toDouble();
     }
   }
   */

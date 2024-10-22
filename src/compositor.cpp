@@ -27,7 +27,10 @@
 #include <QSettings>
 #include <QPainter>
 #include <QDomDocument>
+#include <QFile>
 #include <QFileInfo>
+#include <QImage>
+#include <QProcess>
 
 #include "compositor.h"
 #include "strtools.h"
@@ -81,209 +84,209 @@ void Compositor::addChildLayers(Layer &layer, QXmlStreamReader &xml)
     if(xml.isStartElement() && xml.name() == "output") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("type")) {
-	newLayer.setType(T_OUTPUT);
-	newLayer.setResType(attribs.value("type").toString());
-	if(attribs.hasAttribute("resource")) {
-	  newLayer.setResource(attribs.value("resource").toString());
-	} else {
-	  newLayer.setResource(attribs.value("type").toString());
-	}
+        newLayer.setType(T_OUTPUT);
+        newLayer.setResType(attribs.value("type").toString());
+        if(attribs.hasAttribute("resource")) {
+          newLayer.setResource(attribs.value("resource").toString());
+        } else {
+          newLayer.setResource(attribs.value("type").toString());
+        }
       }
       if(attribs.hasAttribute("width"))
-	newLayer.setWidth(attribs.value("width").toInt());
+        newLayer.setWidth(attribs.value("width").toInt());
       if(attribs.hasAttribute("height"))
-	newLayer.setHeight(attribs.value("height").toInt());
+        newLayer.setHeight(attribs.value("height").toInt());
       if(attribs.hasAttribute("mpixels"))
-	newLayer.setMPixels(attribs.value("mpixels").toDouble());
+        newLayer.setMPixels(attribs.value("mpixels").toDouble());
 
       if(newLayer.type != T_NONE) {
-	addChildLayers(newLayer, xml);
-	layer.addLayer(newLayer);
+        addChildLayers(newLayer, xml);
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "layer") {
       QXmlStreamAttributes attribs = xml.attributes();
       newLayer.setType(T_LAYER);
       if(attribs.hasAttribute("resource"))
-	newLayer.setResource(attribs.value("resource").toString());
+        newLayer.setResource(attribs.value("resource").toString());
       if(attribs.hasAttribute("mode"))
-	newLayer.setMode(attribs.value("mode").toString());
+        newLayer.setMode(attribs.value("mode").toString());
       if(attribs.hasAttribute("opacity"))
-	newLayer.setOpacity(attribs.value("opacity").toInt());
+        newLayer.setOpacity(attribs.value("opacity").toInt());
       if(attribs.hasAttribute("width"))
-	newLayer.setWidth(attribs.value("width").toInt());
+        newLayer.setWidth(attribs.value("width").toInt());
       if(attribs.hasAttribute("height"))
-	newLayer.setHeight(attribs.value("height").toInt());
+        newLayer.setHeight(attribs.value("height").toInt());
       if(attribs.hasAttribute("mpixels"))
-	newLayer.setMPixels(attribs.value("mpixels").toDouble());
+        newLayer.setMPixels(attribs.value("mpixels").toDouble());
       if(attribs.hasAttribute("align"))
-	newLayer.setAlign(attribs.value("align").toString());
+        newLayer.setAlign(attribs.value("align").toString());
       if(attribs.hasAttribute("valign"))
-	newLayer.setVAlign(attribs.value("valign").toString());
+        newLayer.setVAlign(attribs.value("valign").toString());
       if(attribs.hasAttribute("x"))
-	newLayer.setX(attribs.value("x").toInt());
+        newLayer.setX(attribs.value("x").toInt());
       if(attribs.hasAttribute("y"))
-	newLayer.setY(attribs.value("y").toInt());
+        newLayer.setY(attribs.value("y").toInt());
       addChildLayers(newLayer, xml);
       layer.addLayer(newLayer);
     } else if(xml.isStartElement() && xml.name() == "shadow") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("distance") &&
-	 attribs.hasAttribute("softness") &&
-	 attribs.hasAttribute("opacity")) {
-	newLayer.setType(T_SHADOW);
-	newLayer.setDistance(attribs.value("distance").toInt());
-	newLayer.setSoftness(attribs.value("softness").toInt());
-	newLayer.setOpacity(attribs.value("opacity").toInt());
-	layer.addLayer(newLayer);
+         attribs.hasAttribute("softness") &&
+         attribs.hasAttribute("opacity")) {
+        newLayer.setType(T_SHADOW);
+        newLayer.setDistance(attribs.value("distance").toInt());
+        newLayer.setSoftness(attribs.value("softness").toInt());
+        newLayer.setOpacity(attribs.value("opacity").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "blur") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("softness")) {
-	newLayer.setType(T_BLUR);
-	newLayer.setSoftness(attribs.value("softness").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_BLUR);
+        newLayer.setSoftness(attribs.value("softness").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "mask") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("file")) {
-	newLayer.setType(T_MASK);
-	newLayer.setResource(attribs.value("file").toString());
-	if(attribs.hasAttribute("width"))
-	  newLayer.setWidth(attribs.value("width").toInt());
-	if(attribs.hasAttribute("height"))
-	  newLayer.setHeight(attribs.value("height").toInt());
-	if(attribs.hasAttribute("x"))
-	  newLayer.setX(attribs.value("x").toInt());
-	if(attribs.hasAttribute("y"))
-	  newLayer.setY(attribs.value("y").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_MASK);
+        newLayer.setResource(attribs.value("file").toString());
+        if(attribs.hasAttribute("width"))
+          newLayer.setWidth(attribs.value("width").toInt());
+        if(attribs.hasAttribute("height"))
+          newLayer.setHeight(attribs.value("height").toInt());
+        if(attribs.hasAttribute("x"))
+          newLayer.setX(attribs.value("x").toInt());
+        if(attribs.hasAttribute("y"))
+          newLayer.setY(attribs.value("y").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "frame") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("file")) {
-	newLayer.setType(T_FRAME);
-	newLayer.setResource(attribs.value("file").toString());
-	if(attribs.hasAttribute("width"))
-	  newLayer.setWidth(attribs.value("width").toInt());
-	if(attribs.hasAttribute("height"))
-	  newLayer.setHeight(attribs.value("height").toInt());
-	if(attribs.hasAttribute("x"))
-	  newLayer.setX(attribs.value("x").toInt());
-	if(attribs.hasAttribute("y"))
-	  newLayer.setY(attribs.value("y").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_FRAME);
+        newLayer.setResource(attribs.value("file").toString());
+        if(attribs.hasAttribute("width"))
+          newLayer.setWidth(attribs.value("width").toInt());
+        if(attribs.hasAttribute("height"))
+          newLayer.setHeight(attribs.value("height").toInt());
+        if(attribs.hasAttribute("x"))
+          newLayer.setX(attribs.value("x").toInt());
+        if(attribs.hasAttribute("y"))
+          newLayer.setY(attribs.value("y").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "stroke") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("width")) {
-	newLayer.setType(T_STROKE);
-	newLayer.setWidth(attribs.value("width").toInt());
-	if(attribs.hasAttribute("color"))
-	  newLayer.colorFromHex(attribs.value("color").toString());
-	if(attribs.hasAttribute("red"))
-	  newLayer.setRed(attribs.value("red").toInt());
-	if(attribs.hasAttribute("green"))
-	  newLayer.setGreen(attribs.value("green").toInt());
-	if(attribs.hasAttribute("blue"))
-	  newLayer.setBlue(attribs.value("blue").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_STROKE);
+        newLayer.setWidth(attribs.value("width").toInt());
+        if(attribs.hasAttribute("color"))
+          newLayer.colorFromHex(attribs.value("color").toString());
+        if(attribs.hasAttribute("red"))
+          newLayer.setRed(attribs.value("red").toInt());
+        if(attribs.hasAttribute("green"))
+          newLayer.setGreen(attribs.value("green").toInt());
+        if(attribs.hasAttribute("blue"))
+          newLayer.setBlue(attribs.value("blue").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "rounded") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("radius")) {
-	newLayer.setType(T_ROUNDED);
-	newLayer.setWidth(attribs.value("radius").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_ROUNDED);
+        newLayer.setWidth(attribs.value("radius").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "brightness") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("value")) {
-	newLayer.setType(T_BRIGHTNESS);
-	newLayer.setDelta(attribs.value("value").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_BRIGHTNESS);
+        newLayer.setDelta(attribs.value("value").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "opacity") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("value")) {
-	newLayer.setType(T_OPACITY);
-	newLayer.setOpacity(attribs.value("value").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_OPACITY);
+        newLayer.setOpacity(attribs.value("value").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "contrast") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("value")) {
-	newLayer.setType(T_CONTRAST);
-	newLayer.setDelta(attribs.value("value").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_CONTRAST);
+        newLayer.setDelta(attribs.value("value").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "balance") {
       QXmlStreamAttributes attribs = xml.attributes();
       newLayer.setType(T_BALANCE);
       if(attribs.hasAttribute("red"))
-	newLayer.setRed(attribs.value("red").toInt());
+        newLayer.setRed(attribs.value("red").toInt());
       if(attribs.hasAttribute("green"))
-	newLayer.setGreen(attribs.value("green").toInt());
+        newLayer.setGreen(attribs.value("green").toInt());
       if(attribs.hasAttribute("blue"))
-	newLayer.setBlue(attribs.value("blue").toInt());
+        newLayer.setBlue(attribs.value("blue").toInt());
       layer.addLayer(newLayer);
     } else if(xml.isStartElement() && xml.name() == "gamebox") {
       QXmlStreamAttributes attribs = xml.attributes();
       newLayer.setType(T_GAMEBOX);
       if(attribs.hasAttribute("side"))
-	newLayer.setResource(attribs.value("side").toString());
+        newLayer.setResource(attribs.value("side").toString());
       if(attribs.hasAttribute("rotate"))
-	newLayer.setDelta(attribs.value("rotate").toInt());
+        newLayer.setDelta(attribs.value("rotate").toInt());
       if(attribs.hasAttribute("sidescaling"))
-	newLayer.setScaling(attribs.value("sidescaling").toString());
+        newLayer.setScaling(attribs.value("sidescaling").toString());
       layer.addLayer(newLayer);
     } else if(xml.isStartElement() && xml.name() == "hue") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("value")) {
-	newLayer.setType(T_HUE);
-	newLayer.setDelta(attribs.value("value").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_HUE);
+        newLayer.setDelta(attribs.value("value").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "saturation") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("value")) {
-	newLayer.setType(T_SATURATION);
-	newLayer.setDelta(attribs.value("value").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_SATURATION);
+        newLayer.setDelta(attribs.value("value").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "colorize") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("hue")) {
-	newLayer.setType(T_COLORIZE);
-	newLayer.setValue(attribs.value("hue").toInt());
-	if(attribs.hasAttribute("saturation"))
-	  newLayer.setDelta(attribs.value("saturation").toInt());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_COLORIZE);
+        newLayer.setValue(attribs.value("hue").toInt());
+        if(attribs.hasAttribute("saturation"))
+          newLayer.setDelta(attribs.value("saturation").toInt());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "rotate") {
       QXmlStreamAttributes attribs = xml.attributes();
       if(attribs.hasAttribute("degrees")) {
-	newLayer.setType(T_ROTATE);
-	newLayer.setDelta(attribs.value("degrees").toInt());
-	if(attribs.hasAttribute("axis"))
-	  newLayer.setAxis(attribs.value("axis").toString());
-	layer.addLayer(newLayer);
+        newLayer.setType(T_ROTATE);
+        newLayer.setDelta(attribs.value("degrees").toInt());
+        if(attribs.hasAttribute("axis"))
+          newLayer.setAxis(attribs.value("axis").toString());
+        layer.addLayer(newLayer);
       }
     } else if(xml.isStartElement() && xml.name() == "scanlines") {
       QXmlStreamAttributes attribs = xml.attributes();
       newLayer.setType(T_SCANLINES);
       if(attribs.hasAttribute("file")) {
-	newLayer.setResource(attribs.value("file").toString());
+        newLayer.setResource(attribs.value("file").toString());
       }
       if(attribs.hasAttribute("scale")) {
-	newLayer.setScaling(attribs.value("scale").toString());
+        newLayer.setScaling(attribs.value("scale").toString());
       }
       if(attribs.hasAttribute("opacity")) {
-	newLayer.setOpacity(attribs.value("opacity").toInt());
+        newLayer.setOpacity(attribs.value("opacity").toInt());
       }
       if(attribs.hasAttribute("mode")) {
-	newLayer.setMode(attribs.value("mode").toString());
+        newLayer.setMode(attribs.value("mode").toString());
       } else {
-	newLayer.setMode("overlay");
+        newLayer.setMode("overlay");
       }
       layer.addLayer(newLayer);
     } else if(xml.isEndElement() && xml.name() == "layer") {
@@ -300,31 +303,92 @@ void Compositor::saveAll(GameEntry &game, QString completeBaseName)
     QString filename = "/" + completeBaseName + ".png";
     if(output.resType == "cover") {
       filename.prepend(config->coversFolder);
+      bool generateThumbnail = false;
       if(config->skipExistingCovers && QFileInfo::exists(filename)) {
-	game.coverFile = filename;
-	continue;
+        bool isAutogenerated = false;
+        QImage exif(filename);
+        if (!exif.isNull()) {
+          QString softwareTag = exif.text("Software");
+          // printf("3 '%s'\n", softwareTag.toStdString().c_str());
+          if (!softwareTag.isEmpty() && softwareTag == "www.inkscape.org") {
+            // Real covers always have priority over autogenerated ones:
+            isAutogenerated = true;
+          }
+        }
+        if ((isAutogenerated && game.coverData.isEmpty()) ||
+            (!isAutogenerated && !game.coverData.isEmpty())) {
+          game.coverFile = filename;
+          continue;
+        }
+        else if(!isAutogenerated && game.coverData.isEmpty()) {
+          generateThumbnail = true;
+        }
+      }
+      else if(game.coverData.isEmpty()) {
+        generateThumbnail = true;
+      }
+      if (generateThumbnail) {
+        QString sanitizedName = game.title;
+        if (sanitizedName.isEmpty()) {
+          sanitizedName = "N/A";
+        }
+        QProcess thumbnailer;
+        QString convertcommand("/usr/bin/convert");
+        QStringList convertargs;
+        QString thumbnail;
+        QString templateimage("/opt/pegasus/roms/default/missingboxart.png");
+        convertargs << templateimage
+                    << "-size" << "184x256" << "-pointsize" << "30" << "-background" << "none" << "-fill" << "gray10" << "-gravity" << "South"
+                    << "caption:" + sanitizedName
+                    << "-flatten"
+                    << filename;
+        thumbnailer.start(convertcommand, convertargs, QIODevice::ReadOnly);
+        thumbnailer.waitForFinished(10000);
+        thumbnailer.close();
+        game.coverFile = filename;
+        continue;
       }
     } else if(output.resType == "screenshot") {
       filename.prepend(config->screenshotsFolder);
-      if(config->skipExistingScreenshots && QFileInfo::exists(filename)) {
-	game.screenshotFile = filename;
-	continue;
+      if(game.screenshotData.isEmpty() && QFileInfo::exists(filename)) {
+        QFile::remove(filename);
+      }
+      else if(config->skipExistingScreenshots &&
+              !game.screenshotData.isEmpty() &&
+              QFileInfo::exists(filename)) {
+        game.screenshotFile = filename;
+        continue;
       }
     } else if(output.resType == "wheel") {
       filename.prepend(config->wheelsFolder);
-      if(config->skipExistingWheels && QFileInfo::exists(filename)) {
-	game.wheelFile = filename;
-	continue;
+      if(game.wheelData.isEmpty() && QFileInfo::exists(filename)) {
+        QFile::remove(filename);
+      }
+      else if(config->skipExistingWheels &&
+              !game.wheelData.isEmpty() &&
+              QFileInfo::exists(filename)) {
+        game.wheelFile = filename;
+        continue;
       }
     } else if(output.resType == "marquee") {
       filename.prepend(config->marqueesFolder);
-      if(config->skipExistingMarquees && QFileInfo::exists(filename)) {
-	game.marqueeFile = filename;
-	continue;
+      if(game.marqueeData.isEmpty() && QFileInfo::exists(filename)) {
+        QFile::remove(filename);
+      }
+      else if(config->skipExistingMarquees &&
+              !game.marqueeData.isEmpty() &&
+              QFileInfo::exists(filename)) {
+        game.marqueeFile = filename;
+        continue;
       }
     } else if (output.resType == "texture") {
       filename.prepend(config->texturesFolder);
-      if (config->skipExistingTextures && QFileInfo::exists(filename)) {
+      if(game.textureData.isEmpty() && QFileInfo::exists(filename)) {
+        QFile::remove(filename);
+      }
+      else if(config->skipExistingTextures &&
+              !game.textureData.isEmpty() &&
+              QFileInfo::exists(filename)) {
         game.textureFile = filename;
         continue;
       }
@@ -378,36 +442,36 @@ void Compositor::processChildLayers(GameEntry &game, Layer &layer)
     Layer thisLayer = layer.getLayers().at(a);
     if(thisLayer.type == T_LAYER) {
       if(thisLayer.resource == "") {
-	QImage emptyCanvas(1, 1, QImage::Format_ARGB32_Premultiplied);
-	emptyCanvas.fill(Qt::transparent);
-	thisLayer.setCanvas(emptyCanvas);
+        QImage emptyCanvas(1, 1, QImage::Format_ARGB32_Premultiplied);
+        emptyCanvas.fill(Qt::transparent);
+        thisLayer.setCanvas(emptyCanvas);
       } else if(thisLayer.resource == "cover") {
-	thisLayer.setCanvas(QImage::fromData(game.coverData));
+        thisLayer.setCanvas(QImage::fromData(game.coverData));
       } else if(thisLayer.resource == "screenshot") {
-	  thisLayer.setCanvas(QImage::fromData(game.screenshotData));
+          thisLayer.setCanvas(QImage::fromData(game.screenshotData));
       } else if(thisLayer.resource == "wheel") {
-	  thisLayer.setCanvas(QImage::fromData(game.wheelData));
+          thisLayer.setCanvas(QImage::fromData(game.wheelData));
       } else if(thisLayer.resource == "marquee") {
-	  thisLayer.setCanvas(QImage::fromData(game.marqueeData));
+          thisLayer.setCanvas(QImage::fromData(game.marqueeData));
       } else if (thisLayer.resource == "texture") {
           thisLayer.setCanvas(QImage::fromData(game.textureData));
       } else {
-	thisLayer.setCanvas(config->resources[thisLayer.resource]);
+        thisLayer.setCanvas(config->resources[thisLayer.resource]);
       }
-	  
+          
       // If no meaningful canvas could be created, stop processing this layer branch entirely
       if(thisLayer.canvas.isNull()) {
-	continue;
+        continue;
       }
       
       thisLayer.premultiply();
       if(thisLayer.resource == "screenshot") {
-	// Crop away transparency and, if configured, black borders around screenshots
-	thisLayer.setCanvas(ImgTools::cropToFit(thisLayer.canvas, config->cropBlack));
+        // Crop away transparency and, if configured, black borders around screenshots
+        thisLayer.setCanvas(ImgTools::cropToFit(thisLayer.canvas, config->cropBlack));
       } else {
-	// Crop away transparency around all other types. Never crop black on these as many
-	// have black outlines that are very much needed
-	thisLayer.setCanvas(ImgTools::cropToFit(thisLayer.canvas));
+        // Crop away transparency around all other types. Never crop black on these as many
+        // have black outlines that are very much needed
+        thisLayer.setCanvas(ImgTools::cropToFit(thisLayer.canvas));
       }
       thisLayer.scale();
 
@@ -416,7 +480,7 @@ void Compositor::processChildLayers(GameEntry &game, Layer &layer)
 
       // Continue concurrency if this layer has children
       if(thisLayer.hasLayers()) {
-	processChildLayers(game, thisLayer);
+        processChildLayers(game, thisLayer);
       }
 
       // Composite image on canvas (which is the parent canvas at this point)
@@ -424,21 +488,21 @@ void Compositor::processChildLayers(GameEntry &game, Layer &layer)
       painter.begin(&layer.canvas);
       painter.setCompositionMode(thisLayer.mode);
       if(thisLayer.opacity != -1)
-	painter.setOpacity(thisLayer.opacity * 0.01);
+        painter.setOpacity(thisLayer.opacity * 0.01);
 
       int x = 0;
       if(thisLayer.align == "center") {
-	x = (layer.width / 2) - (thisLayer.width / 2);
+        x = (layer.width / 2) - (thisLayer.width / 2);
       } else if(thisLayer.align == "right") {
-	x = layer.width - thisLayer.width;
+        x = layer.width - thisLayer.width;
       }
       x += thisLayer.x;
 
       int y = 0;
       if(thisLayer.valign == "middle") {
-	y = (layer.height / 2) - (thisLayer.height / 2);
+        y = (layer.height / 2) - (thisLayer.height / 2);
       } else if(thisLayer.valign == "bottom") {
-	y = layer.height - thisLayer.height;
+        y = layer.height - thisLayer.height;
       }
       y += thisLayer.y;
 

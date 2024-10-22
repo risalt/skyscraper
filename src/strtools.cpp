@@ -23,6 +23,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
+#include <QUrl>
 #include <QDate>
 #include <QRegularExpression>
 #include <QCryptographicHash>
@@ -87,7 +88,7 @@ QString StrTools::xmlUnescape(QString str)
     replace("&#x14D;", "o");
 
   while(str.contains("&") && str.contains(";") && str.indexOf("&") < str.indexOf(";") &&
-	str.indexOf(";") - str.indexOf("&") <= 10) {
+        str.indexOf(";") - str.indexOf("&") <= 10) {
     str = str.remove(str.indexOf("&"), str.indexOf(";") + 1 - str.indexOf("&"));
   }
 
@@ -106,55 +107,12 @@ QString StrTools::xmlEscape(QString str)
     replace("'", "&apos;");
 }
 
-QByteArray StrTools::magic(const QByteArray str)
+QString StrTools::uriEscape(QString str)
 {
-  QByteArray magicStr("WowMuchEncryptedVeryImpressIGuessThisHasToBeQuiteLongToAlsoSupportSomeVeryLongKeys");
-
-  int strChars[str.length()];
-  int magicChars[str.length()];
-
-  for(int a = 0; a < str.length(); ++a) {
-    strChars[a] = str.at(a);
-  }
-
-  for(int a = 0; a < str.length(); ++a) {
-    magicChars[a] = magicStr.at(a);
-  }
-
-  QByteArray thingie;
-  for(int a = 0; a < str.length(); ++a) {
-    thingie.append(QString::number(strChars[a] += magicChars[a]).toUtf8() + ";");
-  }
-
-  thingie = thingie.left(thingie.length() - 1);
-
-  return thingie; 
+  return QUrl::toPercentEncoding(str, "/");
 }
 
-QByteArray StrTools::unMagic(const QByteArray str)
-{
-  int length = str.split(';').length();
-
-  QByteArray magicStr("WowMuchEncryptedVeryImpressIGuessThisHasToBeQuiteLongToAlsoSupportSomeVeryLongKeys");
-
-  int strChars[length];
-  int magicChars[length];
-
-  for(int a = 0; a < length; ++a) {
-    strChars[a] = str.split(';').at(a).toInt();
-  }
-  for(int a = 0; a < length; ++a) {
-    magicChars[a] = magicStr.at(a);
-  }
-  QByteArray thingie;
-  for(int a = 0; a < length; ++a) {
-    thingie.append(QString(QChar(strChars[a] -= magicChars[a])).toUtf8());
-  }
-
-  return thingie; 
-}
-
-QString StrTools::conformPlayers(const QString str)
+QString StrTools::conformPlayers(const QString &str)
 {
   if(QRegularExpression("^1 Player").match(str).hasMatch())
     return "1";
@@ -216,6 +174,8 @@ QString StrTools::conformAges(QString str)
   } else if(str == "EC") {
     str = "3";
   } else if(str == "Early Childhood") {
+    str = "3";
+  } else if(str == "EC - Early Childhood") {
     str = "3";
   } else if(str == "3+") {
     str = "3";
@@ -306,7 +266,7 @@ QString StrTools::conformReleaseDate(QString str)
   return str;
 }
 
-QString StrTools::conformTags(const QString str)
+QString StrTools::conformTags(const QString &str)
 {
   QString tags = "";
 #if QT_VERSION >= 0x050e00
@@ -334,9 +294,55 @@ QString StrTools::getVersionHeader()
   return QString("\033[1;34m" + dashesString + "\033[0m\n\033[1;33m" + headerString + "\033[0m\n\033[1;34m" + dashesString + "\033[0m\n");
 }
 
-QString StrTools::stripBrackets(const QString str)
+QString StrTools::stripBrackets(const QString &str)
 {
   return str.left(str.indexOf("(")).left(str.indexOf("[")).simplified();
+}
+
+QString StrTools::sanitizeName(const QString &str, bool removeBrackets)
+{
+  QString sanitizedName = str;
+  sanitizedName.remove(QChar('.'))
+               .remove(QChar(','))
+               .remove(QChar(':'))
+               .remove(QChar(';'))
+               .remove(QChar(' '))
+               .remove(QChar('#'))
+               .remove(QChar('$'))
+               .remove(QChar('%'))
+               .remove(QChar('='))
+               .remove(QChar('-'))
+               .remove(QChar('_'))
+               .remove(QChar(0x2026))
+               .remove(QChar('^'))
+               .remove(QChar('*'))
+               .remove(QChar('@'))
+               .remove(QChar('~'))
+               .remove(QChar(' '))
+               .remove(QChar('/'))
+               .remove(QChar('\\'))
+               .remove(QChar('+'))
+               .remove(QChar(0x2018))
+               .remove(QChar(0x2019))
+               .remove(QChar(0x201A))
+               .remove(QChar(0x201B))
+               .remove(QChar(0x201C))
+               .remove(QChar(0x201D))
+               .remove(QChar('"'))
+               .remove(QChar('\''))
+               .remove(QChar(0x00BA))
+               .remove(QChar('?'))
+               .remove(QChar(0x00BF))
+               .remove(QChar('!'))
+               .remove(QChar(0x2013))
+               .replace("&", "and");
+  sanitizedName = sanitizedName.toLower();
+  if (removeBrackets) {
+    return stripBrackets(sanitizedName).simplified();
+  }
+  else {
+    return sanitizedName.simplified();
+  }
 }
 
 QString StrTools::stripHtmlTags(QString str)
@@ -352,4 +358,43 @@ QString StrTools::getMd5Sum(const QByteArray &data)
   QCryptographicHash md5(QCryptographicHash::Md5);
   md5.addData(data);
   return md5.result().toHex();
+}
+
+int StrTools::distanceBetweenStrings(const QString &first, const QString &second, bool simplify) 
+{
+  QString firstStr = simplify ? first.simplified().toLower().replace(" ", "") : first;
+  QString secondStr = simplify ? second.simplified().toLower().replace(" ", "") : second;
+  std::string s1 = firstStr.toStdString();
+  std::string s2 = secondStr.toStdString();
+  const std::size_t len1 = s1.size(), len2 = s2.size();
+  unsigned int *col = (unsigned int *) malloc(sizeof(unsigned int)*(len2+1));
+  unsigned int *prevCol = (unsigned int *) malloc(sizeof(unsigned int)*(len2+1));
+  unsigned int *aux;
+        
+  for (unsigned int i = 0; i < len2+1; i++)
+    prevCol[i] = i;
+  for (unsigned int i = 0; i < len1; i++) {
+    col[0] = i+1;
+    for (unsigned int j = 0; j < len2; j++)
+      // C++11 allows std::min({arg1, arg2, arg3}) but it's way slower
+      col[j+1] = std::min(std::min(prevCol[1 + j] + 1, col[j] + 1), prevCol[j] + (s1[i]==s2[j] ? 0 : 1));
+    aux = col;
+    col = prevCol;
+    prevCol = aux;
+  }
+  int distance = prevCol[len2];
+  free(col);
+  free(prevCol);
+  return distance;
+}
+
+QString StrTools::onlyNumbers(const QString &str)
+{
+  QString result;
+  for (const QChar c : qAsConst(str)) {
+    if (c.isDigit()) {
+      result.append(c);
+    }
+  }
+  return result;
 }

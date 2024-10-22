@@ -47,9 +47,14 @@ class Skyscraper : public QObject
 public:
   Skyscraper(const QCommandLineParser &parser, const QString &currentDir);
   ~Skyscraper();
+  void setLock();
+  static void removeLockAndExit(const int exitCode = 0);
   QSharedPointer<Queue> queue;
   QSharedPointer<NetManager> manager;
   int state = 0;
+  inline static bool videos;
+  inline static bool manuals;
+  inline static bool chiptunes;
 
 public slots:
   void run();
@@ -63,6 +68,7 @@ private slots:
 
 private:
   Settings config;
+  inline static QFile lockFile;
   void loadConfig(const QCommandLineParser &parser);
   void copyFile(const QString &distro, const QString &current, bool overwrite = true);
   QString secsToString(const int &seconds);

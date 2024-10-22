@@ -24,15 +24,19 @@
  */
 
 #include <QJsonArray>
+#include <QTextStream>
 
 #include "igdb.h"
+#include "platform.h"
 #include "strtools.h"
 #include "nametools.h"
 
 Igdb::Igdb(Settings *config,
-	   QSharedPointer<NetManager> manager)
+           QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
+  incrementalScraping = true;
+
   QPair<QString, QString> clientIdHeader;
   clientIdHeader.first = "Client-ID";
   clientIdHeader.second = config->user;
@@ -60,18 +64,32 @@ Igdb::Igdb(Settings *config,
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(PLAYERS);
   fetchOrder.append(TAGS);
+  fetchOrder.append(FRANCHISES);
   fetchOrder.append(AGES);
+  fetchOrder.append(SCREENSHOT);
+  // Deprecated: fetchOrder.append(TEXTURE); if several screenshots
+  fetchOrder.append(COVER);
+  fetchOrder.append(MARQUEE);
+  // Deprecated: fetchOrder.append(WHEEL); if several artworks (i.e. marquee)
+  // Fetch one minute videos from youtube https://www.youtube.com/watch?v=%s
+  fetchOrder.append(VIDEO);
 }
 
 void Igdb::getSearchResults(QList<GameEntry> &gameEntries,
-				QString searchName, QString platform)
+                                QString searchName, QString platform)
 {
   // Request list of games but don't allow re-releases ("game.version_parent = null")
   limiter.exec();
-  netComm->request(baseUrl + "/search/", "fields game.name,game.platforms.name; search \"" + searchName + "\"; where game != null & game.version_parent = null;", headers);
+  // netComm->request(baseUrl + "/search/", "fields game.name,game.platforms.name; search \"" + searchName + "\"; where game != null & game.version_parent = null;", headers);
+  // Try search based on partial match:
+  netComm->request(baseUrl + "/search/", "fields game.name,game.platforms.name; where name ~ \"" + searchName + "\" & game != null & game.version_parent = null;", headers);
   q.exec();
   data = netComm->getData();
-  
+  // Debug:
+  //QTextStream out(stdout);
+  //out << baseUrl + "/search/" + "fields game.name,game.platforms.name; where name ~ \"" + searchName + "\" & game != null & game.version_parent = null;" << Qt::endl;
+  //out << data << Qt::endl;
+ 
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
     return;
@@ -93,19 +111,26 @@ void Igdb::getSearchResults(QList<GameEntry> &gameEntries,
 
     QJsonArray jsonPlatforms = jsonGame.toObject()["game"].toObject()["platforms"].toArray();
     for(const auto &jsonPlatform: jsonPlatforms) {
-      game.id.append(";" + QString::number(jsonPlatform.toObject()["id"].toInt()));
+      //game.id.append(";" + QString::number(jsonPlatform.toObject()["id"].toInt()));
       game.platform = jsonPlatform.toObject()["name"].toString();
       if(platformMatch(game.platform, platform)) {
-	gameEntries.append(game);
+        game.id.append(";" + QString::number(jsonPlatform.toObject()["id"].toInt()));
+        gameEntries.append(game);
+        break;
       }
     }
   }
 }
 
-void Igdb::getGameData(GameEntry &game)
+void Igdb::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   limiter.exec();
-  netComm->request(baseUrl + "/games/", "fields age_ratings.rating,age_ratings.category,total_rating,cover.url,game_modes.slug,genres.name,screenshots.url,summary,release_dates.date,release_dates.region,release_dates.platform,involved_companies.company.name,involved_companies.developer,involved_companies.publisher; where id = " + game.id.split(";").first() + ";", headers);
+  netComm->request(baseUrl + "/games/", "fields age_ratings.rating,age_ratings.category,total_rating,cover.url,game_modes.slug,genres.name,franchises.name,screenshots.url,artworks.url,videos.video_id,storyline,summary,release_dates.date,release_dates.region,release_dates.platform,involved_companies.company.name,involved_companies.developer,involved_companies.publisher; where id = " + game.id.split(";").first() + ";", headers);
   q.exec();
   data = netComm->getData();
 
@@ -115,6 +140,11 @@ void Igdb::getGameData(GameEntry &game)
   }
 
   jsonObj = jsonDoc.array().first().toObject();
+
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
 
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
@@ -130,26 +160,68 @@ void Igdb::getGameData(GameEntry &game)
     case PLAYERS:
       getPlayers(game);
       break;
-    case RATING:
-      getRating(game);
-      break;
     case AGES:
       getAges(game);
       break;
+    case RATING:
+      getRating(game);
+      break;
     case TAGS:
       getTags(game);
+      break;
+    case FRANCHISES:
+      getFranchises(game);
       break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
     case COVER:
       if(config->cacheCovers) {
-	getCover(game);
+        if ((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
       }
       break;
     case SCREENSHOT:
       if(config->cacheScreenshots) {
-	getScreenshot(game);
+        if ((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
+      }
+      break;
+    case WHEEL:
+      if(config->cacheWheels) {
+        if ((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
+      }
+      break;
+    case MARQUEE:
+      if(config->cacheMarquees) {
+        if ((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
+      }
+      break;
+    case TEXTURE:
+      if (config->cacheTextures) {
+        if ((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
+      }
+      break;
+    case VIDEO:
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        if ((!cache) || (cache && cache->videoData == "")) {
+          getVideo(game);
+        }
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        if ((!cache) || (cache && cache->manualData == "")) {
+          getManual(game);
+        }
       }
       break;
     default:
@@ -167,27 +239,27 @@ void Igdb::getReleaseDate(GameEntry &game)
       int regionEnum = jsonDate.toObject()["region"].toInt();
       QString curRegion = "";
       if(regionEnum == 1)
-	curRegion = "eu";
+        curRegion = "eu";
       else if(regionEnum == 2)
-	curRegion = "us";
+        curRegion = "us";
       else if(regionEnum == 3)
-	curRegion = "au";
+        curRegion = "au";
       else if(regionEnum == 4)
-	curRegion = "nz";
+        curRegion = "nz";
       else if(regionEnum == 5)
-	curRegion = "jp";
+        curRegion = "jp";
       else if(regionEnum == 6)
-	curRegion = "cn";
+        curRegion = "cn";
       else if(regionEnum == 7)
-	curRegion = "asi";
+        curRegion = "asi";
       else if(regionEnum == 8)
-	curRegion = "wor";
+        curRegion = "wor";
       if(QString::number(jsonDate.toObject()["platform"].toInt()) ==
-	 game.id.split(";").last() &&
-	 region == curRegion) {
-	game.releaseDate = QDateTime::fromMSecsSinceEpoch((qint64)jsonDate.toObject()["date"].toInt() * 1000).toString("yyyyMMdd");
-	regionMatch = true;
-	break;
+         game.id.split(";").last() &&
+         region == curRegion) {
+        game.releaseDate = QDateTime::fromMSecsSinceEpoch((qint64)jsonDate.toObject()["date"].toInt() * 1000).toString("yyyyMMdd");
+        regionMatch = true;
+        break;
       }
     }
     if(regionMatch)
@@ -221,6 +293,15 @@ void Igdb::getTags(GameEntry &game)
     game.tags.append(jsonGenre.toObject()["name"].toString() + ", ");
   }
   game.tags = game.tags.left(game.tags.length() - 2);
+}
+
+void Igdb::getFranchises(GameEntry &game)
+{
+  QJsonArray jsonFranchises = jsonObj["franchises"].toArray();
+  for(const auto &jsonFranchise: jsonFranchises) {
+    game.franchises.append(jsonFranchise.toObject()["name"].toString() + ", ");
+  }
+  game.franchises = game.franchises.left(game.franchises.length() - 2);
 }
 
 void Igdb::getAges(GameEntry &game)
@@ -277,9 +358,14 @@ void Igdb::getDeveloper(GameEntry &game)
 
 void Igdb::getDescription(GameEntry &game)
 {
+  game.description = "";
   QJsonValue jsonValue = jsonObj["summary"];
   if(jsonValue != QJsonValue::Undefined) {
-    game.description = StrTools::stripHtmlTags(jsonValue.toString());
+    game.description = StrTools::stripHtmlTags(jsonValue.toString()) + "\n";
+  }
+  jsonValue = jsonObj["storyline"];
+  if(jsonValue != QJsonValue::Undefined && !jsonValue.toString().isEmpty()) {
+    game.description = game.description + "\nPossible spoilers ahead!\n" + StrTools::stripHtmlTags(jsonValue.toString());
   }
 }
 
@@ -294,9 +380,111 @@ void Igdb::getRating(GameEntry &game)
   }
 }
 
+void Igdb::getCover(GameEntry &game)
+{
+  QJsonValue jsonValue = jsonObj["cover"].toObject()["url"];
+  if(jsonValue == QJsonValue::Undefined) {
+    return;
+  }
+  QString coverUrl = "https:" + StrTools::stripHtmlTags(jsonValue.toString());
+  coverUrl.replace("t_thumb", "t_original");
+  
+  netComm->request(coverUrl);
+  q.exec();
+  QImage image;
+  if(netComm->getError() == QNetworkReply::NoError &&
+     image.loadFromData(netComm->getData())) {
+    game.coverData = netComm->getData();
+  }
+}
+
+void Igdb::getScreenshot(GameEntry &game)
+{
+  QJsonArray jsonScreenshots = jsonObj["screenshots"].toArray();
+  int pos = 0;
+  QString screenshotUrl;
+  for(const auto &jsonScreenshot: jsonScreenshots) {
+    // Change 1 to 2 to allow second screenshot to be stored as Wheel
+    if (pos < 1) {
+      screenshotUrl = "https:" + jsonScreenshot.toObject()["url"].toString();
+      screenshotUrl.replace("t_thumb", "t_original");
+    }
+    else {
+      return;
+    }
+    netComm->request(screenshotUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      if (pos == 0) {
+        game.screenshotData = netComm->getData();
+      }
+      else {
+        game.wheelData = netComm->getData();
+      }
+    }
+    pos++;
+  }
+}
+
+void Igdb::getMarquee(GameEntry &game)
+{
+  QJsonArray jsonMarquees = jsonObj["artworks"].toArray();
+  int pos = 0;
+  QString marqueeUrl;
+  for(const auto &jsonMarquee: jsonMarquees) {
+    // Change 1 to 2 to allow second artwork to be stored as Texture
+    if (pos < 1) {
+      marqueeUrl = "https:" + jsonMarquee.toObject()["url"].toString();
+      marqueeUrl.replace("t_thumb", "t_original");
+    }
+    else {
+      return;
+    }
+    netComm->request(marqueeUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      if (pos == 0) {
+        game.marqueeData = netComm->getData();
+      }
+      else {
+        game.textureData = netComm->getData();
+      }
+    }
+    pos++;
+  }
+}
+
+void Igdb::getVideo(GameEntry &game)
+{
+  QJsonArray jsonVideos = jsonObj["videos"].toArray();
+  int pos = 0;
+  QString videoUrl;
+  for(const auto &jsonVideo: jsonVideos) {
+    if (pos < 1) {
+      videoUrl = jsonVideo.toObject()["video_id"].toString();
+      if (videoUrl.isEmpty()) {
+        return;
+      }
+      videoUrl = "https://www.youtube.com/watch?v=" + videoUrl;
+    }
+    else {
+      return;
+    }
+    getOnlineVideo(videoUrl, game);
+    pos++;
+  }
+}
+
 QList<QString> Igdb::getSearchNames(const QFileInfo &info)
 {
-  QString baseName = info.completeBaseName();
+  QList<QString> searchNames = AbstractScraper::getSearchNames(info);
+  return searchNames;
+
+  /*QString baseName = info.completeBaseName();
 
   if(!config->aliasMap[baseName].isEmpty()) {
     baseName = config->aliasMap[baseName];
@@ -309,16 +497,15 @@ QList<QString> Igdb::getSearchNames(const QFileInfo &info)
     }
   } else if(config->platform == "scummvm") {
     baseName = NameTools::getScummName(baseName, config->scummIni);
-  } else if((config->platform == "neogeo" ||
-	     config->platform == "arcade" ||
-	     config->platform == "mame-advmame" ||
-	     config->platform == "mame-libretro" ||
-	     config->platform == "mame-mame4all" ||
-	     config->platform == "fba") && !config->mameMap[baseName].isEmpty()) {
+  } else if(Platform::get().getFamily(config->platform) == "arcade" &&
+            !config->mameMap[baseName].isEmpty()) {
     baseName = config->mameMap[baseName];
   }
   baseName = StrTools::stripBrackets(baseName);
-  QList<QString> searchNames;
   searchNames.append(baseName);
-  return searchNames;
+  QListIterator<QString> listNames(searchNames);
+  while (listNames.hasNext()) {
+    printf("%s\n", listNames.next().toStdString().c_str());
+  }
+  return searchNames; */
 }

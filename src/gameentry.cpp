@@ -24,16 +24,23 @@
  */
 
 #include "gameentry.h"
+#include "skyscraper.h"
 
 GameEntry::GameEntry()
 {
 }
 
-void GameEntry::calculateCompleteness(bool videoEnabled)
+int GameEntry::getCompleteness() const
 {
-  completeness = 100.0;
-  int noOfTypes = 13;
-  if(videoEnabled) {
+  double completeness = 100.0;
+  int noOfTypes = 16;
+  if(Skyscraper::videos) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::manuals) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::chiptunes) {
     noOfTypes += 1;
   }
   double valuePerType = completeness / (double)noOfTypes;
@@ -43,7 +50,7 @@ void GameEntry::calculateCompleteness(bool videoEnabled)
   if(platform.isEmpty()) {
     completeness -= valuePerType;
   }
-  if(coverData.isNull()) {
+  if(coverData.isNull() || emptyShell) {
     completeness -= valuePerType;
   }
   if(screenshotData.isNull()) {
@@ -53,6 +60,9 @@ void GameEntry::calculateCompleteness(bool videoEnabled)
     completeness -= valuePerType;
   }
   if(marqueeData.isNull()) {
+    completeness -= valuePerType;
+  }
+  if(textureData.isNull()) {
     completeness -= valuePerType;
   }
   if(description.isEmpty()) {
@@ -70,6 +80,9 @@ void GameEntry::calculateCompleteness(bool videoEnabled)
   if(tags.isEmpty()) {
     completeness -= valuePerType;
   }
+  if(franchises.isEmpty()) {
+    completeness -= valuePerType;
+  }
   if(rating.isEmpty()) {
     completeness -= valuePerType;
   }
@@ -79,13 +92,15 @@ void GameEntry::calculateCompleteness(bool videoEnabled)
   if(ages.isEmpty()) {
     completeness -= valuePerType;
   }
-  if(videoEnabled && videoFormat.isEmpty()) {
+  if(Skyscraper::videos && videoFormat.isEmpty()) {
     completeness -= valuePerType;
   }
-}
-
-int GameEntry::getCompleteness() const
-{
+  if(Skyscraper::manuals && manualFormat.isEmpty()) {
+    completeness -= valuePerType;
+  }
+  if(Skyscraper::chiptunes && ( chiptuneId.isEmpty() || chiptunePath.isEmpty())) {
+    completeness -= valuePerType;
+  }
   return (int)completeness;
 }
 
@@ -95,5 +110,89 @@ void GameEntry::resetMedia()
   screenshotData = QByteArray();
   wheelData = QByteArray();
   marqueeData = QByteArray();
+  textureData = QByteArray();
   videoData = "";
+  manualData = "";
+}
+
+QDebug operator<<(QDebug debug, const GameEntry &game) {
+    QDebugStateSaver saver(debug);
+    debug.nospace() << 
+      "\nField 'id': " << game.id <<
+      "\nField 'path': " << game.path <<
+      "\nField 'title': " << game.title <<
+      "\nField 'titleSrc': " << game.titleSrc <<
+      "\nField 'platform': " << game.platform <<
+      "\nField 'platformSrc': " << game.platformSrc <<
+      "\nField 'description': " << game.description <<
+      "\nField 'descriptionSrc': " << game.descriptionSrc <<
+      "\nField 'releaseDate': " << game.releaseDate <<
+      "\nField 'releaseDateSrc': " << game.releaseDateSrc <<
+      "\nField 'developer': " << game.developer <<
+      "\nField 'developerSrc': " << game.developerSrc <<
+      "\nField 'publisher': " << game.publisher <<
+      "\nField 'publisherSrc': " << game.publisherSrc <<
+      "\nField 'tags': " << game.tags <<
+      "\nField 'tagsSrc': " << game.tagsSrc <<
+      "\nField 'franchises': " << game.franchises <<
+      "\nField 'franchisesSrc': " << game.franchisesSrc <<
+      "\nField 'players': " << game.players <<
+      "\nField 'playersSrc': " << game.playersSrc <<
+      "\nField 'ages': " << game.ages <<
+      "\nField 'agesSrc': " << game.agesSrc <<
+      "\nField 'rating': " << game.rating <<
+      "\nField 'ratingSrc': " << game.ratingSrc <<
+      "\nField 'completed': " << game.completed <<
+      "\nField 'favourite': " << game.favourite <<
+      "\nField 'played': " << game.played <<
+      "\nField 'timesPlayed': " << game.timesPlayed <<
+      "\nField 'lastPlayed': " << game.lastPlayed <<
+      "\nField 'firstPlayed': " << game.firstPlayed <<
+      "\nField 'timePlayed': " << game.timePlayed <<
+      "\nField 'coverFile': " << game.coverFile <<
+      "\nField 'coverData': " << "Data:" << game.coverData.size() <<
+      "\nField 'coverSrc': " << game.coverSrc <<
+      "\nField 'coverRegion': " << game.coverRegion <<
+      "\nField 'screenshotFile': " << game.screenshotFile <<
+      "\nField 'screenshotData': " << "Data:" << game.screenshotData.size() <<
+      "\nField 'screenshotSrc': " << game.screenshotSrc <<
+      "\nField 'screenshotRegion': " << game.screenshotRegion <<
+      "\nField 'wheelFile': " << game.wheelFile <<
+      "\nField 'wheelData': " << "Data:" << game.wheelData.size() <<
+      "\nField 'wheelSrc': " << game.wheelSrc <<
+      "\nField 'wheelRegion': " << game.wheelRegion <<
+      "\nField 'marqueeFile': " << game.marqueeFile <<
+      "\nField 'marqueeData': " << "Data:" << game.marqueeData.size() <<
+      "\nField 'marqueeSrc': " << game.marqueeSrc <<
+      "\nField 'marqueeRegion': " << game.marqueeRegion <<
+      "\nField 'textureFile': " << game.textureFile <<
+      "\nField 'textureData': " << "Data:" << game.textureData.size() <<
+      "\nField 'textureSrc': " << game.textureSrc <<
+      "\nField 'textureRegion': " << game.textureRegion <<
+      "\nField 'videoFile': " << game.videoFile <<
+      "\nField 'videoData': " << "Data:" << game.videoData.size() <<
+      "\nField 'videoSrc': " << game.videoSrc <<
+      "\nField 'manualFile': " << game.manualFile <<
+      "\nField 'manualData': " << "Data:" << game.manualData.size() <<
+      "\nField 'manualSrc': " << game.manualSrc <<
+      "\nField 'chiptuneId': " << game.chiptuneId <<
+      "\nField 'chiptuneIdSrc': " << game.chiptuneIdSrc <<
+      "\nField 'chiptunePath': " << game.chiptunePath <<
+      "\nField 'chiptunePathSrc': " << game.chiptunePathSrc <<
+      "\nField 'searchMatch': " << game.searchMatch <<
+      "\nField 'cacheId': " << game.cacheId <<
+      "\nField 'source': " << game.source <<
+      "\nField 'url': " << game.url <<
+      "\nField 'sqrNotes': " << game.sqrNotes <<
+      "\nField 'parNotes': " << game.parNotes <<
+      "\nField 'videoFormat': " << game.videoFormat <<
+      "\nField 'manualFormat': " << game.manualFormat <<
+      "\nField 'baseName': " << game.baseName <<
+      "\nField 'absoluteFilePath': " << game.absoluteFilePath <<
+      "\nField 'found': " << game.found <<
+      "\nField 'emptyShell': " << game.emptyShell <<
+      "\nField 'miscData': " << QString(game.miscData) <<
+      "\nField 'pSValuePairs': " << game.pSValuePairs;
+
+    return debug;
 }

@@ -42,8 +42,8 @@ private:
   QTimer limitTimer;
   QEventLoop limiter;
   void getSearchResults(QList<GameEntry> &gameEntries,
-			QString searchName, QString platform) override;
-  void getGameData(GameEntry &game) override;
+                        QString searchName, QString platform) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
@@ -53,13 +53,21 @@ private:
   void getAges(GameEntry &game) override;
   void getRating(GameEntry &game) override;
   void getCover(GameEntry &game) override;
+  void getTexture(GameEntry &game) override;
+  void getMarquee(GameEntry &game) override;
+  void getWheel(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
+  void getManual(GameEntry &game) override;
+  void loadConfig(const QString& configPath);
 
   QString getPlatformId(const QString platform) override;
 
   QString getRegionShort(const QString &region);
 
+  QMap<QString, int> platformToId;
   QJsonDocument jsonDoc;
+  QJsonDocument jsonMedia;
+  QJsonDocument jsonScreens;
   QJsonObject jsonObj;
 
 };

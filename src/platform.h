@@ -40,6 +40,8 @@ public:
     void clearConfigData();
 
     QStringList getPlatforms() const;
+    QString getSortBy(QString platform) const;
+    QString getFamily(QString platform) const;
     QStringList getScrapers(QString platform) const;
     QString getFormats(QString platform, QString extensions, QString addExtensions) const;
     QString getDefaultScraper() const;
@@ -47,6 +49,8 @@ public:
 
 private:
     QStringList platforms;
+    QMap<QString, QString> platformToSortBy;
+    QMap<QString, QString> platformToFamily;
     QMap<QString, QStringList> platformToScrapers;
     QMap<QString, QStringList> platformToFormats;
     QMap<QString, QStringList> platformToAliases;

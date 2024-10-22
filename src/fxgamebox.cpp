@@ -34,18 +34,18 @@ FxGamebox::FxGamebox()
 }
 
 QImage FxGamebox::applyEffect(const QImage &src, const Layer &layer,
-			      const GameEntry &game, Settings *config)
+                              const GameEntry &game, Settings *config)
 {
   QPainter painter;
   QTransform trans;
   double borderFactor = 0.029;
 
   QImage front(src.width() - src.width() * borderFactor, src.height(),
-	       QImage::Format_ARGB32_Premultiplied);
+               QImage::Format_ARGB32_Premultiplied);
   front.fill(Qt::black);
   QImage overlayFront(config->resources["boxfront.png"]);
   overlayFront = overlayFront.scaled(front.width(), front.height(),
-				     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                                     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
   painter.begin(&front);
   painter.drawImage(0, front.height() * borderFactor / 2, src.scaledToHeight(front.height() - front.height() * borderFactor));
@@ -68,6 +68,8 @@ QImage FxGamebox::applyEffect(const QImage &src, const Layer &layer,
     sideImage = QImage::fromData(game.wheelData);
   } else if(layer.resource == "marquee") {
     sideImage = QImage::fromData(game.marqueeData);
+  } else if(layer.resource == "texture") {
+    sideImage = QImage::fromData(game.textureData);
   } else {
     sideImage = QImage(config->resources[layer.resource]);
   }
@@ -76,28 +78,30 @@ QImage FxGamebox::applyEffect(const QImage &src, const Layer &layer,
   trans.reset();
   trans.rotate(layer.delta, Qt::ZAxis);
   sideImage = sideImage.transformed(trans, Qt::SmoothTransformation);
-  // Scale spine / side artwork
-  if(layer.scaling == "") {
-    // Autoscale
-    if((double)sideImage.height() / sideImage.width() > (double)side.height() / side.width()) {
-      sideImage = sideImage.scaledToHeight(side.height() - side.height() * borderFactor, Qt::SmoothTransformation);
+  if (!sideImage.isNull()) {
+    // Scale spine / side artwork
+    if(layer.scaling == "") {
+      // Autoscale
+      if((double)sideImage.height() / sideImage.width() > (double)side.height() / side.width()) {
+        sideImage = sideImage.scaledToHeight(side.height() - side.height() * borderFactor, Qt::SmoothTransformation);
+      } else {
+        sideImage = sideImage.scaledToWidth(side.width(), Qt::SmoothTransformation);
+      }
     } else {
-      sideImage = sideImage.scaledToWidth(side.width(), Qt::SmoothTransformation);
-    }
-  } else {
-    // Scale per 'sidescale' attribute
-    if(layer.scaling == "height") {
-      sideImage = sideImage.scaledToHeight(side.height() - side.height() * borderFactor, Qt::SmoothTransformation);
-    } else if(layer.scaling == "width") {
-      sideImage = sideImage.scaledToWidth(side.width(), Qt::SmoothTransformation);
-    } else if(layer.scaling == "both") {
-      sideImage = sideImage.scaled(side.width(), side.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+      // Scale per 'sidescale' attribute
+      if(layer.scaling == "height") {
+        sideImage = sideImage.scaledToHeight(side.height() - side.height() * borderFactor, Qt::SmoothTransformation);
+      } else if(layer.scaling == "width") {
+        sideImage = sideImage.scaledToWidth(side.width(), Qt::SmoothTransformation);
+      } else if(layer.scaling == "both") {
+        sideImage = sideImage.scaled(side.width(), side.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+      }
     }
   }
 
   painter.begin(&side);
   painter.drawImage(side.width() / 2.0 - sideImage.width() / 2.0,
-		    side.height() / 2.0 - sideImage.height() / 2.0, sideImage);
+                    side.height() / 2.0 - sideImage.height() / 2.0, sideImage);
   painter.drawImage(0, 0, overlaySide);
   painter.end();
 
@@ -114,7 +118,7 @@ QImage FxGamebox::applyEffect(const QImage &src, const Layer &layer,
   side = side.scaledToHeight(front.height(), Qt::SmoothTransformation);
 
   QImage gamebox(side.width() + front.width(), front.height(),
-		 QImage::Format_ARGB32_Premultiplied);
+                 QImage::Format_ARGB32_Premultiplied);
   gamebox.fill(Qt::transparent);
   painter.begin(&gamebox);
   painter.drawImage(0, 0, side);

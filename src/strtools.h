@@ -26,6 +26,7 @@
 #ifndef STRTOOLS_H
 #define STRTOOLS_H
 
+#include <QString>
 #include <QObject>
 
 class StrTools : public QObject
@@ -33,17 +34,19 @@ class StrTools : public QObject
 public:
   static QString xmlUnescape(QString str);
   static QString xmlEscape(QString str);
-  static QByteArray magic(const QByteArray str);
-  static QByteArray unMagic(const QByteArray str);
-  static QString conformPlayers(const QString str);
+  static QString uriEscape(QString str);
+  static QString conformPlayers(const QString &str);
   static QString conformAges(QString str);
   static QString conformReleaseDate(QString str);
-  static QString conformTags(const QString str);
+  static QString conformTags(const QString &str);
   static QString getVersionHeader();
-  static QString stripBrackets(const QString str);
+  static QString stripBrackets(const QString &str);
   static QString stripHtmlTags(QString str);
   static QString getMd5Sum(const QByteArray &data);
-
+  static QString sanitizeName(const QString &str, bool removeBrackets=false);
+  static int distanceBetweenStrings(const QString &first, const QString &second,
+                                    bool simplify = true);
+  static QString onlyNumbers(const QString &str);
 };
 
 #endif // STRTOOLS_H

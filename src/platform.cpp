@@ -28,7 +28,6 @@
 #include <QByteArray>
 #include <QFile>
 #include <QDir>
-#include <QProcess>
 #include <QString>
 
 #include <QJsonDocument>
@@ -58,11 +57,17 @@ void Platform::loadConfig(const QString& configPath)
         QString platformName = platformObject["name"].toString();
         platforms.push_back(platformName);
 
+        QString platformSortBy = platformObject["sortby"].toString();
+        platformToSortBy[platformName].push_back(platformSortBy);
+
+        QString platformFamily = platformObject["type"].toString();
+        platformToFamily[platformName].push_back(platformFamily);
+
         QJsonArray scrapersArray = platformObject["scrapers"].toArray();
         for (int scraperIndex = 0; scraperIndex < scrapersArray.size(); ++scraperIndex) {
             QString scraperName = scrapersArray[scraperIndex].toString();
             platformToScrapers[platformName].push_back(scraperName);
-}
+        }
 
         QJsonArray formatsArray = platformObject["formats"].toArray();
         for (int formatIndex = 0; formatIndex < formatsArray.size(); ++formatIndex) {
@@ -76,11 +81,14 @@ void Platform::loadConfig(const QString& configPath)
             platformToAliases[platformName].push_back(aliasName);
         }
     }
+    platforms.sort();
 }
 
 void Platform::clearConfigData()
 {
     platforms.clear();
+    platformToSortBy.clear();
+    platformToFamily.clear();
     platformToScrapers.clear();
     platformToFormats.clear();
     platformToAliases.clear();
@@ -95,6 +103,20 @@ Platform& Platform::get()
 QStringList Platform::getPlatforms() const
 {
   return platforms;
+}
+
+QString Platform::getSortBy(QString platform) const
+{
+    QString sortBy = platformToSortBy[platform];
+
+    return sortBy;
+}
+
+QString Platform::getFamily(QString platform) const
+{
+    QString family = platformToFamily[platform];
+
+    return family;
 }
 
 QStringList Platform::getScrapers(QString platform) const

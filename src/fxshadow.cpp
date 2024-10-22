@@ -46,7 +46,7 @@ QImage FxShadow::applyEffect(const QImage &src, const Layer &layer)
     opacity = 70;
 
   QImage buffer1(src.width() + softness * 2, src.height() + softness * 2,
-		 QImage::Format_ARGB32_Premultiplied);
+                 QImage::Format_ARGB32_Premultiplied);
   buffer1.fill(Qt::transparent);
   QPainter painter;
   painter.begin(&buffer1);
@@ -67,8 +67,8 @@ QImage FxShadow::applyEffect(const QImage &src, const Layer &layer)
   boxBlur(buffer1Bits, buffer2Bits, width, height, softness);
 
   QImage resultImage(src.width() + distance + softness,
-		     src.height() + distance + softness,
-		     QImage::Format_ARGB32_Premultiplied);
+                     src.height() + distance + softness,
+                     QImage::Format_ARGB32_Premultiplied);
   resultImage.fill(Qt::transparent);
   painter.begin(&resultImage);
   painter.setOpacity(opacity * 0.01);

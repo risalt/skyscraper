@@ -31,6 +31,7 @@
 #include "scripter.h"
 #include "platform.h"
 #include "strtools.h"
+#include "skyscraper.h"
 
 Scripter::Scripter()
 {
@@ -48,7 +49,7 @@ Scripter::Scripter()
   getline(std::cin, overwriteStr);
   if(overwriteStr != "y") {
     printf("User chose not to continue, now exiting...\n");
-    exit(0);
+    Skyscraper::removeLockAndExit(0);
   }
 
   std::string frontendStr = "na";
@@ -58,11 +59,15 @@ Scripter::Scripter()
   printf("* \033[1;33mretrobat\033[0m\n");
   printf("* \033[1;33mattractmode\033[0m\n");
   printf("* \033[1;33mpegasus\033[0m\n");
+  printf("* \033[1;33mxmlexport\033[0m\n");
+  printf("* \033[1;33mkoillection\033[0m\n");
   while(frontendStr != "emulationstation" &&
-	frontendStr != "retrobat" &&
-	frontendStr != "attractmode" &&
-	frontendStr != "pegasus" &&
-	frontendStr != "") {
+        frontendStr != "retrobat" &&
+        frontendStr != "attractmode" &&
+        frontendStr != "pegasus" &&
+        frontendStr != "xmlexport" &&
+        frontendStr != "koillection" &&
+        frontendStr != "") {
     printf("\033[1;34mPlease enter the frontend you wish to scrape for\033[0m (enter for 'emulationstation'):\033[0m ");
     getline(std::cin, frontendStr);
   }
@@ -119,6 +124,10 @@ Scripter::Scripter()
   printf("\033[1;34mDo you wish to enable video scraping where supported\033[0m (y/N)? ");
   getline(std::cin, videosStr);
 
+  std::string manualsStr = "";
+  printf("\033[1;34mDo you wish to enable manual scraping where supported\033[0m (y/N)? ");
+  getline(std::cin, manualsStr);
+
   std::string forceFilenameStr = "";
   printf("\033[1;34mDo you wish to use filename as game name instead of the one provided by the scraping module\033[0m (y/N)? ");
   getline(std::cin, forceFilenameStr);
@@ -147,8 +156,8 @@ Scripter::Scripter()
 
   QFile scriptFile(QDir::homePath() + "/.skyscraper/skyscript.sh");
   if(!scriptFile.open(QIODevice::WriteOnly)) {
-    printf("Couldn't open '/home/USER/.skyscraper/skyscript.sh' file for writing, please check permissions and rerun Skyscraper\nNow quitting...\n");
-    exit(1);
+    printf("Couldn't open '%s/.skyscraper/skyscript.sh' file for writing, please check permissions and rerun Skyscraper\nNow quitting...\n", QDir::homePath().toStdString().c_str());
+    Skyscraper::removeLockAndExit(1);
   }
 
   std::string baseStr = "Skyscraper -p " + platformStr;
@@ -165,10 +174,10 @@ Scripter::Scripter()
     generateStr += " -f " + frontendStr;
     if((frontendStr == "attractmode" || frontendStr == "pegasus") && extrasStr != "") {
       if(extrasStr.find(' ') != std::string::npos &&
-	 extrasStr.front() != '\"' &&
-	 extrasStr.back() != '\"') {
-	extrasStr.insert(0, "\"");
-	extrasStr.push_back('\"');
+         extrasStr.front() != '\"' &&
+         extrasStr.back() != '\"') {
+        extrasStr.insert(0, "\"");
+        extrasStr.push_back('\"');
       }
       generateStr += " -e " + extrasStr;
     }
@@ -197,6 +206,10 @@ Scripter::Scripter()
     gatherStr += "videos,";
     generateStr += "videos,";
   }
+  if(manualsStr == "y" || manualsStr == "Y") {
+    gatherStr += "manuals,";
+    generateStr += "manuals,";
+  }
 
   if(gatherStr.back() == ',') {
     gatherStr = gatherStr.substr(0, gatherStr.length() - 1);
@@ -217,14 +230,14 @@ Scripter::Scripter()
 
   std::string runScriptStr = "";
   printf("\n");
-  printf("The script '\033[1;32m/home/USER/.skyscraper/skyscript.sh\033[0m' has been created. \033[1;34mDo you wish to run it now?\033[0m (Y/n)? ");
+  printf("The script '\033[1;32m%s/.skyscraper/skyscript.sh\033[0m' has been created. \033[1;34mDo you wish to run it now?\033[0m (Y/n)? ", QDir::homePath().toStdString().c_str());
   getline(std::cin, runScriptStr);
   if(runScriptStr == "y" || runScriptStr == "Y" || runScriptStr == "") {
     printf("\nRunning script...\n");
     QProcess::execute("sh " + QDir::homePath() + "/.skyscraper/skyscript.sh", QStringList({}));
   } else {
     printf("\nUser chose not to run script, now exiting...\n");
-    exit(0);
+    Skyscraper::removeLockAndExit(0);
   }
 }
 

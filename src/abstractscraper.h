@@ -32,9 +32,11 @@
 #include "settings.h"
 
 #include <QImage>
+#include <QString>
 #include <QEventLoop>
 #include <QFileInfo>
 #include <QSettings>
+#include <QStringList>
 
 class AbstractScraper : public QObject
 {
@@ -42,12 +44,32 @@ class AbstractScraper : public QObject
 
 public:
   AbstractScraper(Settings *config,
-		  QSharedPointer<NetManager> manager);
+                  QSharedPointer<NetManager> manager);
   virtual ~AbstractScraper();
-  virtual void getGameData(GameEntry &game);
+
+  // Fill in the game skeleton with the data from the scraper service.
+  virtual void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr);
+
+  // Applies alias/scummvm/amiga/mame filename to name conversion.
+  // Applies getUrlQuery conversion to the outcome, including space to
+  // the special character needed by the scraping service.
+  // Adds three variations: without subtitles, converting the first numeral
+  // to arabic or roman format, and both without subtitles and converting
+  // the first numeral.
+  // Returns the full list of up to four possibilities, that will be checked
+  // in order against the scraping service until a match is found.
   virtual QList<QString> getSearchNames(const QFileInfo &info);
+
+  // Generates the name for the game until a scraper provides an official one.
+  // This is used to calculate the search names and calculate the best entry and
+  // the distance to the official name.
   virtual QString getCompareTitle(QFileInfo info);
+
+  // Tries to identify the region of the game from the filename. Calls getSearchNames and with
+  // the outcome, executes the getSearchResults in sequence until a search name is successful.
   virtual void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &output, QString &debug);
+
+  bool supportsIncrementalScraping();
 
   //void setConfig(Settings *config);
 
@@ -56,14 +78,18 @@ public:
 protected:
   Settings *config;
 
+  // Queries the scraping service with searchName and generates a skeleton
+  // game in gameEntries for each candidate returned.
   virtual void getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
-				QString platform);
+                                QString platform);
+
   virtual void getDescription(GameEntry &game);
   virtual void getDeveloper(GameEntry &game);
   virtual void getPublisher(GameEntry &game);
   virtual void getPlayers(GameEntry &game);
   virtual void getAges(GameEntry &game);
   virtual void getTags(GameEntry &game);
+  virtual void getFranchises(GameEntry &game);
   virtual void getRating(GameEntry &game);
   virtual void getReleaseDate(GameEntry &game);
   virtual void getCover(GameEntry &game);
@@ -72,13 +98,25 @@ protected:
   virtual void getMarquee(GameEntry &game);
   virtual void getTexture(GameEntry &game);
   virtual void getVideo(GameEntry &game);
+  virtual void getManual(GameEntry &game);
+  virtual void getChiptune(GameEntry &game);
+  virtual void getCustomFlags(GameEntry &game);
 
+  // Consume text in data until finding nom.
   virtual void nomNom(const QString nom, bool including = true);
 
+  // Detects if found is a valid name for platform platform.
   virtual bool platformMatch(QString found, QString platform);
+
+  // Returns the scraping service id for the platform.
   virtual QString getPlatformId(const QString);
 
+  // Detects if nom is present in the non-consumed part of data.
   bool checkNom(const QString nom);
+
+  void getOnlineVideo(QString videoUrl, GameEntry &game);
+
+  bool incrementalScraping;
 
   QList<int> fetchOrder;
 
@@ -108,6 +146,8 @@ protected:
   QString agesPost;
   QList<QString> tagsPre;
   QString tagsPost;
+  QList<QString> franchisesPre;
+  QString franchisesPost;
   QList<QString> ratingPre;
   QString ratingPost;
   QList<QString> releaseDatePre;
@@ -125,6 +165,8 @@ protected:
   QString texturePost;
   QList<QString> videoPre;
   QString videoPost;
+  QList<QString> manualPre;
+  QString manualPost;
 
   // This is used when file names have a region in them. The original regionPrios is in Settings
   QList<QString> regionPrios;

@@ -37,8 +37,6 @@ private:
 public:
     Crc32();
 
-    quint32 calculateFromFile(QString filename);
-
     void initInstance(int i);
     void pushData(int i, char *data, int len);
     quint32 releaseInstance(int i);

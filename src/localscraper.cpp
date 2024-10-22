@@ -26,12 +26,12 @@
 #include "localscraper.h"
 
 LocalScraper::LocalScraper(Settings *config,
-			   QSharedPointer<NetManager> manager)
+                           QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
 }
 
-void LocalScraper::getGameData(GameEntry &)
+void LocalScraper::getGameData(GameEntry &, QStringList &, GameEntry * = nullptr)
 {
 }
 

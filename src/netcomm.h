@@ -37,7 +37,7 @@ class NetComm : public QObject
 
 public:
   NetComm(QSharedPointer<NetManager> manager);
-  void request(QString query, QString postData = QString(), QList<QPair<QString, QString> > headers = QList<QPair<QString, QString> >());
+  void request(QString query, QString postData = QString(), QList<QPair<QString, QString> > headers = QList<QPair<QString, QString> >(), QByteArray operation="");
   QByteArray getData();
   QNetworkReply::NetworkError getError(const int &verbosity = 0);
   QByteArray getContentType();

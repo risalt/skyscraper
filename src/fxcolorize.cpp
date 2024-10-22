@@ -52,12 +52,12 @@ QImage FxColorize::applyEffect(const QImage &src, const Layer &layer)
     QRgb* line = (QRgb *)canvas.scanLine(y);
     for(int x = 0; x < canvas.width(); ++x) {
         QColor color(line[x]);
-	color.setHsl(hue, saturation,
-		     qRed(line[x]) * 0.2126 +
-		     qGreen(line[x]) * 0.7152 +
-		     qRed(line[x]) * 0.0722,
-		     qAlpha(line[x]));
-	line[x] = qPremultiply(color.rgba());
+        color.setHsl(hue, saturation,
+                     qRed(line[x]) * 0.2126 +
+                     qGreen(line[x]) * 0.7152 +
+                     qRed(line[x]) * 0.0722,
+                     qAlpha(line[x]));
+        line[x] = qPremultiply(color.rgba());
     }
   }
 

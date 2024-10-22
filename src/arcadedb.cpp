@@ -27,13 +27,15 @@
 
 #include "arcadedb.h"
 #include "strtools.h"
+#include "platform.h"
 
 ArcadeDB::ArcadeDB(Settings *config,
-		   QSharedPointer<NetManager> manager)
+                   QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
-  baseUrl = "http://adb.arcadeitalia.net";
+  incrementalScraping = true;
 
+  baseUrl = "http://adb.arcadeitalia.net";
   searchUrlPre = "http://adb.arcadeitalia.net/service_scraper.php?ajax=query_mame&lang=en&use_parent=1&game_name=";
 
   fetchOrder.append(PUBLISHER);
@@ -45,12 +47,20 @@ ArcadeDB::ArcadeDB(Settings *config,
   fetchOrder.append(COVER);
   fetchOrder.append(WHEEL);
   fetchOrder.append(MARQUEE);
+  fetchOrder.append(TEXTURE);
   fetchOrder.append(VIDEO);
+  fetchOrder.append(MANUAL);
 }
 
 void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
-				QString searchName, QString platform)
+                                QString searchName, QString platform)
 {
+  if (Platform::get().getFamily(config->platform) != "arcade") {
+    reqRemaining = 0;
+    printf("\033[0;31mPlatform not supported by ArcadeItalia (only Arcade platforms are supported)...\033[0m\n");
+    return;
+  }
+
   netComm->request(searchUrlPre + searchName);
   q.exec();
   data = netComm->getData();
@@ -70,13 +80,19 @@ void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
 
   GameEntry game;
 
+  internalName = searchName;
   game.title = jsonObj.value("title").toString();
-  game.platform = platform;
+  game.platform = Platform::get().getAliases(platform).at(1);
   gameEntries.append(game);
 }
 
-void ArcadeDB::getGameData(GameEntry &game)
+void ArcadeDB::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
     case DESCRIPTION:
@@ -94,35 +110,65 @@ void ArcadeDB::getGameData(GameEntry &game)
     case RATING:
       getRating(game);
       break;
+    case AGES:
+      getAges(game);
+      break;
     case TAGS:
       getTags(game);
+      break;
+    case FRANCHISES:
+      getFranchises(game);
       break;
     case RELEASEDATE:
       getReleaseDate(game);
       break;
     case COVER:
       if(config->cacheCovers) {
-	getCover(game);
+        if ((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
       }
       break;
     case SCREENSHOT:
       if(config->cacheScreenshots) {
-	getScreenshot(game);
+        if ((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
       }
       break;
     case WHEEL:
       if(config->cacheWheels) {
-	getWheel(game);
+        if ((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
       }
       break;
     case MARQUEE:
       if(config->cacheMarquees) {
-	getMarquee(game);
+        if ((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
+      }
+      break;
+    case TEXTURE:
+      if (config->cacheTextures) {
+        if ((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
       }
       break;
     case VIDEO:
-      if(config->videos) {
-	getVideo(game);
+      if((config->videos) && (!sharedBlobs.contains("video"))) {
+        if ((!cache) || (cache && cache->videoData == "")) {
+          getVideo(game);
+        }
+      }
+      break;
+    case MANUAL:
+      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
+        if ((!cache) || (cache && cache->manualData == "")) {
+          getManual(game);
+        }
       }
       break;
     default:
@@ -154,30 +200,23 @@ void ArcadeDB::getPublisher(GameEntry &game)
 void ArcadeDB::getDescription(GameEntry &game)
 {
   game.description = jsonObj.value("history").toString();
-  if(game.description.contains("- TECHNICAL")) {
-    game.description = game.description.left(game.description.indexOf("- TECHNICAL")).trimmed();
+  if(game.description.contains("- CONTRIBUTE")) {
+    game.description = game.description.left(game.description.indexOf("- CONTRIBUTE")).trimmed();
   }
 }
 
 void ArcadeDB::getCover(GameEntry &game)
 {
-  for(const auto &key: jsonObj.keys()) {
-    if(key == "url_image_flyer" ||
-       key == "url_image_title") {
-      if(jsonObj.value(key).toString().isEmpty()) {
-	continue;
-      }
-      netComm->request(jsonObj.value(key).toString());
-      q.exec();
-      {
-	QImage image;
-	if(netComm->getError() == QNetworkReply::NoError &&
-	   image.loadFromData(netComm->getData())) {
-	  game.coverData = netComm->getData();
-	  return;
-	}
-      }
-    }
+  if(!jsonObj.contains("url_image_flyer") ||
+     jsonObj.value("url_image_flyer").toString().isEmpty()) {
+    return;
+  }
+  netComm->request(jsonObj.value("url_image_flyer").toString());
+  q.exec();
+  QImage image;
+  if(netComm->getError() == QNetworkReply::NoError &&
+     image.loadFromData(netComm->getData())) {
+    game.coverData = netComm->getData();
   }
 }
 
@@ -198,7 +237,11 @@ void ArcadeDB::getScreenshot(GameEntry &game)
 
 void ArcadeDB::getWheel(GameEntry &game)
 {
-  netComm->request("http://adb.arcadeitalia.net/media/mame.current/decals/" + jsonObj["game_name"].toString() + ".png");
+  if(!jsonObj.contains("url_image_title") ||
+     jsonObj.value("url_image_title").toString().isEmpty()) {
+    return;
+  }
+  netComm->request(jsonObj.value("url_image_title").toString());
   q.exec();
   QImage image;
   if(netComm->getError() == QNetworkReply::NoError &&
@@ -222,6 +265,21 @@ void ArcadeDB::getMarquee(GameEntry &game)
   }
 }
 
+void ArcadeDB::getTexture(GameEntry &game)
+{
+  if(!jsonObj.contains("url_image_cabinet") ||
+     jsonObj.value("url_image_cabinet").toString().isEmpty()) {
+    return;
+  }
+  netComm->request(jsonObj.value("url_image_cabinet").toString());
+  q.exec();
+  QImage image;
+  if(netComm->getError() == QNetworkReply::NoError &&
+     image.loadFromData(netComm->getData())) {
+    game.textureData = netComm->getData();
+  }
+}
+
 void ArcadeDB::getVideo(GameEntry &game)
 {
   if(!jsonObj.contains("url_video_shortplay") ||
@@ -236,6 +294,20 @@ void ArcadeDB::getVideo(GameEntry &game)
     game.videoFormat = "mp4";
   } else {
     game.videoData = "";
+  }
+}
+
+void ArcadeDB::getManual(GameEntry &game)
+{
+  netComm->request("http://adb.arcadeitalia.net/download_file.php?tipo=mame_current&codice=" +
+         internalName + "&entity=manual&oper=view&filler=" + internalName + ".pdf");
+  q.exec();
+  game.manualData = netComm->getData();
+  if(netComm->getError() == QNetworkReply::NoError &&
+     game.manualData.length() > 4096) {
+    game.manualFormat = "pdf";
+  } else {
+    game.manualData = "";
   }
 }
 

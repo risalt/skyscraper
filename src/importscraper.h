@@ -35,15 +35,17 @@ class ImportScraper : public AbstractScraper
 public:
   ImportScraper(Settings *config, QSharedPointer<NetManager> manager);
   void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &, QString &) override;
-  void getGameData(GameEntry &game) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   QString getCompareTitle(QFileInfo info) override;
   void getTitle(GameEntry &game);
+  void getRating(GameEntry &game);
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
   void getWheel(GameEntry &game) override;
   void getMarquee(GameEntry &game) override;
   void getTexture(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
+  void getManual(GameEntry &game) override;
 
 private:
   bool checkType(QString baseName, QList<QFileInfo> &infos, QString &inputFile);
@@ -59,6 +61,7 @@ private:
   QString agesTag = "###AGES###";
   QString ratingTag = "###RATING###";
   QString tagsTag = "###TAGS###";
+  QString franchisesTag = "###FRANCHISES###";
   QString releaseDateTag = "###RELEASEDATE###";
 
   QList<QFileInfo> textual;
@@ -68,6 +71,7 @@ private:
   QList<QFileInfo> marquees;
   QList<QFileInfo> textures;
   QList<QFileInfo> videos;
+  QList<QFileInfo> manuals;
   QString textualFile = "";
   QString coverFile = "";
   QString screenshotFile = "";
@@ -75,6 +79,7 @@ private:
   QString marqueeFile = "";
   QString textureFile = "";
   QString videoFile = "";
+  QString manualFile = "";
 };
 
 #endif // IMPORTSCRAPER_H

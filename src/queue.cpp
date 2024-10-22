@@ -67,7 +67,7 @@ void Queue::filterFiles(const QString &patterns, const bool &include)
     bool match = false;
     for(const auto &regExpPattern: regExpPatterns) {
       if(QRegularExpression(regExpPattern).match(info.fileName()).hasMatch()) {
-	match = true;
+        match = true;
       }
     }
     if(match && !include) {
@@ -87,8 +87,8 @@ void Queue::removeFiles(const QList<QString> &files)
     QFileInfo info = it.next();
     for(const auto &file: files) {
       if(info.absoluteFilePath() == file) {
-	it.remove();
-	break;
+        it.remove();
+        break;
       }
     }
   }
@@ -98,11 +98,11 @@ void Queue::removeFiles(const QList<QString> &files)
 QList<QString> Queue::getRegExpPatterns(QString patterns)
 {
   patterns.replace("\\,", "###COMMA###");
-  patterns.replace(",", ";");
+  // patterns.replace(",", ";");
 
   QList<QString> regExpPatterns;
 
-  for(auto regExpPattern: patterns.split(";")) {
+  for(auto regExpPattern: patterns.split(",")) {
     regExpPattern.replace("###COMMA###", ",");
     regExpPattern = QRegularExpression::escape(regExpPattern);
     regExpPattern.replace("\\*", ".*");

@@ -5,7 +5,7 @@ Original project by [Lars Muldjord](https://github.com/muldjord/skyscraper)
 
 A powerful and versatile yet easy to use game scraper written in C++ for use with multiple frontends running on a Linux system (macOS and Windows too, but not officially supported). It scrapes and caches various game resources from various scraping sources, including media such as screenshot, cover and video. It then gives you the option to generate a game list and artwork for the chosen frontend by combining all of the cached resources.
 
-All Skyscraper features are [well-documented](https://github.com/detain/skyscraper/tree/master/docs) and there's also a [F.A.Q](https://github.com/detain/skyscraper/blob/master/docs/FAQ.md).
+All Skyscraper features are [well-documented](docs/) and there's also a [F.A.Q](docs/FAQ.md).
 
 ## 🎮Platforms Supported (set with '-p'):
 Check the full list of platforms [here](docs/PLATFORMS.md).
@@ -133,7 +133,7 @@ One of Skyscraper's most powerful features is the resource cache. It's important
 ### Custom data
 I addition to allowing scraping from locally cached resources, Skyscraper also allows you to import your own data into the resource cache with the `-s import` scraping module. You can also edit existing resources in the cache or add individual `user` resources with the `--cache edit` command. Lastly, you also have the option of importing existing EmulationStation game list data into the Skyscraper resource cache if you need it. You can do this with the `-s esgamelist` scraping module.
 
-To read more about any of the features described above, please check out all of the documentation [here](https://github.com/detain/skyscraper/tree/master/docs).
+To read more about any of the features described above, please check out all of the documentation [here](docs/).
 
 ### Artwork look and effects
 Check the full artwork documentation [here](docs/ARTWORK.md)
@@ -145,6 +145,7 @@ The main goal of this fork is to allow users to easily configurate and add platf
 Currently, the only scraper supported by this feature is Screenscraper. This feature is achieved by adding new config files:
 - [platforms.json](platforms.json) describes now the supported platforms by Skyscraper.
 - [screenscraper.json](screenscraper.json). describes the required information on the Screenscraper website for each compatible platform.
+- [mobygames.json](mobygames.json): Maps the local platform name to the platform ID of mobygames.com webpage/API.
 
 These 2 files are pretty straigthforward to edit if you want to add a new platform (as an example I added myself the platforms OpenBOR and Solarus). These files are copied in the folder `/usr/local/etc/skyscraper/` at the first run of the program if you want to edit them after an installation.  
 

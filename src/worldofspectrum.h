@@ -26,6 +26,8 @@
 #ifndef WORLDOFSPECTRUM_H
 #define WORLDOFSPECTRUM_H
 
+#include <QMap>
+
 #include "abstractscraper.h"
 
 class WorldOfSpectrum : public AbstractScraper
@@ -37,12 +39,19 @@ public:
 
 private:
   void getSearchResults(QList<GameEntry> &gameEntries,
-			QString searchName, QString platform) override;
+                        QString searchName, QString platform) override;
   void getDescription(GameEntry &game) override;
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
+  void getMarquee(GameEntry &game) override;
+  void getTexture(GameEntry &game) override;
+  void getWheel(GameEntry &game) override;
+  void getManual(GameEntry &game) override;
+  void getVideo(GameEntry &game) override;
   void getReleaseDate(GameEntry &game) override;
-
+  void getTags(GameEntry &game) override;
+  
+  QMap <QString, QString> resources;
 };
 
 #endif // WORLDOFSPECTRUM_H

@@ -62,19 +62,19 @@ bool EmulationStation::skipExisting(QList<GameEntry> &gameEntries, QSharedPointe
     QFileInfo current(gameEntries.at(a).path);
     for(int b = 0; b < queue->length(); ++b) {
       if(current.isFile()) {
-	if(current.fileName() == queue->at(b).fileName()) {
-	  queue->removeAt(b);
-	  // We assume filename is unique, so break after getting first hit
-	  break;
-	}
+        if(current.fileName() == queue->at(b).fileName()) {
+          queue->removeAt(b);
+          // We assume filename is unique, so break after getting first hit
+          break;
+        }
       } else if(current.isDir()) {
-	// Use current.absoluteFilePath here since it is already a path. Otherwise it will use
-	// the parent folder
-	if(current.absoluteFilePath() == queue->at(b).absolutePath()) {
-	  queue->removeAt(b);
-	  // We assume filename is unique, so break after getting first hit
-	  break;
-	}
+        // Use current.absoluteFilePath here since it is already a path. Otherwise it will use
+        // the parent folder
+        if(current.absoluteFilePath() == queue->at(b).absolutePath()) {
+          queue->removeAt(b);
+          // We assume filename is unique, so break after getting first hit
+          break;
+        }
       }
     }
   }
@@ -88,31 +88,31 @@ void EmulationStation::preserveFromOld(GameEntry &entry)
     QString fileName = entry.path.mid(entry.path.lastIndexOf("/"), entry.path.length());
     if(oldFileName == fileName) {
       if(entry.eSFavorite.isEmpty())
-	entry.eSFavorite = oldEntry.eSFavorite;
+        entry.eSFavorite = oldEntry.eSFavorite;
       if(entry.eSHidden.isEmpty())
-	entry.eSHidden = oldEntry.eSHidden;
+        entry.eSHidden = oldEntry.eSHidden;
       if(entry.eSPlayCount.isEmpty())
-	entry.eSPlayCount = oldEntry.eSPlayCount;
+        entry.eSPlayCount = oldEntry.eSPlayCount;
       if(entry.eSLastPlayed.isEmpty())
-	entry.eSLastPlayed = oldEntry.eSLastPlayed;
+        entry.eSLastPlayed = oldEntry.eSLastPlayed;
       if(entry.eSKidGame.isEmpty())
-	entry.eSKidGame = oldEntry.eSKidGame;
+        entry.eSKidGame = oldEntry.eSKidGame;
       if(entry.eSSortName.isEmpty())
-	entry.eSSortName = oldEntry.eSSortName;
+        entry.eSSortName = oldEntry.eSSortName;
       if(entry.developer.isEmpty())
-	entry.developer = oldEntry.developer;
+        entry.developer = oldEntry.developer;
       if(entry.publisher.isEmpty())
-	entry.publisher = oldEntry.publisher;
+        entry.publisher = oldEntry.publisher;
       if(entry.players.isEmpty())
-	entry.players = oldEntry.players;
+        entry.players = oldEntry.players;
       if(entry.description.isEmpty())
-	entry.description = oldEntry.description;
+        entry.description = oldEntry.description;
       if(entry.rating.isEmpty())
-	entry.rating = oldEntry.rating;
+        entry.rating = oldEntry.rating;
       if(entry.releaseDate.isEmpty())
-	entry.releaseDate = oldEntry.releaseDate;
+        entry.releaseDate = oldEntry.releaseDate;
       if(entry.tags.isEmpty())
-	entry.tags = oldEntry.tags;
+        entry.tags = oldEntry.tags;
       break;
     }
   }
@@ -141,21 +141,21 @@ void EmulationStation::assembleList(QString &finalOutput, QList<GameEntry> &game
       QString entryAbsolutePath = entryInfo.absolutePath();
       // Check if path is exactly one subfolder beneath root platform folder (has one more '/')
       if(entryAbsolutePath.count("/") == config->inputFolder.count("/") + 1) {
-	QString extensions = Platform::get().getFormats(config->platform,
-						  config->extensions,
-						  config->addExtensions);
-	// Check if the platform has both cue and bin extensions. Remove bin if it does to avoid count() below to be 2
-	// I thought about removing bin extensions entirely from platform.cpp, but I assume I've added them per user request at some point.
-	if(extensions.contains("*.cue") &&
-	   extensions.contains("*.bin")) {
-	  extensions.replace("*.bin", "");
-	  extensions = extensions.simplified();
-	}
-	// Check is subfolder has more roms than one, in which case we stick with <game>
-	if(QDir(entryAbsolutePath, extensions).count() == 1) {
-	  entryType = "folder";
-	  entry.path = entryAbsolutePath;
-	}
+        QString extensions = Platform::get().getFormats(config->platform,
+                                                  config->extensions,
+                                                  config->addExtensions);
+        // Check if the platform has both cue and bin extensions. Remove bin if it does to avoid count() below to be 2
+        // I thought about removing bin extensions entirely from platform.cpp, but I assume I've added them per user request at some point.
+        if(extensions.contains("*.cue") &&
+           extensions.contains("*.bin")) {
+          extensions.replace("*.bin", "");
+          extensions = extensions.simplified();
+        }
+        // Check is subfolder has more roms than one, in which case we stick with <game>
+        if(QDir(entryAbsolutePath, extensions).count() == 1) {
+          entryType = "folder";
+          entry.path = entryAbsolutePath;
+        }
       }
     } else if(entryInfo.isDir()) {
       entryType = "folder";
@@ -194,7 +194,7 @@ void EmulationStation::assembleList(QString &finalOutput, QList<GameEntry> &game
     if (entry.textureFile.isEmpty()) {
       finalOutput.append("    <texture />\n");
     } else {
-      finalOutput.append("    <texture>" + (config->relativePaths ? StrTools::xmlEscape(entry.textureFile).replace(config->inputFolder, ".") : StrTools::xmlEscape(entry.textureFile)) + "</texture>\n");
+      finalOutput.append("    <texture>" + (config->relativePaths?StrTools::xmlEscape(entry.textureFile).replace(config->inputFolder, "."):StrTools::xmlEscape(entry.textureFile)) + "</texture>\n");
     }
     if(entry.videoFormat.isEmpty() || !config->videos) {
       finalOutput.append("    <video />\n");
@@ -254,7 +254,7 @@ void EmulationStation::assembleList(QString &finalOutput, QList<GameEntry> &game
     }
     if(entry.eSKidGame.isEmpty()) {
       if(!entry.ages.isEmpty() && (entry.ages.toInt() >= 1 && entry.ages.toInt() <= 10)) {
-	finalOutput.append("    <kidgame>true</kidgame>\n");
+        finalOutput.append("    <kidgame>true</kidgame>\n");
       }
     } else {
       finalOutput.append("    <kidgame>" + StrTools::xmlEscape(entry.eSKidGame) + "</kidgame>\n");

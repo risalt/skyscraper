@@ -65,7 +65,7 @@ QList<GameEntry> XmlReader::getEntries(QString inputFolder)
 }
 
 void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntries,
-			   const QString &inputFolder)
+                           const QString &inputFolder)
 {
   for(int a = 0; a < nodes.length(); ++a) {
     GameEntry entry;
@@ -80,13 +80,20 @@ void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntr
     if(!entry.videoFile.isEmpty()) {
       entry.videoFormat = "fromxml";
     }
+    entry.manualFile = makeAbsolute(nodes.at(a).firstChildElement("manual").text(), inputFolder);
+    if(!entry.manualFile.isEmpty()) {
+      entry.manualFormat = "fromxml";
+    }
     entry.description = nodes.at(a).firstChildElement("desc").text();
     entry.releaseDate = nodes.at(a).firstChildElement("releasedate").text();
     entry.developer = nodes.at(a).firstChildElement("developer").text();
     entry.publisher = nodes.at(a).firstChildElement("publisher").text();
     entry.tags = nodes.at(a).firstChildElement("genre").text();
+    entry.franchises = nodes.at(a).firstChildElement("franchise").text();
     entry.rating = nodes.at(a).firstChildElement("rating").text();
     entry.players = nodes.at(a).firstChildElement("players").text();
+    entry.chiptuneId = nodes.at(a).firstChildElement("chiptuneid").text();
+    entry.chiptunePath = nodes.at(a).firstChildElement("chiptunepath").text();
     entry.eSFavorite = nodes.at(a).firstChildElement("favorite").text();
     entry.eSHidden = nodes.at(a).firstChildElement("hidden").text();
     entry.eSPlayCount = nodes.at(a).firstChildElement("playcount").text();

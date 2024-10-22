@@ -93,7 +93,7 @@ void FxBlur::boxBlurHorizontal(QRgb *buffer1, QRgb *buffer2, int width, int heig
       valueB += qBlue(buffer1[backIdx]) - firstValB;
       valueA += qAlpha(buffer1[backIdx]) - firstValA;
       buffer2[currentIdx++] = qPremultiply(qRgba(valueR / span, valueG / span,
-						 valueB / span, valueA / span));
+                                                 valueB / span, valueA / span));
       backIdx++;
     }
     for(int x = radius + 1; x < width - radius; x++) {
@@ -102,7 +102,7 @@ void FxBlur::boxBlurHorizontal(QRgb *buffer1, QRgb *buffer2, int width, int heig
       valueB += qBlue(buffer1[backIdx]) - qBlue(buffer1[frontIdx]);
       valueA += qAlpha(buffer1[backIdx]) - qAlpha(buffer1[frontIdx]);
       buffer2[currentIdx++] = qPremultiply(qRgba(valueR / span, valueG / span,
-						 valueB / span, valueA / span));
+                                                 valueB / span, valueA / span));
       frontIdx++;
       backIdx++;
     }
@@ -112,7 +112,7 @@ void FxBlur::boxBlurHorizontal(QRgb *buffer1, QRgb *buffer2, int width, int heig
       valueB += lastValB - qBlue(buffer1[frontIdx]);
       valueA += lastValA - qAlpha(buffer1[frontIdx]);
       buffer2[currentIdx++] = qPremultiply(qRgba(valueR / span, valueG / span,
-						 valueB / span, valueA / span));
+                                                 valueB / span, valueA / span));
       frontIdx++;
     }
   }
@@ -146,7 +146,7 @@ void FxBlur::boxBlurTotal(QRgb *buffer1, QRgb *buffer2, int width, int height, i
       valueB += qBlue(buffer1[backIdx]) - firstValB;
       valueA += qAlpha(buffer1[backIdx]) - firstValA;
       buffer2[currentIdx] = qPremultiply(qRgba(valueR / span, valueG / span,
-					       valueB / span, valueA / span));
+                                               valueB / span, valueA / span));
       backIdx += width;
       currentIdx += width;
     }
@@ -156,7 +156,7 @@ void FxBlur::boxBlurTotal(QRgb *buffer1, QRgb *buffer2, int width, int height, i
       valueB += qBlue(buffer1[backIdx]) - qBlue(buffer1[frontIdx]);
       valueA += qAlpha(buffer1[backIdx]) - qAlpha(buffer1[frontIdx]);
       buffer2[currentIdx] = qPremultiply(qRgba(valueR / span, valueG / span,
-					       valueB / span, valueA / span));
+                                               valueB / span, valueA / span));
       frontIdx += width;
       backIdx += width;
       currentIdx += width;
@@ -167,7 +167,7 @@ void FxBlur::boxBlurTotal(QRgb *buffer1, QRgb *buffer2, int width, int height, i
       valueB += lastValB - qBlue(buffer1[frontIdx]);
       valueA += lastValA - qAlpha(buffer1[frontIdx]);
       buffer2[currentIdx] = qPremultiply(qRgba(valueR / span, valueG / span,
-					       valueB / span, valueA / span));
+                                               valueB / span, valueA / span));
       frontIdx += width;
       currentIdx += width;
     }

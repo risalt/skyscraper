@@ -29,7 +29,7 @@
 #include <QDir>
 
 ESGameList::ESGameList(Settings *config,
-		       QSharedPointer<NetManager> manager)
+                       QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
   baseUrl = config->gameListFolder + (config->gameListFolder.right(1) != "/"?"/":"");
@@ -48,7 +48,8 @@ ESGameList::ESGameList(Settings *config,
 }
 
 void ESGameList::getSearchResults(QList<GameEntry> &gameEntries,
-				  QString searchName, QString platform) {
+                                  QString searchName, QString platform)
+{
   if(games.isEmpty())
     return;
 
@@ -68,7 +69,13 @@ void ESGameList::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-void ESGameList::getGameData(GameEntry &game) {
+void ESGameList::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
+{
+  if (cache && !incrementalScraping) {
+    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
+    return;
+  }
+
   if(gameNode.isNull())
     return;
 
@@ -82,7 +89,7 @@ void ESGameList::getGameData(GameEntry &game) {
   game.marqueeData = loadImageData(gameNode.firstChildElement("marquee").text());
   game.coverData = loadImageData(gameNode.firstChildElement("thumbnail").text());
   game.screenshotData = loadImageData(gameNode.firstChildElement("image").text());
-  if(config->videos) {
+  if((config->videos) && (!sharedBlobs.contains("video"))) {
     loadVideoData(game, gameNode.firstChildElement("video").text());
   }
 }
@@ -97,7 +104,8 @@ QByteArray ESGameList::loadImageData(const QString fileName) {
   return QByteArray();
 }
 
-void ESGameList::loadVideoData(GameEntry &game, const QString fileName) {
+void ESGameList::loadVideoData(GameEntry &game, const QString fileName)
+{
   QString absoluteFileName = getAbsoluteFileName(fileName);
   if(absoluteFileName.isEmpty())
     return;
@@ -112,7 +120,8 @@ void ESGameList::loadVideoData(GameEntry &game, const QString fileName) {
   }
 }
 
-QString ESGameList::getAbsoluteFileName(QString fileName) {
+QString ESGameList::getAbsoluteFileName(QString fileName)
+{
   if(QFileInfo::exists(fileName)) {
     return QFileInfo(fileName).absoluteFilePath();
   }
@@ -123,7 +132,8 @@ QString ESGameList::getAbsoluteFileName(QString fileName) {
   return "";
 }
 
-QList<QString> ESGameList::getSearchNames(const QFileInfo &info) {
+QList<QString> ESGameList::getSearchNames(const QFileInfo &info)
+{
   QList<QString> searchNames;
   searchNames.append(info.fileName());
   return searchNames;

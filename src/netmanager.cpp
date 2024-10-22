@@ -42,3 +42,15 @@ QNetworkReply *NetManager::postRequest(const QNetworkRequest &request, const QBy
   QMutexLocker locker(&requestMutex);
   return post(request, data);
 }
+
+QNetworkReply *NetManager::deleteRequest(const QNetworkRequest &request)
+{
+  QMutexLocker locker(&requestMutex);
+  return deleteResource(request);
+}
+
+QNetworkReply *NetManager::customRequest(const QNetworkRequest &request, const QByteArray &data, QByteArray operation)
+{
+  QMutexLocker locker(&requestMutex);
+  return sendCustomRequest(request, operation, data);
+}

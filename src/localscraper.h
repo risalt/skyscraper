@@ -35,7 +35,7 @@ class LocalScraper : public AbstractScraper
 public:
   LocalScraper(Settings *config, QSharedPointer<NetManager> manager);
   void runPasses(QList<GameEntry> &, const QFileInfo &, QString &, QString &) override;
-  void getGameData(GameEntry &) override;
+  void getGameData(GameEntry &, QStringList &, GameEntry *) override;
 
 };
 

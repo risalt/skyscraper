@@ -55,6 +55,7 @@ struct ResCounts {
   int players;
   int ages;
   int tags;
+  int franchises;
   int ratings;
   int releaseDates;
   int covers;
@@ -63,6 +64,8 @@ struct ResCounts {
   int marquees;
   int textures;
   int videos;
+  int manuals;
+  int chiptunes;
 };
 
 class Cache
@@ -73,12 +76,13 @@ public:
   bool read();
   void printPriorities(QString cacheId);
   void editResources(QSharedPointer<Queue> queue,
-		     const QString &command = "",
-		     const QString &type = "");
+                     const QString &command = "",
+                     const QString &type = "");
   bool purgeAll(const bool unattend = false);
   bool purgeResources(QString purgeStr);
   bool vacuumResources(const QString inputFolder, const QString filters,
-		       const int verbosity, const bool unattend = false);
+                       const int verbosity, const bool unattend = false);
+  bool detectScrapingErrors(const Settings &config);
   void assembleReport(const Settings &config, const QString filters);
   void showStats(int verbosity);
   void readPriorities();
@@ -87,6 +91,8 @@ public:
   void addResources(GameEntry &entry, const Settings &config, QString &output);
   void fillBlanks(GameEntry &entry, const QString scraper = "");
   bool hasEntries(const QString &cacheId, const QString scraper = "");
+  bool hasMeaningfulEntries(const QString &cacheId, const QString scraper = "");
+  bool hasEntriesOfType(const QString &cacheId, const QString &type, const QString scraper = "");
   void addQuickId(const QFileInfo &info, const QString &cacheId);
   QString getQuickId(const QFileInfo &info);
   void merge(Cache &mergeCache, bool overwrite, const QString &mergeCacheFolder);
@@ -109,18 +115,19 @@ public:
 
   void addToResCounts(const QString source, const QString type);
   void addResource(Resource &resource, GameEntry &entry, const QString &cacheAbsolutePath,
-		   const Settings &config, QString &output);
+                   const Settings &config, QString &output);
   void verifyFiles(QDirIterator &dirIt, int &filesDeleted, int &noDelete, QString resType);
   void verifyResources(int &resourcesDeleted);
   bool fillType(QString &type, QList<Resource> &matchingResources,
-		QString &result, QString &source);
+                QString &result, QString &source);
   bool doVideoConvert(Resource &resource,
-		      QString &cacheFile,
-		      const QString &cacheAbsolutePath,
-		      const Settings &config,
-		      QString &output);
+                      QString &cacheFile,
+                      const QString &cacheAbsolutePath,
+                      const Settings &config,
+                      QString &output);
   bool hasAlpha(const QImage &image);
   int resAtLoad = 0;
+  QString globalScraper = "";
 };
 
 #endif // CACHE_H

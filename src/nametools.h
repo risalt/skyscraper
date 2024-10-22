@@ -34,21 +34,26 @@
 class NameTools : public QObject
 {
 public:
-  static QString getScummName(const QString baseName, const QString scummIni);
-  static QString getNameWithSpaces(const QString baseName);
-  static QString getUrlQueryName(const QString baseName,
-				 const int words = -1,
-				 const QString spaceChar = "+");
-  static bool hasIntegerNumeral(const QString baseName);
-  static bool hasRomanNumeral(const QString baseName);
-  static QString convertToIntegerNumeral(const QString baseName);
-  static QString convertToRomanNumeral(const QString baseName);
-  static int getNumeral(const QString baseName);
+  static QString getScummName(const QString &baseName, const QString &scummIni);
+  static QString getNameWithSpaces(const QString &baseName);
+  static QString getUrlQueryName(const QString &baseName,
+                                 const int words = -1,
+                                 const QString &spaceChar = "+",
+                                 const bool onlyMainTitle = false);
+  static bool hasIntegerNumeral(const QString &baseName);
+  static bool hasRomanNumeral(const QString &baseName);
+  static QString convertToIntegerNumeral(const QString &baseName);
+  static QString convertToRomanNumeral(const QString &baseName);
+  static int getNumeral(const QString &baseName);
   static QString getSqrNotes(QString baseName);
   static QString getParNotes(QString baseName);
   static QString getUniqueNotes(const QString &notes, QChar delim);
   static QString getCacheId(const QFileInfo &info);
   static QString getNameFromTemplate(const GameEntry &game, const QString &nameTemplate);
+  static QString removeArticle(const QString &baseName, const QString &spaceChar = " ");
+  static QString moveArticle(const QString &baseName, const bool &toFront);
+  static QString removeEdition(const QString &newName);
+  static QString removeSubtitle(const QString &baseName, bool &hasSubtitle);
 };
 
 #endif // NAMETOOLS_H

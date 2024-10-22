@@ -42,12 +42,16 @@ class ScraperWorker : public QObject
 
 public:
   ScraperWorker(QSharedPointer<Queue> queue,
-		QSharedPointer<Cache> cache,
-		QSharedPointer<NetManager> manager,
-		Settings config,
-		QString threadId);
+                QSharedPointer<Cache> cache,
+                QSharedPointer<NetManager> manager,
+                Settings config,
+                QString threadId);
   ~ScraperWorker();
+
+  // Instantiates the actual scraper and processes files from the list of files.
+  // Protected by mutex as there can be several scraper workers in parallel.
   void run();
+
   bool forceEnd = false;
 
 signals:
@@ -63,15 +67,18 @@ private:
   QSharedPointer<NetManager> manager;
   QSharedPointer<Queue> queue;
 
-  QString platformOrig;
   QString threadId;
 
-  unsigned int editDistance(const std::string& s1, const std::string& s2);
-
+  // Returns the entry from gameEntries with the lowest distance to compareTitle,
+  // and that lowest distance.
   GameEntry getBestEntry(const QList<GameEntry> &gameEntries, QString compareTitle,
-			 int &lowestDistance);
+                         int &lowestDistance);
+
   GameEntry getEntryFromUser(const QList<GameEntry> &gameEntries, const GameEntry &suggestedGame,
-			     const QString &compareTitle, int &lowestDistance);
+                             const QString &compareTitle, int &lowestDistance);
+
+  // Calculate a percentage of match between two strings, taking into account their length
+  // and the Levenshtein-Damerau distance.
   int getSearchMatch(const QString &title, const QString &compareTitle, const int &lowestDistance);
 
   bool limitReached(QString &output);

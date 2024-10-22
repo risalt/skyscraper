@@ -57,9 +57,9 @@ QImage FxMask::applyEffect(const QImage &src, const Layer &layer, Settings *conf
   painter.fillRect(0, 0, layer.x, src.height(), QColor(0, 0, 0));
   painter.fillRect(0, 0, src.width(), layer.y, QColor(0, 0, 0));
   painter.fillRect(layer.x + mask.width(), 0,
-		   src.width() - layer.x - mask.width(), src.height(), QColor(0, 0, 0));
+                   src.width() - layer.x - mask.width(), src.height(), QColor(0, 0, 0));
   painter.fillRect(0, layer.y + mask.height(),
-		   src.width(), src.height() - layer.y - mask.height(), QColor(0, 0, 0));
+                   src.width(), src.height() - layer.y - mask.height(), QColor(0, 0, 0));
   painter.end();
 
   return canvas;
