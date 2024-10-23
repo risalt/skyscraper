@@ -4,100 +4,221 @@
   <order type="title">
     <source>import</source>
     <source>esgamelist</source>
-    <source>openretro</source>
-    <source>arcadedb</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>chiptune</source>
+    <source>gamefaqs</source>
     <source>thegamesdb</source>
   </order>
   <order type="platform">
+    <source>import</source>
+    <source>esgamelist</source>
     <source>screenscraper</source>
-    <source>thegamesdb</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>chiptune</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
   </order>
   <order type="releasedate">
     <source>import</source>
     <source>esgamelist</source>
-    <source>arcadedb</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
     <source>openretro</source>
-    <source>thegamesdb</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
   </order>
   <order type="developer">
     <source>import</source>
     <source>esgamelist</source>
-    <source>arcadedb</source>
+    <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
   </order>
   <order type="publisher">
     <source>import</source>
     <source>esgamelist</source>
+    <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
     <source>arcadedb</source>
     <source>mobygames</source>
-  </order>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
+ </order>
   <order type="players">
     <source>import</source>
     <source>esgamelist</source>
-    <source>arcadedb</source>
-    <source>openretro</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
     <source>thegamesdb</source>
-  </order>
+</order>
   <order type="ages">
     <source>import</source>
     <source>esgamelist</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
     <source>thegamesdb</source>
-    <source>arcadedb</source>
-    <source>openretro</source>
   </order>
   <order type="tags">
     <source>import</source>
     <source>esgamelist</source>
+    <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
     <source>arcadedb</source>
     <source>mobygames</source>
-    <source>openretro</source>
-    <source>screenscraper</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
   </order>
-  <order type="players">
+  <order type="franchises">
     <source>import</source>
+    <source>esgamelist</source>
+    <source>screenscraper</source>
+    <source>openretro</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+  </order>
+  <order type="rating">
+    <source>import</source>
+    <source>esgamelist</source>
+    <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>openretro</source>
     <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>gamefaqs</source>
   </order>
   <order type="description">
     <source>import</source>
     <source>esgamelist</source>
-    <source>mobygames</source>
-    <source>thegamesdb</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
     <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>gamefaqs</source>
+    <source>thegamesdb</source>
   </order>
   <order type="cover">
     <source>import</source>
     <source>esgamelist</source>
     <source>screenscraper</source>
-    <source>mobygames</source>
     <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>launchbox</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
     <source>thegamesdb</source>
-  </order>
+ </order>
   <order type="screenshot">
     <source>import</source>
     <source>esgamelist</source>
     <source>screenscraper</source>
-    <source>mobygames</source>
-    <source>arcadedb</source>
+    <source>launchbox</source>
     <source>openretro</source>
-  </order>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>thegamesdb</source>
+ </order>
   <order type="wheel">
     <source>import</source>
+    <source>esgamelist</source>
     <source>screenscraper</source>
+    <source>igdb</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>giantbomb</source>
     <source>thegamesdb</source>
-  </order>
+</order>
   <order type="marquee">
     <source>import</source>
     <source>esgamelist</source>
+    <source>igdb</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+    <source>screenscraper</source>
+    <source>arcadedb</source>
+    <source>giantbomb</source>
+    <source>thegamesdb</source>
+  </order>
+  <order type="texture">
+    <source>import</source>
+    <source>esgamelist</source>
+    <source>igdb</source>
+    <source>launchbox</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
     <source>screenscraper</source>
     <source>thegamesdb</source>
   </order>
@@ -105,5 +226,50 @@
     <source>import</source>
     <source>esgamelist</source>
     <source>screenscraper</source>
+    <source>launchbox</source>
+    <source>arcadedb</source>
+    <source>igdb</source>
+    <source>giantbomb</source>
+    <source>thegamesdb</source>
+  </order>
+   <order type="manual">
+    <source>import</source>
+    <source>esgamelist</source>
+    <source>screenscraper</source>
+    <source>openretro</source>
+    <source>worldofspectrum</source>
+    <source>arcadedb</source>
+    <source>mobygames</source>
+    <source>offlinemobygames</source>
+  </order>
+  <order type="guides">
+    <source>gamefaqs</source>
+  </order>
+  <order type="chiptuneid">
+    <source>chiptune</source>
+  </order>
+  <order type="chiptunepath">
+    <source>chiptune</source>
+  </order>
+  <order type="completed">
+    <source>customflags</source>
+  </order>
+  <order type="favourite">
+    <source>customflags</source>
+  </order>
+  <order type="played">
+    <source>customflags</source>
+  </order>
+  <order type="timesPlayed">
+    <source>customflags</source>
+  </order>
+  <order type="lastPlayed">
+    <source>customflags</source>
+  </order>
+  <order type="firstPlayed">
+    <source>customflags</source>
+  </order>
+  <order type="timePlayed">
+    <source>customflags</source>
   </order>
 </priorities>
