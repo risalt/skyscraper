@@ -1,0 +1,274 @@
+{
+  "platforms": [
+    {
+      "id": 111,
+      "name": "3DO",
+      "slug": "3do",
+      "code": "3do"
+    },
+    {
+      "id": 41,
+      "name": "Apple II",
+      "slug": "apple-ii",
+      "code": "apple2"
+    },
+    {
+      "id": 23,
+      "name": "Atari 2600",
+      "slug": "atari-2600",
+      "code": "atari2600"
+    },
+    {
+      "id": 31,
+      "name": "Atari 5200",
+      "slug": "atari-5200",
+      "code": "atari5200"
+    },
+    {
+      "id": 28,
+      "name": "Atari 7800",
+      "slug": "atari-7800",
+      "code": "atari7800"
+    },
+    {
+      "id": 25,
+      "name": "Atari 8-bit",
+      "slug": "atari-8-bit",
+      "code": "atari800"
+    },
+    {
+      "id": 46,
+      "name": "Atari Lynx",
+      "slug": "atari-lynx",
+      "code": "atarilynx"
+    },
+    {
+      "id": "34,50",
+      "name": "Atari ST",
+      "slug": "atari-st",
+      "code": "atarist"
+    },
+    {
+      "id": 50,
+      "name": "Atari XEGS",
+      "slug": "atari-xegs",
+      "code": "zatarist"
+    },
+    {
+      "id": 166,
+      "name": "Commodore / Amiga",
+      "slug": "commodore-amiga",
+      "code": "amiga"
+    },
+    {
+      "id": 166,
+      "name": "Commodore / Amiga",
+      "slug": "commodore-amiga",
+      "code": "amigacd32"
+    },
+    {
+      "id": 106,
+      "name": "Dreamcast",
+      "slug": "dreamcast",
+      "code": "dreamcast"
+    },
+    {
+      "id": 26,
+      "name": "Game Boy",
+      "slug": "game-boy",
+      "code": "gb"
+    },
+    {
+      "id": 24,
+      "name": "Game Boy Advance",
+      "slug": "game-boy-advance",
+      "code": "gba"
+    },
+    {
+      "id": 43,
+      "name": "Game Boy Color",
+      "slug": "game-boy-color",
+      "code": "gbc"
+    },
+    {
+      "id": 105,
+      "name": "GameCube",
+      "slug": "gamecube",
+      "code": "gc"
+    },
+    {
+      "id": 77,
+      "name": "Game Gear",
+      "slug": "game-gear",
+      "code": "gamegear"
+    },
+    {
+      "id": 167,
+      "name": "Genesis",
+      "slug": "genesis",
+      "code": "genesis"
+    },
+    {
+      "id": 112,
+      "name": "Jaguar",
+      "slug": "jaguar",
+      "code": "atarijaguar"
+    },
+    {
+      "id": 6,
+      "name": "Linux",
+      "slug": "linux",
+      "code": "linux"
+    },
+    {
+      "id": 55,
+      "name": "Classic Macintosh",
+      "slug": "macintosh",
+      "code": "macintosh"
+    },
+    {
+      "id": 12,
+      "name": "Neo Geo",
+      "slug": "neogeo",
+      "code": "neogeo"
+    },
+    {
+      "id": 49,
+      "name": "NES",
+      "slug": "nes",
+      "code": "nes"
+    },
+    {
+      "id": 8,
+      "name": "Nintendo 3DS",
+      "slug": "nintendo-3ds",
+      "code": "3ds"
+    },
+    {
+      "id": 83,
+      "name": "Nintendo 64",
+      "slug": "nintendo-64",
+      "code": "n64"
+    },
+    {
+      "id": "9,13",
+      "name": "Nintendo DS",
+      "slug": "nintendo-ds",
+      "code": "nds"
+    },
+    {
+      "id": 13,
+      "name": "Nintendo DSi",
+      "slug": "nintendo-dsi",
+      "code": "znds"
+    },
+    {
+      "id": 7,
+      "name": "Nintendo Switch",
+      "slug": "nintendo-switch",
+      "code": "switch"
+    },
+    {
+      "id": 4,
+      "name": "PC",
+      "slug": "pc",
+      "code": "pc"
+    },
+    {
+      "id": 4,
+      "name": "PC",
+      "slug": "pc",
+      "code": "windows"
+    },
+    {
+      "id": 4,
+      "name": "PC",
+      "slug": "pc",
+      "code": "scummvm"
+    },
+    {
+      "id": 27,
+      "name": "PlayStation",
+      "slug": "playstation1",
+      "code": "psx"
+    },
+    {
+      "id": 15,
+      "name": "PlayStation 2",
+      "slug": "playstation2",
+      "code": "ps2"
+    },
+    {
+      "id": 16,
+      "name": "PlayStation 3",
+      "slug": "playstation3",
+      "code": "ps3"
+    },
+    {
+      "id": 17,
+      "name": "PSP",
+      "slug": "psp",
+      "code": "psp"
+    },
+    {
+      "id": 19,
+      "name": "PS Vita",
+      "slug": "ps-vita",
+      "code": "vita"
+    },
+    {
+      "id": 117,
+      "name": "SEGA 32X",
+      "slug": "sega-32x",
+      "code": "sega32x"
+    },
+    {
+      "id": 119,
+      "name": "SEGA CD",
+      "slug": "sega-cd",
+      "code": "megacd"
+    },
+    {
+      "id": 74,
+      "name": "SEGA Master System",
+      "slug": "sega-master-system",
+      "code": "mastersystem"
+    },
+    {
+      "id": 107,
+      "name": "SEGA Saturn",
+      "slug": "sega-saturn",
+      "code": "saturn"
+    },
+    {
+      "id": 79,
+      "name": "SNES",
+      "slug": "snes",
+      "code": "snes"
+    },
+    {
+      "id": 11,
+      "name": "Wii",
+      "slug": "wii",
+      "code": "wii"
+    },
+    {
+      "id": 10,
+      "name": "Wii U",
+      "slug": "wii-u",
+      "code": "wiiu"
+    },
+    {
+      "id": 14,
+      "name": "Xbox 360",
+      "slug": "xbox360",
+      "code": "xbox360"
+    },
+    {
+      "id": 80,
+      "name": "Xbox",
+      "slug": "xbox-old",
+      "code": "xbox"
+    }
+  ]
+}

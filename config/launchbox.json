@@ -1,0 +1,508 @@
+{
+  "platforms": [
+    {
+      "code": "arcade",
+      "query": "Arcade"
+    },
+    {
+      "code": "cave",
+      "query": "Arcade"
+    },
+    {
+      "code": "cps1",
+      "query": "Arcade"
+    },
+    {
+      "code": "cps2",
+      "query": "Arcade"
+    },
+    {
+      "code": "cps3",
+      "query": "Arcade"
+    },
+    {
+      "code": "daphne",
+      "query": "Arcade"
+    },
+    {
+      "code": "dataeast",
+      "query": "Arcade"
+    },
+    {
+      "code": "igs",
+      "query": "Arcade"
+    },
+    {
+      "code": "irem",
+      "query": "Arcade"
+    },
+    {
+      "code": "jaleco",
+      "query": "Arcade"
+    },
+    {
+      "code": "kaneko",
+      "query": "Arcade"
+    },
+    {
+      "code": "konami",
+      "query": "Arcade"
+    },
+    {
+      "code": "midway",
+      "query": "Arcade"
+    },
+    {
+      "code": "nichibutsu",
+      "query": "Arcade"
+    },
+    {
+      "code": "nmk",
+      "query": "Arcade"
+    },
+    {
+      "code": "psikyo",
+      "query": "Arcade"
+    },
+    {
+      "code": "seta",
+      "query": "Arcade"
+    },
+    {
+      "code": "toaplan",
+      "query": "Arcade"
+    },
+    {
+      "code": "3do",
+      "query": "3DO Interactive Multiplayer"
+    },
+    {
+      "code": "3ds",
+      "query": "Nintendo 3DS"
+    },
+    {
+      "code": "acorn",
+      "query": "Acorn Archimedes"
+    },
+    {
+      "code": "acornelectron",
+      "query": "Acorn Electron"
+    },
+    {
+      "code": "actionmax",
+      "query": "WoW Action Max"
+    },
+    {
+      "code": "amiga",
+      "query": "Commodore Amiga"
+    },
+    {
+      "code": "amigacd32",
+      "query": "Commodore Amiga CD32"
+    },
+    {
+      "code": "amigacdtv",
+      "query": "Commodore CDTV"
+    },
+    {
+      "code": "amstradcpc",
+      "query": "Amstrad CPC"
+    },
+    {
+      "code": "amstradgx4000",
+      "query": "Amstrad GX4000"
+    },
+    {
+      "code": "apple2",
+      "query": "Apple II"
+    },
+    {
+      "code": "apple2gs",
+      "query": "Apple IIGS"
+    },
+    {
+      "code": "arcadia",
+      "query": "Emerson Arcadia 2001"
+    },
+    {
+      "code": "astrocade",
+      "query": "Bally Astrocade"
+    },
+    {
+      "code": "atari2600",
+      "query": "Atari 2600"
+    },
+    {
+      "code": "atari5200",
+      "query": "Atari 5200"
+    },
+    {
+      "code": "atari7800",
+      "query": "Atari 7800"
+    },
+    {
+      "code": "atari800",
+      "query": "Atari 800"
+    },
+    {
+      "code": "atarijaguar",
+      "query": "Atari Jaguar"
+    },
+    {
+      "code": "atarilynx",
+      "query": "Atari Lynx"
+    },
+    {
+      "code": "atarist",
+      "query": "Atari ST"
+    },
+    {
+      "code": "atomiswave",
+      "query": "Sammy Atomiswave"
+    },
+    {
+      "code": "bbcmicro",
+      "query": "BBC Microcomputer System"
+    },
+    {
+      "code": "c64",
+      "query": "Commodore 64' OR platform='Commodore 128"
+    },
+    {
+      "code": "cdi",
+      "query": "Philips CD-i"
+    },
+    {
+      "code": "channelf",
+      "query": "Fairchild Channel F"
+    },
+    {
+      "code": "coleco",
+      "query": "ColecoVision"
+    },
+    {
+      "code": "creativision",
+      "query": "VTech CreatiVision"
+    },
+    {
+      "code": "dragon32",
+      "query": "Dragon 32/64"
+    },
+    {
+      "code": "dreamcast",
+      "query": "Sega Dreamcast"
+    },
+    {
+      "code": "epochscv",
+      "query": "Epoch Super Cassette Vision"
+    },
+    {
+      "code": "fds",
+      "query": "Nintendo Famicom Disk System"
+    },
+    {
+      "code": "fm7",
+      "query": "Fujitsu FM-7"
+    },
+    {
+      "code": "fmtowns",
+      "query": "Fujitsu FM Towns Marty"
+    },
+    {
+      "code": "gameandwatch",
+      "query": "Nintendo Game & Watch"
+    },
+    {
+      "code": "gamegear",
+      "query": "Sega Game Gear"
+    },
+    {
+      "code": "gb",
+      "query": "Nintendo Game Boy"
+    },
+    {
+      "code": "gba",
+      "query": "Nintendo Game Boy Advance"
+    },
+    {
+      "code": "gbc",
+      "query": "Nintendo Game Boy Color"
+    },
+    {
+      "code": "gc",
+      "query": "Nintendo GameCube"
+    },
+    {
+      "code": "genesis",
+      "query": "Sega Genesis"
+    },
+    {
+      "code": "gp32",
+      "query": "GamePark GP32"
+    },
+    {
+      "code": "intellivision",
+      "query": "Mattel Intellivision"
+    },
+    {
+      "code": "lcdhandheld",
+      "query": "Nintendo Game & Watch"
+    },
+    {
+      "code": "linux",
+      "query": "Linux"
+    },
+    {
+      "code": "loopy",
+      "query": "Casio Loopy"
+    },
+    {
+      "code": "macintosh",
+      "query": "Apple Mac OS"
+    },
+    {
+      "code": "mastersystem",
+      "query": "Sega Master System"
+    },
+    {
+      "code": "megacd",
+      "query": "Sega CD' OR platform='Sega CD 32X"
+    },
+    {
+      "code": "megaduck",
+      "query": "Mega Duck"
+    },
+    {
+      "code": "msx",
+      "query": "Microsoft MSX"
+    },
+    {
+      "code": "msx2",
+      "query": "Microsoft MSX2' OR platform='Microsoft MSX2+"
+    },
+    {
+      "code": "n64",
+      "query": "Nintendo 64"
+    },
+    {
+      "code": "namco",
+      "query": "Namco System 22"
+    },
+    {
+      "code": "naomi",
+      "query": "Sega Naomi"
+    },
+    {
+      "code": "naomi2",
+      "query": "Sega Naomi 2"
+    },
+    {
+      "code": "nds",
+      "query": "Nintendo DS"
+    },
+    {
+      "code": "neogeo",
+      "query": "SNK Neo Geo AES' OR platform='SNK Neog Geo MVS"
+    },
+    {
+      "code": "neogeocd",
+      "query": "SNK Neo Geo CD"
+    },
+    {
+      "code": "nes",
+      "query": "Nintendo Entertainment System"
+    },
+    {
+      "code": "ngp",
+      "query": "SNK Neo Geo Pocket"
+    },
+    {
+      "code": "ngpc",
+      "query": "SNK Neo Geo Pocket Color"
+    },
+    {
+      "code": "openbor",
+      "query": "OpenBOR"
+    },
+    {
+      "code": "oric",
+      "query": "Oric Atmos"
+    },
+    {
+      "code": "pc",
+      "query": "MS-DOS' OR platform='Windows 3.X"
+    },
+    {
+      "code": "pc88",
+      "query": "NEC PC-8801"
+    },
+    {
+      "code": "pc98",
+      "query": "NEC PC-9801"
+    },
+    {
+      "code": "pcengine",
+      "query": "NEC TurboGrafx-16"
+    },
+    {
+      "code": "pcenginecd",
+      "query": "NEC TurboGrafx-CD"
+    },
+    {
+      "code": "pcfx",
+      "query": "NEC PC-FX"
+    },
+    {
+      "code": "pico8",
+      "query": "PICO-8"
+    },
+    {
+      "code": "pokemini",
+      "query": "Nintendo Pokemon Mini"
+    },
+    {
+      "code": "ps2",
+      "query": "Sony Playstation 2"
+    },
+    {
+      "code": "ps3",
+      "query": "Sony Playstation 3"
+    },
+    {
+      "code": "psp",
+      "query": "Sony PSP' OR platform='Sony PSP Minis"
+    },
+    {
+      "code": "psx",
+      "query": "Sony Playstation"
+    },
+    {
+      "code": "pv1000",
+      "query": "Casio PV-1000"
+    },
+    {
+      "code": "samcoupe",
+      "query": "SAM Coupé"
+    },
+    {
+      "code": "satellaview",
+      "query": "Nintendo Satellaview"
+    },
+    {
+      "code": "saturn",
+      "query": "Sega Saturn"
+    },
+    {
+      "code": "scummvm",
+      "query": "ScummVM"
+    },
+    {
+      "code": "sega32x",
+      "query": "Sega 32X"
+    },
+    {
+      "code": "segasystemx",
+      "query": "Sega Model 1' OR platform='Sega Model 2' OR platform='Sega Model 3' OR platform='Sega System 16' OR platform='Sega System 32"
+    },
+    {
+      "code": "sg-1000",
+      "query": "Sega SG-1000"
+    },
+    {
+      "code": "snes",
+      "query": "Super Nintendo Entertainment System"
+    },
+    {
+      "code": "supergrafx",
+      "query": "PC Engine SuperGrafx"
+    },
+    {
+      "code": "switch",
+      "query": "Nintendo Switch"
+    },
+    {
+      "code": "taito",
+      "query": "Taito Type X"
+    },
+    {
+      "code": "ti99",
+      "query": "Texas Instruments TI 99/4A"
+    },
+    {
+      "code": "trs80",
+      "query": "Tandy TRS-80"
+    },
+    {
+      "code": "vectrex",
+      "query": "GCE Vectrex"
+    },
+    {
+      "code": "videopac",
+      "query": "Magnavox Odyssey 2' OR platform='Philips Videopac+"
+    },
+    {
+      "code": "virtualboy",
+      "query": "Nintendo Virtual Boy"
+    },
+    {
+      "code": "vita",
+      "query": "Sony Playstation Vita"
+    },
+    {
+      "code": "vsmile",
+      "query": "VTech V.Smile"
+    },
+    {
+      "code": "watara",
+      "query": "Watara Supervision"
+    },
+    {
+      "code": "wii",
+      "query": "Nintendo Wii"
+    },
+    {
+      "code": "wiiu",
+      "query": "Nintendo Wii U"
+    },
+    {
+      "code": "windows",
+      "query": "Windows"
+    },
+    {
+      "code": "wonderswan",
+      "query": "WonderSwan"
+    },
+    {
+      "code": "wonderswancolor",
+      "query": "WonderSwan Color"
+    },
+    {
+      "code": "x1",
+      "query": "Sharp X1"
+    },
+    {
+      "code": "x68000",
+      "query": "Sharp X68000"
+    },
+    {
+      "code": "xbox",
+      "query": "Microsoft Xbox"
+    },
+    {
+      "code": "xbox360",
+      "query": "Microsoft Xbox 360"
+    },
+    {
+      "code": "zmachine",
+      "query": "ZiNc"
+    },
+    {
+      "code": "zx81",
+      "query": "Sinclair ZX-81"
+    },
+    {
+      "code": "zxspectrum",
+      "query": "Sinclair ZX Spectrum"
+    }
+  ]
+}

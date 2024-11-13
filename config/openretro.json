@@ -1,0 +1,140 @@
+{
+  "platforms": [
+    {
+      "platform_id": "vic20",
+      "platform_name": "vic20"
+    },
+    {
+      "platform_id": "amiga",
+      "platform_name": "amiga"
+    },
+    {
+      "platform_id": "cd32",
+      "platform_name": "amigacd32"
+    },
+    {
+      "platform_id": "cdtv",
+      "platform_name": "cdtv"
+    },
+    {
+      "platform_id": "snes",
+      "platform_name": "snes"
+    },
+    {
+      "platform_id": "snes",
+      "platform_name": "satellaview"
+    },
+    {
+      "platform_id": "a7800",
+      "platform_name": "atari7800"
+    },
+    {
+      "platform_id": "sms",
+      "platform_name": "mastersystem"
+    },
+    {
+      "platform_id": "smd",
+      "platform_name": "genesis"
+    },
+    {
+      "platform_id": "neogeo",
+      "platform_name": "neogeo"
+    },
+    {
+      "platform_id": "nes",
+      "platform_name": "nes"
+    },
+    {
+      "platform_id": "nes",
+      "platform_name": "fds"
+    },
+    {
+      "platform_id": "tg16",
+      "platform_name": "pcengine"
+    },
+    {
+      "platform_id": "tgcd",
+      "platform_name": "pcenginecd"
+    },
+    {
+      "platform_id": "arcade",
+      "platform_name": "arcade"
+    },
+    {
+      "platform_id": "dos",
+      "platform_name": "pc"
+    },
+    {
+      "platform_id": "dos",
+      "platform_name": "scummvm"
+    },
+    {
+      "platform_id": "gb",
+      "platform_name": "gb"
+    },
+    {
+      "platform_id": "gba",
+      "platform_name": "gba"
+    },
+    {
+      "platform_id": "gbc",
+      "platform_name": "gbc"
+    },
+    {
+      "platform_id": "psx",
+      "platform_name": "psx"
+    },
+    {
+      "platform_id": "spectrum",
+      "platform_name": "zxspectrum"
+    },
+    {
+      "platform_id": "cpc",
+      "platform_name": "amstradcpc"
+    },
+    {
+      "platform_id": "a2600",
+      "platform_name": "atari2600"
+    },
+    {
+      "platform_id": "a5200",
+      "platform_name": "atari5200"
+    },
+    {
+      "platform_id": "atari",
+      "platform_name": "atarist"
+    },
+    {
+      "platform_id": "c64",
+      "platform_name": "c64"
+    },
+    {
+      "platform_id": "saturn",
+      "platform_name": "saturn"
+    },
+    {
+      "platform_id": "sgg",
+      "platform_name": "gamegear"
+    },
+    {
+      "platform_id": "ngc",
+      "platform_name": "gc"
+    },
+    {
+      "platform_id": "lynx",
+      "platform_name": "atarilynx"
+    },
+    {
+      "platform_id": "msx",
+      "platform_name": "msx"
+    },
+    {
+      "platform_id": "msx",
+      "platform_name": "msx2"
+    },
+    {
+      "platform_id": "n64",
+      "platform_name": "n64"
+    }
+  ]
+}

@@ -1,0 +1,686 @@
+{
+   "platforms": [
+      {
+         "id": 1,
+         "name":"amiga"
+      },{
+         "id": 3,
+         "name": "gb"
+      },{
+         "id": 4,
+         "name": "gba"
+      },{
+         "id": 5,
+         "name": "gamegear"
+      },{
+         "id": 6,
+         "name": "genesis"
+      },{
+         "id": 6,
+         "name": "megadrive"
+      },{
+         "id": 7,
+         "name": "atarilynx"
+      },{
+         "id": 8,
+         "name": "mastersystem"
+      },{
+         "id": 9,
+         "name": "snes"
+      },{
+         "id": 11,
+         "name": "amstradcpc"
+      },{
+         "id": 12,
+         "name": "apple2"
+      },{
+         "id": 13,
+         "name": "atarist"
+      },{
+         "id": 14,
+         "name": "c64"
+      },{
+         "id": 15,
+         "name": "msx"
+      },{
+         "id": 15,
+         "name": "msx2"
+      },{
+         "id": 16,
+         "name": "zxspectrum"
+      },{
+         "id": 17,
+         "name": "macintosh"
+      },{
+         "id": 18,
+         "name": "psp"
+      },{
+         "id": 19,
+         "name": "ps2"
+      },{
+         "id": 20,
+         "name": "xbox360"
+      },{
+         "id": 21,
+         "name": "nes"
+      },{
+         "id": 22,
+         "name": "psx"
+      },{
+         "id": 23,
+         "name": "gc"
+      },{
+         "id": 24,
+         "name": "atari800"
+      },{
+         "id": 25,
+         "name": "neogeo"
+      },{
+         "id": 26,
+         "name": "3do"
+      },{
+         "id": 27,
+         "name": "cdi"
+      },{
+         "id": 28,
+         "name": "atarijaguar"
+      },{
+         "id": 29,
+         "name": "megacd"
+      },{
+         "id": 29,
+         "name": "segacd"
+      },{
+         "id": 30,
+         "name": "vic20"
+      },{
+         "id": 31,
+         "name": "sega32x"
+      },{
+         "id": 32,
+         "name": "xbox"
+      },{
+         "id": 34,
+         "name": "N-Gage"
+      },{
+         "id": 35,
+         "name": "ps3"
+      },{
+         "id": 36,
+         "name": "wii"
+      },{
+         "id": 37,
+         "name": "dreamcast"
+      },{
+         "id": 38,
+         "name": "apple2gs"
+      },{
+         "id": 39,
+         "name": "amigacd32"
+      },{
+         "id": 40,
+         "name": "atari2600"
+      },{
+         "id": 42,
+         "name": "saturn"
+      },{
+         "id": 43,
+         "name": "n64"
+      },{
+         "id": 47,
+         "name": "coleco"
+      },{
+         "id": 48,
+         "name": "ti99"
+      },{
+         "id": 51,
+         "name": "intellivision"
+      },{
+         "id": 52,
+         "name": "nds"
+      },{
+         "id": 53,
+         "name": "pcenginecd"
+      },{
+         "id": 54,
+         "name": "wonderswancolor"
+      },{
+         "id": 55,
+         "name": "pcengine"
+      },{
+         "id": 57,
+         "name": "gbc"
+      },{
+         "id": 58,
+         "name": "c128"
+      },{
+         "id": 59,
+         "name": "neogeocd"
+      },{
+         "id": 60,
+         "name": "videopac"
+      },{
+         "id": 61,
+         "name": "dragon32"
+      },{
+         "id": 62,
+         "name": "Commodore PET/CBM"
+      },{
+         "id": 63,
+         "name": "TRS-80"
+      },{
+         "id": 64,
+         "name": "Zodiac"
+      },{
+         "id": 65,
+         "name": "wonderswan"
+      },{
+         "id": 66,
+         "name": "channelf"
+      },{
+         "id": 67,
+         "name": "atari5200"
+      },{
+         "id": 68,
+         "name": "trs80"
+      },{
+         "id": 70,
+         "name": "atari7800"
+      },{
+         "id": 72,
+         "name": "iPod"
+      },{
+         "id": 74,
+         "name": "Odyssey"
+      },{
+         "id": 75,
+         "name": "pcfx"
+      },{
+         "id": 76,
+         "name": "vectrex"
+      },{
+         "id": 77,
+         "name": "Game.Com"
+      },{
+         "id": 78,
+         "name": "Gizmondo"
+      },{
+         "id": 79,
+         "name": "virtualboy"
+      },{
+         "id": 80,
+         "name": "ngp"
+      },{
+         "id": 81,
+         "name": "ngpc"
+      },{
+         "id": 82,
+         "name": "vsmile"
+      },{
+         "id": 83,
+         "name": "Pinball"
+      },{
+         "id": 84,
+         "name": "atomiswave"
+      },{
+         "id": 84,
+         "name": "cave"
+      },{
+         "id": 84,
+         "name": "cps1"
+      },{
+         "id": 84,
+         "name": "cps2"
+      },{
+         "id": 84,
+         "name": "cps3"
+      },{
+         "id": 84,
+         "name": "dataeast"
+      },{
+         "id": 84,
+         "name": "igs"
+      },{
+         "id": 84,
+         "name": "irem"
+      },{
+         "id": 84,
+         "name": "jaleco"
+      },{
+         "id": 84,
+         "name": "kaneko"
+      },{
+         "id": 84,
+         "name": "konami"
+      },{
+         "id": 84,
+         "name": "midway"
+      },{
+         "id": 84,
+         "name": "namco"
+      },{
+         "id": 84,
+         "name": "naomi"
+      },{
+         "id": 84,
+         "name": "naomi2"
+      },{
+         "id": 84,
+         "name": "nichibutsu"
+      },{
+         "id": 84,
+         "name": "nmk"
+      },{
+         "id": 84,
+         "name": "psikyo"
+      },{
+         "id": 84,
+         "name": "segasystemx"
+      },{
+         "id": 84,
+         "name": "seta"
+      },{
+         "id": 84,
+         "name": "taito"
+      },{
+         "id": 84,
+         "name": "toaplan"
+      },{
+         "id": 84,
+         "name": "arcade"
+      },{
+         "id": 84,
+         "name": "fba"
+      },{
+         "id": 84,
+         "name": "mame-advmame"
+      },{
+         "id": 84,
+         "name": "mame-libretro"
+      },{
+         "id": 84,
+         "name": "mame-mame4all"
+      },{
+         "id": 85,
+         "name": "NUON"
+      },{
+         "id": 86,
+         "name": "Xbox 360 Games Store"
+      },{
+         "id": 87,
+         "name": "Wii Shop"
+      },{
+         "id": 88,
+         "name": "PlayStation Network (PS3)"
+      },{
+         "id": 89,
+         "name": "Leapster"
+      },{
+         "id": 90,
+         "name": "Microvision"
+      },{
+         "id": 91,
+         "name": "fds"
+      },{
+         "id": 92,
+         "name": "daphne"
+      },{
+         "id": 93,
+         "name": "Adventure Vision"
+      },{
+         "id": 94,
+         "name": "pc"
+      },{
+         "id": 94,
+         "name": "ports"
+      },{
+         "id": 94,
+         "name": "steam"
+      },{
+         "id": 94,
+         "name": "windows"
+      },{
+         "id": 94,
+         "name": "scummvm"
+      },{
+         "id": 95,
+         "name": "x68000"
+      },{
+         "id": 96,
+         "name": "iPhone"
+      },{
+         "id": 98,
+         "name": "satellaview"
+      },{
+         "id": 99,
+         "name": "arcadia"
+      },{
+         "id": 100,
+         "name": "Aquarius"
+      },{
+         "id": 101,
+         "name": "Nintendo 64DD"
+      },{
+         "id": 102,
+         "name": "Pippin"
+      },{
+         "id": 103,
+         "name": "R-Zone"
+      },{
+         "id": 104,
+         "name": "HyperScan"
+      },{
+         "id": 105,
+         "name": "Game Wave"
+      },{
+         "id": 106,
+         "name": "DSiWare"
+      },{
+         "id": 107,
+         "name": "RDI Halcyon"
+      },{
+         "id": 108,
+         "name": "fmtowns"
+      },{
+         "id": 109,
+         "name": "pc88"
+      },{
+         "id": 110,
+         "name": "bbcmicro"
+      },{
+         "id": 111,
+         "name": "PLATO"
+      },{
+         "id": 112,
+         "name": "pc98"
+      },{
+         "id": 113,
+         "name": "x1"
+      },{
+         "id": 114,
+         "name": "fm7"
+      },{
+         "id": 115,
+         "name": "NEC PC-6001"
+      },{
+         "id": 116,
+         "name": "PlayStation Network (PSP)"
+      },{
+         "id": 117,
+         "name": "3ds"
+      },{
+         "id": 118,
+         "name": "Sega Pico"
+      },{
+         "id": 119,
+         "name": "supergrafx"
+      },{
+         "id": 120,
+         "name": "astrocade"
+      },{
+         "id": 121,
+         "name": "iPad"
+      },{
+         "id": 122,
+         "name": "Zeebo"
+      },{
+         "id": 123,
+         "name": "Android"
+      },{
+         "id": 124,
+         "name": "Windows Phone"
+      },{
+         "id": 125,
+         "name": "acorn"
+      },{
+         "id": 126,
+         "name": "loopy"
+      },{
+         "id": 127,
+         "name": "Bandai Playdia"
+      },{
+         "id": 128,
+         "name": "Sharp MZ"
+      },{
+         "id": 129,
+         "name": "vita"
+      },{
+         "id": 131,
+         "name": "RCA Studio II"
+      },{
+         "id": 132,
+         "name": "XaviXPORT"
+      },{
+         "id": 133,
+         "name": "gp32"
+      },{
+         "id": 134,
+         "name": "pokemini"
+      },{
+         "id": 135,
+         "name": "Epoch Cassette Vision"
+      },{
+         "id": 136,
+         "name": "epochscv"
+      },{
+         "id": 137,
+         "name": "megaduck"
+      },{
+         "id": 138,
+         "name": "Nintendo 3DS eShop"
+      },{
+         "id": 139,
+         "name": "wiiu"
+      },{
+         "id": 140,
+         "name": "Browser"
+      },{
+         "id": 141,
+         "name": "sg-1000"
+      },{
+         "id": 142,
+         "name": "cdtv"
+      },{
+         "id": 143,
+         "name": "PlayStation Network (Vita)"
+      },{
+         "id": 144,
+         "name": "Leapfrog Didj"
+      },{
+         "id": 145,
+         "name": "Xbox One"
+      },{
+         "id": 146,
+         "name": "ps4"
+      },{
+         "id": 147,
+         "name": "watara"
+      },{
+         "id": 148,
+         "name": "actionmax"
+      },{
+         "id": 149,
+         "name": "pv1000"
+      },{
+         "id": 150,
+         "name": "c16"
+      },{
+         "id": 151,
+         "name": "Super A'Can"
+      },{
+         "id": 152,
+         "name": "linux"
+      },{
+         "id": 153,
+         "name": "Memorex MD 2500 VIS"
+      },{
+         "id": 154,
+         "name": "Ouya"
+      },{
+         "id": 155,
+         "name": "Amazon Fire TV"
+      },{
+         "id": 156,
+         "name": "New Nintendo 3DS"
+      },{
+         "id": 157,
+         "name": "switch"
+      },{
+         "id": 158,
+         "name": "Game Master"
+      },{
+         "id": 159,
+         "name": "Apple TV"
+      },{
+         "id": 160,
+         "name": "Sony SMC-777"
+      },{
+         "id": 162,
+         "name": "samcoupe"
+      },{
+         "id": 163,
+         "name": "View-Master Interactive Vision"
+      },{
+         "id": 164,
+         "name": "Fuze Tomahawk F1"
+      },{
+         "id": 165,
+         "name": "Tomy Tutor"
+      },{
+         "id": 166,
+         "name": "gamate"
+      },{
+         "id": 168,
+         "name": "MicroBee"
+      },{
+         "id": 169,
+         "name": "VTech Socrates"
+      },{
+         "id": 170,
+         "name": "Luxor ABC80"
+      },{
+         "id": 171,
+         "name": "atarijaguarcd"
+      },{
+         "id": 172,
+         "name": "Amazon Alexa"
+      },{
+         "id": 173,
+         "name": "Magic Leap One"
+      },{
+         "id": 174,
+         "name": "Advanced Pico Beena"
+      },{
+         "id": 175,
+         "name": "Google Stadia"
+      },{
+         "id": 176,
+         "name": "ps5"
+      },{
+         "id": 177,
+         "name": "Meta Quest"
+      },{
+         "id": 178,
+         "name": "playdate"
+      },{
+         "id": 179,
+         "name": "Xbox Series X|S"
+      },{
+         "id": 180,
+         "name": "Evercade"
+      },{
+         "id": 181,
+         "name": "Intellivision Amico"
+      },{
+         "id": 182,
+         "name": "Epoch Game Pocket Computer"
+      },{
+         "id": 183,
+         "name": "Smaky"
+      },{
+         "id": 184,
+         "name": "Entex Select-A-Game"
+      },{
+         "id": 185,
+         "name": "Leapster Explorer"
+      },{
+         "id": 186,
+         "name": "LeapPad"
+      },{
+         "id": 187,
+         "name": "Casio PV-2000"
+      },{
+         "id": 188,
+         "name": "Timetop GameKing"
+      },{
+         "id": 189,
+         "name": "Timetop GameKing III"
+      },{
+         "id": 190,
+         "name": "APF MP-1000"
+      },{
+         "id": 191,
+         "name": "Interton VC 4000"
+      },{
+         "id": 192,
+         "name": "Digiblast"
+      },{
+         "id": 193,
+         "name": "Sord M5"
+      },{
+         "id": 194,
+         "name": "Stream"
+      },{
+         "id": 195,
+         "name": "oric"
+      },{
+         "id": 196,
+         "name": "Gakken Compact Vision TV Boy"
+      },{
+         "id": 197,
+         "name": "Amstrad PCW"
+      },{
+         "id": 198,
+         "name": "Hitachi S1"
+      },{
+         "id": 199,
+         "name": "Amazon Luna"
+      },{
+         "id": 200,
+         "name": "Denshi Mangajuku"
+      },{
+         "id": 201,
+         "name": "Bandai RX-78"
+      },{
+         "id": 202,
+         "name": "Atari VCS"
+      },{
+         "id": 203,
+         "name": "M2"
+      },{
+         "id": 204,
+         "name": "Monon Color"
+      },{
+         "id": 205,
+         "name": "Mitsubishi Multi 8"
+      },{
+         "id": 206,
+         "name": "Memotech MTX"
+      },{
+         "id": 207,
+         "name": "Coleco Adam"
+      },{
+         "id": 208,
+         "name": "DVD"
+      },{
+         "id": 209,
+         "name": "creativision"
+      },{
+         "id": 210,
+         "name": "Nintendo Next Gaming System"
+      },{
+         "id": 211,
+         "name": "Next Generation Xbox"
+      }
+   ]
+}

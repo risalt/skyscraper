@@ -9,19 +9,28 @@ The main changes have been:
 * Koillection: Frontend to support the wonderful collection tool by [Benjamin Jonard](https://github.com/benjaminjonard/koillection). A hybrid frontend mixing API calls to the Koillection server and SQL connections to the underlying MySQL/MariaDB database. Beware that I also slightly "customized" the public Koillection branch so that it could interoperate in my landscape.
 
 ## New Scrapers
-* GiantBomb: A hybrid frontend that downloads part of the information in an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
+* GiantBomb: A hybrid frontend that downloads part of the information from [GiantBomb](https://www.giantbomb.com) in an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
 * Chiptune: A specialized scraper that matches my soundtrack collection stored in my [Navidrome](https://github.com/navidrome/navidrome) SQLite database to my game collection.
 * OfflineMobyGames: A hybrid frontend that uses an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
 * Customflags: A specialized scraper that detects special files in my collection to deduce the concepts: Completed, Favourite, Played, First Played, Last Played, Total Times Played, Time Played.
-* Launchbox: A very inefficient but effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
+* Launchbox: A very effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
+* Rawg: An online frontend that uses the [Rawg.io](https://rawg.io/) service.
+* VGFacts: A hybrid specialized scraper that uses a JSON version of the [VGFacts](https://www.vgfacts.com/) website to retrieve videogames trivia.
+* VGMaps: A specialized offline scraper that uses a dump of the [VGMaps](https://www.vgmaps.com/) website to include graphical maps of videogames.
+* GameFAQs: An offline frontend that uses a JSON+guides dump of the [GameFAQs](https://gamefaqs.gamespot.com/) website to include videogame guides and walkthroughs in the collection. GameFAQs does not approve of external scraping, so the dumps need to be obtained from somewhere else.
 
 ## Fix Broken Scrapers
 * Notably OpenRetro, WorldOfSpectrum, but also fixes and improvements to IGDB, MobyGames, ArcadeDB, TGDB and, of course the King Screenscraper.
 
 And of course:
-* Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files.
-* Support additional resources (music, manuals, usage data).
-* Refactoring, errors and typos fixes.
+* Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files. All the scraper code/platform ids mappings are now in the configuration files.
+* Support additional resources (music, manuals, usage data, trivia, maps, guides).
+* Validation of the cache now tries to fix (and cleanses if it cannot) the textual resource contents of the database.
+* --startat and --endat now are compatible recursive directories.
+* Take advantage of MAME short names for the compatible scrapers.
+* Improve data conformance checks and corrections to ensure homogeneized resources across scrapers.
+* Alternative name support for the compatible scrapers.
+* Massive refactorings, errors, typos and style fixes.
 * File-based locking mechanism to avoid/minimize corrupted cache databases.
 * Rescan feature to recheck the cache against the scraper databases (specially needed after changing the title matching logic).
 * Incremental scraping, for when new resources need to be added to already scraped games.
@@ -30,6 +39,7 @@ And of course:
 * Some changes to minimize the false positives from the scrapers, specially as I basically turned off the checksum/hash mechanisms (as my files are frequently modified and the checksum search would generally fail).
 * New cache tools to manage big databases such as mine (several tens of thousands of entries) and spot inconsistencies and false positive matches.
 * ...Changes that I need that probably no other one out there will need :)
+*  Breaking changes: The unpack functionality has been removed. The checksum matching logic has been removed. It may come back improved in the future. Or not.
  
 
 ## Original Readme:
