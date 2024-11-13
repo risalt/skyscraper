@@ -80,9 +80,9 @@ QString NameTools::getNameWithSpaces(const QString &baseName)
   QChar previous;
   for(int a = 0; a < baseName.length(); ++a) {
     QChar current = baseName.at(a);
-    if(current == '_' ||
-       (a > 4 && baseName.mid(a, 4) == "Demo") ||
-       baseName.mid(a, 5) == "-WHDL") {
+    if((current == '_') ||
+       (a > 4 && (!baseName.mid(a, 4).compare("Demo", Qt::CaseInsensitive) ||
+       !baseName.mid(a, 5).compare("-WHDL", Qt::CaseInsensitive)))) {
       break;
     }
     if(a > 0) {
@@ -91,7 +91,7 @@ QString NameTools::getNameWithSpaces(const QString &baseName)
       } else if(current == '&') {
         withSpaces.append(" ");
       } else if(current == 'D') {
-        if(baseName.mid(a, 6) == "Deluxe") {
+        if(!baseName.mid(a, 6).compare("Deluxe", Qt::CaseInsensitive)) {
           withSpaces.append(" ");
         } else if(previous != '3' && previous != '4') {
           withSpaces.append(" ");
@@ -125,28 +125,25 @@ QString NameTools::getUrlQueryName(const QString &baseName, const int words, con
   // Remove everything in brackets
   newName = newName.left(newName.indexOf("(", 2)).simplified();
   newName = newName.left(newName.indexOf("[", 2)).simplified();
-  // The following is mostly, if not only, used when getting the name from mameMap
-  newName = newName.left(newName.indexOf(" / ", 2)).simplified();
-  if (onlyMainTitle) {
+  // DEPRECATED: The following is mostly, if not only, used when getting the name from mameMap
+  // newName = newName.left(newName.indexOf(" / ", 2)).simplified();
+  if(onlyMainTitle) {
     bool dummy;
     newName = NameTools::removeSubtitle(newName, dummy);
   }
 
   QRegularExpressionMatch match;
   // Remove " rev.X" instances
-  match = QRegularExpression(" rev[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$").match(newName);
+  match = QRegularExpression(" rev[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$",
+                             QRegularExpression::CaseInsensitiveOption).match(newName);
   if(match.hasMatch() && match.capturedStart(0) != -1) {
     newName = newName.left(match.capturedStart(0)).simplified();
   }
   // Remove versioning instances
-  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$").match(newName);
+  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$",
+                             QRegularExpression::CaseInsensitiveOption).match(newName);
   if(match.hasMatch() && match.capturedStart(0) != -1) {
     newName = newName.left(match.capturedStart(0)).simplified();
-  }
-
-  // If we have the first game in a series, remove the ' I' for more search results
-  if(newName.right(2) == " I") {
-    newName = newName.left(newName.length() - 2);
   }
 
   newName = newName.toLower();
@@ -157,37 +154,16 @@ QString NameTools::getUrlQueryName(const QString &baseName, const int words, con
   // If it's shorter the 'the' is of more significance and shouldn't be removed.
   // Consider articles in English, German, French, Spanish
   // Exceptions: "Las Vegas", "Die Hard"
-  if(newName.length() >= 10) {
+  // Dirty trick of using words=-2 to prevent article removal.
+  if(newName.length() >= 10 && words != -2) {
     newName = removeArticle(newName);
   }
-  
+
   // Use space as separator character as a signal that the symbols need to be respected:
-  if (spaceChar != " ") {
-    newName = newName.replace("_", " ");
-    newName = newName.replace(" - ", " ");
-    newName = newName.replace(",", " ");
-    newName = newName.replace("&", "%26");
-    newName = newName.replace("+", "");
-    // A few game names have faulty "s's". Fix them to "s'"
-    newName = newName.replace("s's", "s'");
-    newName = newName.replace("'", "%27");
-    // Finally change all spaces to requested char. Default is '+' since that's what most search engines seem to understand
-    newName = newName.simplified().replace(" ", spaceChar);
-  }
+  newName = StrTools::altUriEscape(newName, spaceChar);
 
-  // Implement special cases here (belongs to the exceptions mapping file, not here)
-  /* if(newName == "ik") {
-    newName = "international+karate";
-  }
-  if(newName == "arkanoid+revenge+of+doh") {
-    newName = "arkanoid%3A+revenge+of+doh";
-  }
-  if(newName == "lemmings+3") {
-    newName = "all+new+world+of+lemmings";
-  } */
-
-  if(words != -1) {
-    QList<QString> wordList = newName.split(spaceChar);
+  if(words > 0) {
+    QStringList wordList = newName.split(spaceChar);
     if(wordList.size() > words) {
       newName.clear();
       for(int a = 0; a < words; ++a) {
@@ -196,8 +172,10 @@ QString NameTools::getUrlQueryName(const QString &baseName, const int words, con
       newName = newName.left(newName.length() - spaceChar.length());
     }
   }
-  
-  // qDebug() << "Simplified from " << baseName << " to " << newName;
+
+  if(Skyscraper::config.verbosity > 3) {
+    qDebug() << "Simplified from " << baseName << " to " << newName;
+  }
   return newName;
 }
 
@@ -210,7 +188,8 @@ bool NameTools::hasIntegerNumeral(const QString &baseName)
 
 bool NameTools::hasRomanNumeral(const QString &baseName)
 {
-  if(QRegularExpression(" [IVX]{1,5}([,: ]+|$)").match(baseName).hasMatch())
+  if(QRegularExpression(" [IVX]{1,5}([,: ]+|$)",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     return true;
   return false;
 }
@@ -281,7 +260,8 @@ QString NameTools::convertToIntegerNumeral(const QString &baseName)
   QRegularExpressionMatch match;
   QString newName = baseName;
 
-  match = QRegularExpression(" [IVX]{1,5}([,: ]+|$)").match(baseName);
+  match = QRegularExpression(" [IVX]{1,5}([,: ]+|$)",
+                             QRegularExpression::CaseInsensitiveOption).match(baseName);
   // Match is either " X" or " X: blah blah blah"
   if(match.hasMatch()) {
     QString roman = match.captured(0);
@@ -292,45 +272,45 @@ QString NameTools::convertToIntegerNumeral(const QString &baseName)
     } else {
       roman = roman.simplified();
     }
-    if(roman == "I") {
+    if(!roman.compare("I", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "1"));
-    } else if(roman == "II") {
+    } else if(!roman.compare("II", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "2"));
-    } else if(roman == "III") {
+    } else if(!roman.compare("III", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "3"));
-    } else if(roman == "IV") {
+    } else if(!roman.compare("IV", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "4"));
-    } else if(roman == "V") {
+    } else if(!roman.compare("V", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "5"));
-    } else if(roman == "VI") {
+    } else if(!roman.compare("VI", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "6"));
-    } else if(roman == "VII") {
+    } else if(!roman.compare("VII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "7"));
-    } else if(roman == "VIII") {
+    } else if(!roman.compare("VIII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "8"));
-    } else if(roman == "IX") {
+    } else if(!roman.compare("IX", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "9"));
-    } else if(roman == "X") {
+    } else if(!roman.compare("X", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "10"));
-    } else if(roman == "XI") {
+    } else if(!roman.compare("XI", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "11"));
-    } else if(roman == "XII") {
+    } else if(!roman.compare("XII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "12"));
-    } else if(roman == "XIII") {
+    } else if(!roman.compare("XIII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "13"));
-    } else if(roman == "XIV") {
+    } else if(!roman.compare("XIV", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "14"));
-    } else if(roman == "XV") {
+    } else if(!roman.compare("XV", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "15"));
-    } else if(roman == "XVI") {
+    } else if(!roman.compare("XVI", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "16"));
-    } else if(roman == "XVII") {
+    } else if(!roman.compare("XVII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "17"));
-    } else if(roman == "XVIII") {
+    } else if(!roman.compare("XVIII", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "18"));
-    } else if(roman == "XIX") {
+    } else if(!roman.compare("XIX", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "19"));
-    } else if(roman == "XX") {
+    } else if(!roman.compare("XX", Qt::CaseInsensitive)) {
       return newName.replace(match.captured(0), match.captured(0).replace(roman, "20"));
     }
   }
@@ -363,15 +343,20 @@ QString NameTools::getSqrNotes(QString baseName)
   }
 
   // Look for '_tag_' or '[tag]' with the last char optional
-  if(QRegularExpression("[_[]{1}(Aga|AGA)[_\\]]{0,1}").match(baseName).hasMatch())
+  if(QRegularExpression("[_[]{1}(AGA)[_\\]]{0,1}",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     sqrNotes.append("[AGA]");
-  if(QRegularExpression("[_[]{1}(Cd32|cd32|CD32)[_\\]]{0,1}").match(baseName).hasMatch())
+  if(QRegularExpression("[_[]{1}(CD32)[_\\]]{0,1}",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     sqrNotes.append("[CD32]");
-  if(QRegularExpression("[_[]{1}(Cdtv|cdtv|CDTV)[_\\]]{0,1}").match(baseName).hasMatch())
+  if(QRegularExpression("[_[]{1}(CDTV)[_\\]]{0,1}",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     sqrNotes.append("[CDTV]");
-  if(QRegularExpression("[_[]{1}(Ntsc|ntsc|NTSC)[_\\]]{0,1}").match(baseName).hasMatch())
+  if(QRegularExpression("[_[]{1}(NTSC)[_\\]]{0,1}",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     sqrNotes.append("[NTSC]");
-  if(QRegularExpression("(Demo|demo|DEMO)[_\\]]{1}").match(baseName).hasMatch())
+  if(QRegularExpression("(DEMO)[_\\]]{1}",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     sqrNotes.append("[Demo]");
   // Don't add PAL detection as it will also match with "_Palace" and such
   sqrNotes = sqrNotes.simplified();
@@ -397,15 +382,18 @@ QString NameTools::getParNotes(QString baseName)
   QRegularExpressionMatch match;
 
   // Add "nDisk" detection
-  match = QRegularExpression("[0-9]{1,2}[ ]{0,1}Disk").match(baseName);
+  match = QRegularExpression("[0-9]{1,2}[ ]{0,1}Disk",
+                             QRegularExpression::CaseInsensitiveOption).match(baseName);
   if(match.hasMatch()) {
-    parNotes.append("(" + match.captured(0).left(match.captured(0).indexOf("Disk")).trimmed() + " Disk)");
+    parNotes.append("(" + match.captured(0).left(match.captured(0).indexOf("Disk", 0, Qt::CaseInsensitive)).trimmed() + " Disk)");
   }
   // Add "CD" detection that DON'T match CD32 and CDTV
-  if(QRegularExpression("[_[]{1}CD(?!32|TV)").match(baseName).hasMatch())
+  if(QRegularExpression("[_[]{1}CD(?!32|TV)",
+                        QRegularExpression::CaseInsensitiveOption).match(baseName).hasMatch())
     parNotes.append("(CD)");
   // Look for language and add it
-  match = QRegularExpression("[_[]{1}(De|It|Pl|Fr|Es|Fi|Dk|Gr|Cz){1,10}[_\\]]{0,1}").match(baseName);
+  match = QRegularExpression("[_[]{1}(De|It|Pl|Fr|Es|Fi|Dk|Gr|Cz){1,10}[_\\]]{0,1}",
+                             QRegularExpression::CaseInsensitiveOption).match(baseName);
   if(match.hasMatch()) {
     parNotes.append("(" +
                     match.captured(0).replace("_", "").
@@ -422,14 +410,14 @@ QString NameTools::getParNotes(QString baseName)
 QString NameTools::getUniqueNotes(const QString &notes, QChar delim)
 {
 #if QT_VERSION >= 0x050e00
-  QList<QString> notesList = notes.split(delim, Qt::SkipEmptyParts);
+  QStringList notesList = notes.split(delim, Qt::SkipEmptyParts);
 #else
-  QList<QString> notesList = notes.split(delim, QString::SkipEmptyParts);
+  QStringList notesList = notes.split(delim, QString::SkipEmptyParts);
 #endif
-  QList<QString> uniqueList;
-  for(const auto &note: notesList) {
+  QStringList uniqueList;
+  for(const auto &note: std::as_const(notesList)) {
     bool found = false;
-    for(const auto &unique: uniqueList) {
+    for(const auto &unique: std::as_const(uniqueList)) {
       if(note.toLower() == unique.toLower()) {
         found = true;
       }
@@ -439,7 +427,7 @@ QString NameTools::getUniqueNotes(const QString &notes, QChar delim)
     }
   }
   QString uniqueNotes;
-  for(const auto &note: uniqueList) {
+  for(const auto &note: std::as_const(uniqueList)) {
     uniqueNotes.append(note);
   }
   return uniqueNotes;
@@ -449,16 +437,17 @@ QString NameTools::getCacheId(const QFileInfo &info)
 {
   QCryptographicHash cacheId(QCryptographicHash::Sha1);
 
+  QString suffix = info.suffix().toLower();
   // Use checksum of filename if file is a script or an "unstable" compressed filetype
   bool cacheIdFromData = true;
-  if(info.suffix() == "uae"  || info.suffix() == "cue" ||
-     info.suffix() == "sh"   || info.suffix() == "svm" ||
-     info.suffix() == "conf" || info.suffix() == "mds" ||
-     info.suffix() == "zip"  || info.suffix() == "7z"  ||
-     info.suffix() == "gdi"  || info.suffix() == "ml"  ||
-     info.suffix() == "bat"  || info.suffix() == "au3" ||
-     info.suffix() == "po"   || info.suffix() == "dsk" ||
-     info.suffix() == "nib"  || info.suffix() == "scummvm") {
+  if(suffix == "uae"  || suffix == "cue" ||
+     suffix == "sh"   || suffix == "svm" ||
+     suffix == "conf" || suffix == "mds" ||
+     suffix == "zip"  || suffix == "7z"  ||
+     suffix == "gdi"  || suffix == "ml"  ||
+     suffix == "bat"  || suffix == "au3" ||
+     suffix == "po"   || suffix == "dsk" ||
+     suffix == "nib"  || suffix == "scummvm") {
     cacheIdFromData = false;
   }
   // If file is larger than 50 MBs, use filename checksum for cache id for optimization reasons
@@ -489,7 +478,7 @@ QString NameTools::getCacheId(const QFileInfo &info)
 
 QString NameTools::getNameFromTemplate(const GameEntry &game, const QString &nameTemplate)
 {
-  QList<QString> templateGroups = nameTemplate.split(";");
+  QStringList templateGroups = nameTemplate.split(";");
   QString finalName;
   for(auto &templateGroup: templateGroups) {
     bool include = false;
@@ -549,7 +538,7 @@ QString NameTools::removeArticle(const QString &baseName, const QString &spaceCh
   while(pos < baseName.size()) {
     int articleSize = 0;
     QString article = baseName.mid(pos, 3);
-    if (!article.compare("the", Qt::CaseInsensitive) ||
+    if(!article.compare("the", Qt::CaseInsensitive) ||
         !article.compare("der", Qt::CaseInsensitive) ||
         !article.compare("die", Qt::CaseInsensitive) ||
         !article.compare("das", Qt::CaseInsensitive) ||
@@ -564,13 +553,13 @@ QString NameTools::removeArticle(const QString &baseName, const QString &spaceCh
        }
     } else {
       article = baseName.mid(pos, 2);
-      if (!article.compare("el", Qt::CaseInsensitive) ||
+      if(!article.compare("el", Qt::CaseInsensitive) ||
           !article.compare("la", Qt::CaseInsensitive) ||
           !article.compare("le", Qt::CaseInsensitive)) {
          articleSize = 2;
       }
     }
-    if (articleSize) {
+    if(articleSize) {
       bool wordBefore = (classCurrent == "space" && classBefore == "word");
       bool wordAfter = false;
       int pos2 = pos+articleSize;
@@ -608,7 +597,7 @@ QString NameTools::removeArticle(const QString &baseName, const QString &spaceCh
       }
       if((wordBefore && wordAfter) || (classCurrent == "word" || classAfter == "word")) {
         newName.append(article);
-        if (classCurrent != "word") {
+        if(classCurrent != "word") {
           classBefore = classCurrent;
           classCurrent = "word";
         }
@@ -617,13 +606,13 @@ QString NameTools::removeArticle(const QString &baseName, const QString &spaceCh
         pos += articleSize;
       }
     } else {
-      if (classCurrent != "space" && (baseName[pos].isSpace() || baseName[pos] == spaceChar[0])) {
+      if(classCurrent != "space" && (baseName[pos].isSpace() || baseName[pos] == spaceChar[0])) {
         classBefore = classCurrent;
         classCurrent = "space";
       } else if(classCurrent != "punct" && (baseName[pos].isPunct() || baseName[pos].isDigit())) {
         classBefore = classCurrent;
         classCurrent = "punct";
-      } else if (classCurrent != "word" /*&& baseName[pos].isLetter()*/) {
+      } else if(classCurrent != "word" /*&& baseName[pos].isLetter()*/) {
         classBefore = classCurrent;
         classCurrent = "word";
       }
@@ -641,26 +630,33 @@ QString NameTools::moveArticle(const QString &baseName, const bool &toFront)
   QRegularExpressionMatch match;
   if(toFront) {
     // Three digit articles in English, German, French, Spanish:
-    match = QRegularExpression(", [Tt]he").match(returnName);
+    match = QRegularExpression(", the",
+                               QRegularExpression::CaseInsensitiveOption).match(returnName);
     if(!match.hasMatch()) {
-      match = QRegularExpression(", [Dd]er").match(returnName);
+      match = QRegularExpression(", der",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression(", [Dd]ie").match(returnName);
+      match = QRegularExpression(", die",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression(", [Dd]as").match(returnName);
+      match = QRegularExpression(", das",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression(", [Ll][eao]s").match(returnName);
+      match = QRegularExpression(", l[eao]s",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(match.hasMatch()) {
       returnName.replace(match.captured(0), "").prepend(match.captured(0).right(3) + " ");
     } else {
       // Two digit articles in French, Spanish:
-      match = QRegularExpression(", [Ll][ea]").match(returnName);
+      match = QRegularExpression(", l[ea]",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
       if(!match.hasMatch()) {
-        match = QRegularExpression(", [Ee]l").match(returnName);
+        match = QRegularExpression(", el",
+                                   QRegularExpression::CaseInsensitiveOption).match(returnName);
       }
       if(match.hasMatch()) {
         returnName.replace(match.captured(0), "").prepend(match.captured(0).right(2) + " ");
@@ -669,28 +665,37 @@ QString NameTools::moveArticle(const QString &baseName, const bool &toFront)
   } else {
     // Two and three digit articles in English, German, French, Spanish:
     // Exceptions: "Las Vegas", "Die Hard"
-    match = QRegularExpression("^[Tt]he ").match(returnName);
+    match = QRegularExpression("^the ",
+                               QRegularExpression::CaseInsensitiveOption).match(returnName);
     if(!match.hasMatch()) {
-      match = QRegularExpression("^[Dd]er ").match(returnName);
+      match = QRegularExpression("^der ",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      if(!QRegularExpression("^[Dd]ie [Hh]ard").match(returnName).hasMatch()) {
-        match = QRegularExpression("^[Dd]ie ").match(returnName);
+      if(!QRegularExpression("^die hard",
+                             QRegularExpression::CaseInsensitiveOption).match(returnName).hasMatch()) {
+        match = QRegularExpression("^die ",
+                                   QRegularExpression::CaseInsensitiveOption).match(returnName);
       }
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression("^[Dd]as ").match(returnName);
+      match = QRegularExpression("^das ",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      if(!QRegularExpression("^[Ll]as [Vv]egas").match(returnName).hasMatch()) {
-        match = QRegularExpression("^[Ll][eao]s ").match(returnName);
+      if(!QRegularExpression("^las vegas",
+                             QRegularExpression::CaseInsensitiveOption).match(returnName).hasMatch()) {
+        match = QRegularExpression("^l[eao]s ",
+                                   QRegularExpression::CaseInsensitiveOption).match(returnName);
       }
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression("^[Ll][ea] ").match(returnName);
+      match = QRegularExpression("^l[ea] ",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(!match.hasMatch()) {
-      match = QRegularExpression("^[Ee]l ").match(returnName);
+      match = QRegularExpression("^el ",
+                                 QRegularExpression::CaseInsensitiveOption).match(returnName);
     }
     if(match.hasMatch()) {
       returnName.replace(match.captured(0), "").append(", " + match.captured(0).replace(" ", ""));
@@ -702,7 +707,7 @@ QString NameTools::moveArticle(const QString &baseName, const bool &toFront)
 QString NameTools::removeEdition(const QString &newName)
 {
   QRegularExpressionMatch match = QRegularExpression(" [[:alpha:]]+ edition",
-                                     QRegularExpression::CaseInsensitiveOption).match(newName);
+                                                     QRegularExpression::CaseInsensitiveOption).match(newName);
   if(match.hasMatch()) {
     QString woArticle = newName;
     return woArticle.replace(match.captured(0), " ").simplified();
@@ -727,4 +732,77 @@ QString NameTools::removeSubtitle(const QString &baseName, bool &hasSubtitle)
   hasSubtitle = false;
   noSubtitle = baseName;
   return noSubtitle;
+}
+
+void NameTools::generateSearchNames(const QString &baseName,
+                                    QStringList &safeTransformations,
+                                    QStringList &unsafeTransformations,
+                                    bool offlineUsage)
+{
+  QString spaceChar = " ";
+  /* Apparently this is not needed anymore...
+  if(Skyscraper::config.scraper == "screenscraper") {
+    spaceChar = "+";
+  }*/
+
+  // Safe transformations 1-5:
+  // 1. Lowercase
+  safeTransformations.append(StrTools::altUriEscape(baseName.toLower(), spaceChar));
+  // 2. Lowercase + No brackets
+  QString copy = StrTools::stripBrackets(baseName);
+  safeTransformations.append(StrTools::altUriEscape(copy.toLower(), spaceChar));
+  // 3a. Lowercase + No brackets + No revision/version/edition + Roman numbers + &->and
+  copy.replace("&", " and ");
+  QString copy2 = getUrlQueryName(convertToRomanNumeral(copy), -2, spaceChar);
+  safeTransformations.append(copy2);
+  // 3b. Lowercase + No brackets + No revision/version/edition + Roman numbers +
+  //     Article to front/removed + &->and
+  copy2 = getUrlQueryName(convertToRomanNumeral(copy), -1, spaceChar);
+  safeTransformations.append(copy2);
+  // 4a. Lowercase + No brackets + No revision/version/edition + Arabic numbers + &->and
+  copy2 = getUrlQueryName(convertToIntegerNumeral(copy), -2, spaceChar);
+  safeTransformations.append(copy2);
+  // 4b. Lowercase + No brackets + No revision/version/edition + Arabic numbers +
+  //     Article to front/removed + &->and
+  copy = getUrlQueryName(convertToIntegerNumeral(copy), -1, spaceChar);
+  safeTransformations.append(copy);
+  // 5a. Offline only: Lowercase + No brackets + No revision/version/edition + Arabic numbers +
+  //                   Article removed + &->and + no symbols + no spaces
+  // 5b. Offline only: Lowercase + No brackets + No revision/version/edition + Arabic numbers +
+  //                   &->and + no symbols + no spaces
+  if(offlineUsage) {
+    safeTransformations.append(StrTools::sanitizeName(copy2));
+    safeTransformations.append(StrTools::sanitizeName(copy));
+  }
+  safeTransformations.removeDuplicates();
+  if(Skyscraper::config.verbosity > 3) {
+    qDebug() << "Safe transformations for" << baseName << ":" << safeTransformations;
+  }
+  if(!Skyscraper::config.keepSubtitle) {
+    bool hasSubtitle;
+    // Unsafe transformations: Same as 1-5 removing the subtitle
+    copy = NameTools::removeSubtitle(baseName, hasSubtitle);
+    if(hasSubtitle) {
+      unsafeTransformations.append(StrTools::altUriEscape(copy.toLower(), spaceChar));
+      copy = StrTools::stripBrackets(copy);
+      unsafeTransformations.append(StrTools::altUriEscape(copy.toLower(), spaceChar));
+      copy.replace("&", " and ");
+      copy2 = getUrlQueryName(convertToRomanNumeral(copy), -2, spaceChar);
+      unsafeTransformations.append(copy2);
+      copy2 = getUrlQueryName(convertToRomanNumeral(copy), -1, spaceChar);
+      unsafeTransformations.append(copy2);
+      copy2 = getUrlQueryName(convertToIntegerNumeral(copy), -2, spaceChar);
+      unsafeTransformations.append(copy2);
+      copy = getUrlQueryName(convertToIntegerNumeral(copy), -1, spaceChar);
+      unsafeTransformations.append(copy);
+      if(offlineUsage) {
+        unsafeTransformations.append(StrTools::sanitizeName(copy2));
+        unsafeTransformations.append(StrTools::sanitizeName(copy));
+      }
+      unsafeTransformations.removeDuplicates();
+      if(Skyscraper::config.verbosity > 3) {
+        qDebug() << "Unsafe transformations for" << baseName << ":" << unsafeTransformations;
+      }
+    }
+  }
 }

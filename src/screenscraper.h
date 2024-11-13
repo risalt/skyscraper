@@ -42,13 +42,11 @@ class ScreenScraper : public AbstractScraper
 
 public:
   ScreenScraper(Settings *config, QSharedPointer<NetManager> manager);
-
-private:
-  QTimer limitTimer;
-  QEventLoop limiter;
-  QList<QString> getSearchNames(const QFileInfo &info) override;
-  void getSearchResults(QList<GameEntry> &gameEntries, QString searchName, QString) override;
+  QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
+
+protected:
+  void getSearchResults(QList<GameEntry> &gameEntries, QString searchName, QString) override;
   void getReleaseDate(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
@@ -63,20 +61,20 @@ private:
   void getScreenshot(GameEntry &game) override;
   void getWheel(GameEntry &game) override;
   void getMarquee(GameEntry &game) override;
-  void getTexture(GameEntry& game) override;
+  void getTexture(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
   void getManual(GameEntry &game) override;
 
-  QString getJsonText(QJsonArray array, int attr, QList<QString> types = QList<QString>());
+private:
+  QString getJsonText(QJsonArray array, int attr, QStringList types = QStringList());
 
-  QString getPlatformId(const QString platform) override;
-
-  void loadConfig(const QString& configPath);
-  QMap<QString, int> platformToId;
+  QTimer limitTimer;
+  QEventLoop limiter;
 
   QString region;
   QString lang;
   QJsonObject jsonObj;
+  QString platformId;
 
 };
 

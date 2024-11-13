@@ -85,6 +85,7 @@ void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntr
       entry.manualFormat = "fromxml";
     }
     entry.description = nodes.at(a).firstChildElement("desc").text();
+    entry.trivia = nodes.at(a).firstChildElement("trivia").text();
     entry.releaseDate = nodes.at(a).firstChildElement("releasedate").text();
     entry.developer = nodes.at(a).firstChildElement("developer").text();
     entry.publisher = nodes.at(a).firstChildElement("publisher").text();
@@ -92,6 +93,8 @@ void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntr
     entry.franchises = nodes.at(a).firstChildElement("franchise").text();
     entry.rating = nodes.at(a).firstChildElement("rating").text();
     entry.players = nodes.at(a).firstChildElement("players").text();
+    entry.guides = nodes.at(a).firstChildElement("guides").text();
+    entry.vgmaps = nodes.at(a).firstChildElement("vgmaps").text();
     entry.chiptuneId = nodes.at(a).firstChildElement("chiptuneid").text();
     entry.chiptunePath = nodes.at(a).firstChildElement("chiptunepath").text();
     entry.eSFavorite = nodes.at(a).firstChildElement("favorite").text();

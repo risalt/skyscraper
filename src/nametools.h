@@ -30,6 +30,7 @@
 
 #include <QObject>
 #include <QFileInfo>
+#include <QStringList>
 
 class NameTools : public QObject
 {
@@ -54,6 +55,10 @@ public:
   static QString moveArticle(const QString &baseName, const bool &toFront);
   static QString removeEdition(const QString &newName);
   static QString removeSubtitle(const QString &baseName, bool &hasSubtitle);
+  static void generateSearchNames(const QString &baseName,
+                                  QStringList &safeTransformations,
+                                  QStringList &unsafeTransformations,
+                                  bool offlineUsage);
 };
 
 #endif // NAMETOOLS_H

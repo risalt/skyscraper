@@ -53,6 +53,7 @@ As Skyscraper was built to be used with RetroPie, the list of supported platform
 * PC-9800
 * PC-Engine / TurboGrafx-16
 * PC-Engine CD / TurboGrafx-16 CD
+* PC-Engine Supergrafx
 * PC-FX
 * Pico-8 (Virtual console)
 * Playstation
@@ -84,3 +85,41 @@ As Skyscraper was built to be used with RetroPie, the list of supported platform
 * Z-Machine
 * ZX81
 * ZX Spectrum
+
+Thanks to the PR from torresflo @ GitHub it is possible to add new platforms by
+editing the `platforms.json` file.
+
+Take this example:
+```json
+        {
+            "name": "atari2600",
+            "scrapers": [
+                "screenscraper"
+            ],
+            "formats": [
+                "*.a26",
+                "*.bin",
+                "*.gz",
+                "*.rom"
+            ],
+            "aliases": [
+                "atari 2600"
+            ]
+        },
+```
+
+- `name`: reflects the platform/folder name, usually provided with `-p` on the
+  command line.
+- `scrapers`: set of possible scraper sites. Denotes the default scrapers if not
+  overridden by `-s` command line flag.
+- `formats`: set of ROM file extensions which will be included in scraping if
+  not a ROM file is provided via command line.
+- `aliases`: set of aliases for this platform. Make sure that the platform names
+  from `screenscraper.json` and/or `mobygames.json` are listed here, thus
+  Skyscraper will map it to the right platform ID for the scraper.
+
+**Note**: If you need a specific folder name for a platform (on your setup or
+due to an EmulationStation theme) use a symbolic link (see `megadrive` and
+`genesis` for example on RetroPie) instead of adding a new platform in this JSON
+file.
+

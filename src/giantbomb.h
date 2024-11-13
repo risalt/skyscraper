@@ -32,6 +32,7 @@
 #include <QFile>
 #include <QPair>
 #include <QMap>
+#include <QMultiMap>
 #include <QDateTime>
 
 #include "abstractscraper.h"
@@ -42,19 +43,11 @@ class GiantBomb : public AbstractScraper
 
 public:
   GiantBomb(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QString threadId;
-  QDateTime lastGameRequest;
-  QDateTime lastReleaseRequest;
-  QDateTime lastImageRequest;
-  QDateTime lastVideoRequest;
-
-  QList<QPair<QString, QString > > headers;
-  
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
@@ -69,16 +62,24 @@ private:
   void getWheel(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
+
+private:
   bool refreshGbCache(QString &endpoint, QFile *file, QDateTime *lastRequest);
   bool requestGb (const QString &url, QDateTime *lastRequest);
 
-  void loadConfig(const QString& configPath);
-  QMap<QString, int> platformToId;
-  QString getPlatformId(const QString platform) override;
-  QMap<QString, QPair<QString, QString>> gbPlatformMap;
-  QString platformId;
+  QString threadId;
+  QDateTime lastGameRequest;
+  QDateTime lastReleaseRequest;
+  QDateTime lastImageRequest;
+  QDateTime lastVideoRequest;
 
-  QList<QString> getSearchNames(const QFileInfo &info) override;
+  QList<QPair<QString, QString > > headers;
+
+  QMultiMap<QString, QPair<QString, QString>> gbPlatformMap;
+  QMultiMap<QString, QPair<QString, QString>> gbPlatformMapTitle;
+  QString platformId;
+  
+  QStringList existingMedia;
 
   QJsonDocument jsonDoc;
   QJsonDocument jsonRel;
@@ -87,6 +88,7 @@ private:
   QJsonObject jsonObjRel;
   QJsonObject jsonObjVid;
   QJsonArray jsonImages;
+
 };
 
 #endif // GIANTBOMB_H

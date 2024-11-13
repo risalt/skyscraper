@@ -30,78 +30,181 @@ GameEntry::GameEntry()
 {
 }
 
-int GameEntry::getCompleteness() const
+GameEntry::GameEntry(const QByteArray & buffer)
 {
-  double completeness = 100.0;
-  int noOfTypes = 16;
-  if(Skyscraper::videos) {
-    noOfTypes += 1;
-  }
-  if(Skyscraper::manuals) {
-    noOfTypes += 1;
-  }
-  if(Skyscraper::chiptunes) {
-    noOfTypes += 1;
-  }
-  double valuePerType = completeness / (double)noOfTypes;
-  if(title.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(platform.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(coverData.isNull() || emptyShell) {
-    completeness -= valuePerType;
-  }
-  if(screenshotData.isNull()) {
-    completeness -= valuePerType;
-  }
-  if(wheelData.isNull()) {
-    completeness -= valuePerType;
-  }
-  if(marqueeData.isNull()) {
-    completeness -= valuePerType;
-  }
-  if(textureData.isNull()) {
-    completeness -= valuePerType;
-  }
-  if(description.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(releaseDate.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(developer.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(publisher.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(tags.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(franchises.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(rating.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(players.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(ages.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(Skyscraper::videos && videoFormat.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(Skyscraper::manuals && manualFormat.isEmpty()) {
-    completeness -= valuePerType;
-  }
-  if(Skyscraper::chiptunes && ( chiptuneId.isEmpty() || chiptunePath.isEmpty())) {
-    completeness -= valuePerType;
-  }
-  return (int)completeness;
+  GameEntry game;
+  QDataStream bRead(buffer);
+  bRead >>
+        id >>
+        path >>
+        title >>
+        titleSrc >>
+        platform >>
+        platformSrc >>
+        description >>
+        descriptionSrc >>
+        trivia >>
+        triviaSrc >>
+        releaseDate >>
+        releaseDateSrc >>
+        developer >>
+        developerSrc >>
+        publisher >>
+        publisherSrc >>
+        tags >>
+        tagsSrc >>
+        franchises >>
+        franchisesSrc >>
+        players >>
+        playersSrc >>
+        ages >>
+        agesSrc >>
+        rating >>
+        ratingSrc >>
+        completed >>
+        favourite >>
+        played >>
+        timesPlayed >>
+        lastPlayed >>
+        firstPlayed >>
+        timePlayed >>
+        coverFile >>
+        coverData >>
+        coverSrc >>
+        coverRegion >>
+        screenshotFile >>
+        screenshotData >>
+        screenshotSrc >>
+        screenshotRegion >>
+        wheelFile >>
+        wheelData >>
+        wheelSrc >>
+        wheelRegion >>
+        marqueeFile >>
+        marqueeData >>
+        marqueeSrc >>
+        marqueeRegion >>
+        textureFile >>
+        textureData >>
+        textureSrc >>
+        textureRegion >>
+        videoFile >>
+        videoData >>
+        videoSrc >>
+        manualFile >>
+        manualData >>
+        manualSrc >>
+        guides >>
+        guidesSrc >>
+        vgmaps >>
+        vgmapsSrc >>
+        chiptuneId >>
+        chiptuneIdSrc >>
+        chiptunePath >>
+        chiptunePathSrc >>
+        searchMatch >>
+        cacheId >>
+        source >>
+        url >>
+        sqrNotes >>
+        parNotes >>
+        videoFormat >>
+        manualFormat >>
+        baseName >>
+        absoluteFilePath >>
+        found >>
+        emptyShell >>
+        miscData >>
+        pSValuePairs;
+}
+
+QByteArray GameEntry::serialize() const
+{
+  QByteArray result;
+  QDataStream bWrite(&result, QIODevice::WriteOnly);
+  bWrite << 
+         id <<
+         path <<
+         title <<
+         titleSrc <<
+         platform <<
+         platformSrc <<
+         description <<
+         descriptionSrc <<
+         trivia <<
+         triviaSrc <<
+         releaseDate <<
+         releaseDateSrc <<
+         developer <<
+         developerSrc <<
+         publisher <<
+         publisherSrc <<
+         tags <<
+         tagsSrc <<
+         franchises <<
+         franchisesSrc <<
+         players <<
+         playersSrc <<
+         ages <<
+         agesSrc <<
+         rating <<
+         ratingSrc <<
+         completed <<
+         favourite <<
+         played <<
+         timesPlayed <<
+         lastPlayed <<
+         firstPlayed <<
+         timePlayed <<
+         coverFile <<
+         coverData <<
+         coverSrc <<
+         coverRegion <<
+         screenshotFile <<
+         screenshotData <<
+         screenshotSrc <<
+         screenshotRegion <<
+         wheelFile <<
+         wheelData <<
+         wheelSrc <<
+         wheelRegion <<
+         marqueeFile <<
+         marqueeData <<
+         marqueeSrc <<
+         marqueeRegion <<
+         textureFile <<
+         textureData <<
+         textureSrc <<
+         textureRegion <<
+         videoFile <<
+         videoData <<
+         videoSrc <<
+         manualFile <<
+         manualData <<
+         manualSrc <<
+         guides <<
+         guidesSrc <<
+         vgmaps <<
+         vgmapsSrc <<
+         chiptuneId <<
+         chiptuneIdSrc <<
+         chiptunePath <<
+         chiptunePathSrc <<
+         searchMatch <<
+         cacheId <<
+         source <<
+         url <<
+         sqrNotes <<
+         parNotes <<
+         videoFormat <<
+         manualFormat <<
+         baseName <<
+         absoluteFilePath <<
+         found <<
+         emptyShell <<
+         miscData <<
+         pSValuePairs;
+  return result;
 }
 
 void GameEntry::resetMedia()
@@ -115,9 +218,321 @@ void GameEntry::resetMedia()
   manualData = "";
 }
 
+int GameEntry::getCompleteness() const
+{
+  double completeness = 0.0;
+  int noOfTypes = 17;
+  if(Skyscraper::config.videos) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.manuals) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.guides) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.vgmaps) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.chiptunes) {
+    noOfTypes += 1;
+  }
+  // If we are scraping we can be more exact:
+  if(Skyscraper::config.scraper == "arcadedb") {
+    noOfTypes = 12;
+    if(Skyscraper::config.videos) noOfTypes++;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "chiptune") {
+    noOfTypes = 2;
+    if(Skyscraper::config.chiptunes) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "vgmaps") {
+    noOfTypes = 2;
+    if(Skyscraper::config.vgmaps) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "gamefaqs") {
+    noOfTypes = 12;
+    if(Skyscraper::config.guides) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "vgfacts") {
+    noOfTypes = 9;
+  } else if(Skyscraper::config.scraper == "rawg") {
+    noOfTypes = 11;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "giantbomb") {
+    noOfTypes = 14;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "igdb") {
+    noOfTypes = 14;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "launchbox") {
+    noOfTypes = 15;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "customflags") {
+    noOfTypes = 7;
+  } else if(Skyscraper::config.scraper == "mobygames") {
+    noOfTypes = 15;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "offlinemobygames") {
+    noOfTypes = 15;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "openretro") {
+    noOfTypes = 14;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "screenscraper") {
+    noOfTypes = 16;
+    if(Skyscraper::config.videos) noOfTypes++;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "thegamesdb") {
+    noOfTypes = 14;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "worldofspectrum") {
+    noOfTypes = 12;
+    if(Skyscraper::config.videos) noOfTypes++;
+    if(Skyscraper::config.manuals) noOfTypes++;
+  }
+  double valuePerType = 100.0 / (double)noOfTypes;
+  if(!title.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!platform.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!coverData.isNull() && !emptyShell) {
+    completeness += valuePerType;
+  }
+  if(!screenshotData.isNull()) {
+    completeness += valuePerType;
+  }
+  if(!wheelData.isNull()) {
+    completeness += valuePerType;
+  }
+  if(!marqueeData.isNull()) {
+    completeness += valuePerType;
+  }
+  if(!textureData.isNull()) {
+    completeness += valuePerType;
+  }
+  if(!description.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!trivia.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!releaseDate.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!developer.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!publisher.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!tags.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!franchises.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!rating.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!players.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(!ages.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.videos && !videoFormat.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.manuals && !manualFormat.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.guides && !guides.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.vgmaps && !vgmaps.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.chiptunes && !chiptuneId.isEmpty() && !chiptunePath.isEmpty()) {
+    completeness += valuePerType;
+  }
+  return (int)completeness;
+}
+
+QDataStream &operator>>(QDataStream &in, GameEntry &game)
+{
+  in >> game.id >>
+        game.path >>
+        game.title >>
+        game.titleSrc >>
+        game.platform >>
+        game.platformSrc >>
+        game.description >>
+        game.descriptionSrc >>
+        game.trivia >>
+        game.triviaSrc >>
+        game.releaseDate >>
+        game.releaseDateSrc >>
+        game.developer >>
+        game.developerSrc >>
+        game.publisher >>
+        game.publisherSrc >>
+        game.tags >>
+        game.tagsSrc >>
+        game.franchises >>
+        game.franchisesSrc >>
+        game.players >>
+        game.playersSrc >>
+        game.ages >>
+        game.agesSrc >>
+        game.rating >>
+        game.ratingSrc >>
+        game.completed >>
+        game.favourite >>
+        game.played >>
+        game.timesPlayed >>
+        game.lastPlayed >>
+        game.firstPlayed >>
+        game.timePlayed >>
+        game.coverFile >>
+        game.coverData >>
+        game.coverSrc >>
+        game.coverRegion >>
+        game.screenshotFile >>
+        game.screenshotData >>
+        game.screenshotSrc >>
+        game.screenshotRegion >>
+        game.wheelFile >>
+        game.wheelData >>
+        game.wheelSrc >>
+        game.wheelRegion >>
+        game.marqueeFile >>
+        game.marqueeData >>
+        game.marqueeSrc >>
+        game.marqueeRegion >>
+        game.textureFile >>
+        game.textureData >>
+        game.textureSrc >>
+        game.textureRegion >>
+        game.videoFile >>
+        game.videoData >>
+        game.videoSrc >>
+        game.manualFile >>
+        game.manualData >>
+        game.manualSrc >>
+        game.guides >>
+        game.guidesSrc >>
+        game.vgmaps >>
+        game.vgmapsSrc >>
+        game.chiptuneId >>
+        game.chiptuneIdSrc >>
+        game.chiptunePath >>
+        game.chiptunePathSrc >>
+        game.searchMatch >>
+        game.cacheId >>
+        game.source >>
+        game.url >>
+        game.sqrNotes >>
+        game.parNotes >>
+        game.videoFormat >>
+        game.manualFormat >>
+        game.baseName >>
+        game.absoluteFilePath >>
+        game.found >>
+        game.emptyShell >>
+        game.miscData >>
+        game.pSValuePairs;
+  return in;
+}
+
+QDataStream &operator<<(QDataStream &out, const GameEntry &game)
+{
+  out << game.id <<
+         game.path <<
+         game.title <<
+         game.titleSrc <<
+         game.platform <<
+         game.platformSrc <<
+         game.description <<
+         game.descriptionSrc <<
+         game.trivia <<
+         game.triviaSrc <<
+         game.releaseDate <<
+         game.releaseDateSrc <<
+         game.developer <<
+         game.developerSrc <<
+         game.publisher <<
+         game.publisherSrc <<
+         game.tags <<
+         game.tagsSrc <<
+         game.franchises <<
+         game.franchisesSrc <<
+         game.players <<
+         game.playersSrc <<
+         game.ages <<
+         game.agesSrc <<
+         game.rating <<
+         game.ratingSrc <<
+         game.completed <<
+         game.favourite <<
+         game.played <<
+         game.timesPlayed <<
+         game.lastPlayed <<
+         game.firstPlayed <<
+         game.timePlayed <<
+         game.coverFile <<
+         game.coverData <<
+         game.coverSrc <<
+         game.coverRegion <<
+         game.screenshotFile <<
+         game.screenshotData <<
+         game.screenshotSrc <<
+         game.screenshotRegion <<
+         game.wheelFile <<
+         game.wheelData <<
+         game.wheelSrc <<
+         game.wheelRegion <<
+         game.marqueeFile <<
+         game.marqueeData <<
+         game.marqueeSrc <<
+         game.marqueeRegion <<
+         game.textureFile <<
+         game.textureData <<
+         game.textureSrc <<
+         game.textureRegion <<
+         game.videoFile <<
+         game.videoData <<
+         game.videoSrc <<
+         game.manualFile <<
+         game.manualData <<
+         game.manualSrc <<
+         game.guides <<
+         game.guidesSrc <<
+         game.vgmaps <<
+         game.vgmapsSrc <<
+         game.chiptuneId <<
+         game.chiptuneIdSrc <<
+         game.chiptunePath <<
+         game.chiptunePathSrc <<
+         game.searchMatch <<
+         game.cacheId <<
+         game.source <<
+         game.url <<
+         game.sqrNotes <<
+         game.parNotes <<
+         game.videoFormat <<
+         game.manualFormat <<
+         game.baseName <<
+         game.absoluteFilePath <<
+         game.found <<
+         game.emptyShell <<
+         game.miscData <<
+         game.pSValuePairs;
+  return out;
+}
+
 QDebug operator<<(QDebug debug, const GameEntry &game) {
     QDebugStateSaver saver(debug);
-    debug.nospace() << 
+    debug.nospace() <<
       "\nField 'id': " << game.id <<
       "\nField 'path': " << game.path <<
       "\nField 'title': " << game.title <<
@@ -126,6 +541,8 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'platformSrc': " << game.platformSrc <<
       "\nField 'description': " << game.description <<
       "\nField 'descriptionSrc': " << game.descriptionSrc <<
+      "\nField 'trivia': " << game.trivia <<
+      "\nField 'triviaSrc': " << game.triviaSrc <<
       "\nField 'releaseDate': " << game.releaseDate <<
       "\nField 'releaseDateSrc': " << game.releaseDateSrc <<
       "\nField 'developer': " << game.developer <<
@@ -175,6 +592,10 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'manualFile': " << game.manualFile <<
       "\nField 'manualData': " << "Data:" << game.manualData.size() <<
       "\nField 'manualSrc': " << game.manualSrc <<
+      "\nField 'guides': " << game.guides <<
+      "\nField 'guidesSrc': " << game.guidesSrc <<
+      "\nField 'vgmaps': " << game.vgmaps <<
+      "\nField 'vgmapsSrc': " << game.vgmapsSrc <<
       "\nField 'chiptuneId': " << game.chiptuneId <<
       "\nField 'chiptuneIdSrc': " << game.chiptuneIdSrc <<
       "\nField 'chiptunePath': " << game.chiptunePath <<

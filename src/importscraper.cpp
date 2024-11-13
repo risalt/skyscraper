@@ -49,6 +49,10 @@ ImportScraper::ImportScraper(Settings *config,
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(FRANCHISES);
   fetchOrder.append(MANUAL);
+  fetchOrder.append(GUIDES);
+  fetchOrder.append(PLATFORM);
+  fetchOrder.append(TRIVIA);
+  fetchOrder.append(VGMAPS);
 
   covers = QDir(config->importFolder + "/covers", "*.*",
                 QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
@@ -71,88 +75,13 @@ ImportScraper::ImportScraper(Settings *config,
 
 void ImportScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
   // Always reset game title at this point, to avoid saving the dummy title in cache
   game.title = "";
 
   loadData();
-
   QByteArray dataOrig = data;
-  for(int a = 0; a < fetchOrder.length(); ++a) {
-    switch(fetchOrder.at(a)) {
-    case TITLE:
-      getTitle(game);
-      data = dataOrig;
-      break;
-    case DESCRIPTION:
-      getDescription(game);
-      data = dataOrig;
-      break;
-    case DEVELOPER:
-      getDeveloper(game);
-      data = dataOrig;
-      break;
-    case PUBLISHER:
-      getPublisher(game);
-      data = dataOrig;
-      break;
-    case PLAYERS:
-      getPlayers(game);
-      data = dataOrig;
-      break;
-    case AGES:
-      getAges(game);
-      data = dataOrig;
-      break;
-    case RATING:
-      getRating(game);
-      data = dataOrig;
-      break;
-    case TAGS:
-      getTags(game);
-      data = dataOrig;
-      break;
-    case FRANCHISES:
-      getFranchises(game);
-      data = dataOrig;
-      break;
-    case RELEASEDATE:
-      getReleaseDate(game);
-      data = dataOrig;
-      break;
-    case COVER:
-      getCover(game);
-      break;
-    case SCREENSHOT:
-      getScreenshot(game);
-      break;
-    case WHEEL:
-      getWheel(game);
-      break;
-    case MARQUEE:
-      getMarquee(game);
-      break;
-    case TEXTURE:
-      getTexture(game);
-      break;
-    case VIDEO:
-      if((config->videos) && (!sharedBlobs.contains("video"))) {
-        getVideo(game);
-      }
-      break;
-    case MANUAL:
-      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
-        getVideo(game);
-      }
-      break;
-    default:
-      ;
-    }
-  }
+
+  fetchGameResources(game, sharedBlobs, cache);
 }
 
 void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &, QString &)
@@ -234,9 +163,9 @@ void ImportScraper::getMarquee(GameEntry &game)
 
 void ImportScraper::getTexture(GameEntry &game)
 {
-  if (!textureFile.isEmpty()) {
+  if(!textureFile.isEmpty()) {
     QFile f(textureFile);
-    if (f.open(QIODevice::ReadOnly)) {
+    if(f.open(QIODevice::ReadOnly)) {
       game.textureData = f.readAll();
       f.close();
     }
@@ -274,12 +203,12 @@ void ImportScraper::getTitle(GameEntry &game)
   if(titlePre.isEmpty()) {
     return;
   }
-  for(const auto &nom: titlePre) {
+  for(const auto &nom: std::as_const(titlePre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: titlePre) {
+  for(const auto &nom: std::as_const(titlePre)) {
     nomNom(nom);
   }
   game.title = data.left(data.indexOf(titlePost.toUtf8())).simplified();
@@ -290,12 +219,12 @@ void ImportScraper::getRating(GameEntry &game)
   if(ratingPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: ratingPre) {
+  for(const auto &nom: std::as_const(ratingPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: ratingPre) {
+  for(const auto &nom: std::as_const(ratingPre)) {
     nomNom(nom);
   }
   game.rating = data.left(data.indexOf(ratingPost.toUtf8()));
@@ -303,9 +232,9 @@ void ImportScraper::getRating(GameEntry &game)
   // check for 0, 0.5, 1, 1.5, ... 5
   QRegularExpression re("^[0-5](\\.5)?$");
   QRegularExpressionMatch m = re.match(game.rating);
-  if (m.hasMatch()) {
+  if(m.hasMatch()) {
     double rating = game.rating.toDouble();
-    if (rating <= 5.0) {
+    if(rating <= 5.0) {
       game.rating = QString::number(rating / 5.0);
     } else {
       game.rating = "";
@@ -357,6 +286,10 @@ bool ImportScraper::loadDefinitions()
       checkForTag(franchisesPre, franchisesPost, franchisesTag, line);
       checkForTag(releaseDatePre, releaseDatePost, releaseDateTag, line);
       checkForTag(descriptionPre, descriptionPost, descriptionTag, line);
+      checkForTag(guidesPre, guidesPost, guidesTag, line);
+      checkForTag(platformPre, platformPost, platformTag, line);
+      checkForTag(triviaPre, triviaPost, triviaTag, line);
+      checkForTag(vgmapsPre, vgmapsPost, vgmapsTag, line);
     }
     defFile.close();
     return true;
@@ -364,7 +297,7 @@ bool ImportScraper::loadDefinitions()
   return false;
 }
 
-void ImportScraper::checkForTag(QList<QString> &pre, QString &post, QString &tag, QString &line)
+void ImportScraper::checkForTag(QStringList &pre, QString &post, QString &tag, QString &line)
 {
   if(line.indexOf(tag) != -1 && line.indexOf(tag) != 0) {
     pre.append(line.left(line.indexOf(tag)));
@@ -374,7 +307,7 @@ void ImportScraper::checkForTag(QList<QString> &pre, QString &post, QString &tag
 
 bool ImportScraper::checkType(QString baseName, QList<QFileInfo> &infos, QString &inputFile)
 {
-  for(const auto &i: infos) {
+  for(const auto &i: std::as_const(infos)) {
     if(i.completeBaseName() == baseName) {
       inputFile = i.absoluteFilePath();
       return true;

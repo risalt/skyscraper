@@ -34,31 +34,22 @@
 #include "abstractscraper.h"
 #include "gameentry.h"
 
-constexpr int CTNULL = 0;
-constexpr int CTNAME = 3;
-constexpr int CTFILENAME = 19;
-constexpr int CTLAUNCHBOX = 21;
-constexpr int CTMAMEFILE = 22;
-
-
 class Chiptune : public AbstractScraper
 {
   Q_OBJECT
 
 public:
   Chiptune(Settings *config, QSharedPointer<NetManager> manager);
-  ~Chiptune();
-  virtual QList<QString> getSearchNames(const QFileInfo &info) override;
-  
-private:
-  QMap<QString, int> schema;
-  QMap<QString, QString> mameNameToLongName;
-  QMap<QString, QPair<QString, QPair<QString, QString>>> soundtrackList;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
-  void getChiptune(GameEntry &game) override;
+
+private:
+  QMap<QString, int> schema;
+  QMultiMap<QString, QPair<QString, QPair<QString, QString>>> soundtrackList;
+  QMultiMap<QString, QPair<QString, QPair<QString, QString>>> soundtrackListTitle;
 
 };
 

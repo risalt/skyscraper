@@ -45,6 +45,6 @@ QImage FxRotate::applyEffect(const QImage &src, const Layer &layer)
   }
 
   QImage canvas = src.transformed(rotate, Qt::SmoothTransformation);
- 
+
   return canvas;
 }

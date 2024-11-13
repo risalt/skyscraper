@@ -52,7 +52,7 @@ QImage FxBalance::applyEffect(const QImage &src, const Layer &layer)
   for(int y = 0; y < canvas.height(); ++y) {
     QRgb* line =(QRgb *)canvas.scanLine(y);
     for(int x = 0; x < canvas.width(); ++x) {
-      
+
       line[x] = qPremultiply(qRgba(indexRed[qRed(line[x])],
                                    indexGreen[qGreen(line[x])],
                                    indexBlue[qBlue(line[x])],

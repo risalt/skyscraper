@@ -23,6 +23,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
+#include <QUrl>
 #include <QJsonArray>
 
 #include "arcadedb.h"
@@ -33,15 +34,23 @@ ArcadeDB::ArcadeDB(Settings *config,
                    QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
-  incrementalScraping = true;
-
   baseUrl = "http://adb.arcadeitalia.net";
   searchUrlPre = "http://adb.arcadeitalia.net/service_scraper.php?ajax=query_mame&lang=en&use_parent=1&game_name=";
+
+  if(Platform::get().getFamily(config->platform) != "arcade" &&
+     (!config->extensions.contains("mame") && !config->addExtensions.contains("mame"))) {
+    reqRemaining = 0;
+    printf("\033[0;31mPlatform not supported by ArcadeItalia "
+           "(only Arcade platforms are supported)...\033[0m\n");
+    return;
+  }
 
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(TAGS);
   fetchOrder.append(PLAYERS);
+  fetchOrder.append(RATING);
+  fetchOrder.append(FRANCHISES);
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(SCREENSHOT);
   fetchOrder.append(COVER);
@@ -55,13 +64,7 @@ ArcadeDB::ArcadeDB(Settings *config,
 void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
                                 QString searchName, QString platform)
 {
-  if (Platform::get().getFamily(config->platform) != "arcade") {
-    reqRemaining = 0;
-    printf("\033[0;31mPlatform not supported by ArcadeItalia (only Arcade platforms are supported)...\033[0m\n");
-    return;
-  }
-
-  netComm->request(searchUrlPre + searchName);
+  netComm->request(searchUrlPre + QUrl::toPercentEncoding(searchName));
   q.exec();
   data = netComm->getData();
 
@@ -88,113 +91,39 @@ void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
 
 void ArcadeDB::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
-  for(int a = 0; a < fetchOrder.length(); ++a) {
-    switch(fetchOrder.at(a)) {
-    case DESCRIPTION:
-      getDescription(game);
-      break;
-    case DEVELOPER:
-      getDeveloper(game);
-      break;
-    case PUBLISHER:
-      getPublisher(game);
-      break;
-    case PLAYERS:
-      getPlayers(game);
-      break;
-    case RATING:
-      getRating(game);
-      break;
-    case AGES:
-      getAges(game);
-      break;
-    case TAGS:
-      getTags(game);
-      break;
-    case FRANCHISES:
-      getFranchises(game);
-      break;
-    case RELEASEDATE:
-      getReleaseDate(game);
-      break;
-    case COVER:
-      if(config->cacheCovers) {
-        if ((!cache) || (cache && cache->coverData.isNull())) {
-          getCover(game);
-        }
-      }
-      break;
-    case SCREENSHOT:
-      if(config->cacheScreenshots) {
-        if ((!cache) || (cache && cache->screenshotData.isNull())) {
-          getScreenshot(game);
-        }
-      }
-      break;
-    case WHEEL:
-      if(config->cacheWheels) {
-        if ((!cache) || (cache && cache->wheelData.isNull())) {
-          getWheel(game);
-        }
-      }
-      break;
-    case MARQUEE:
-      if(config->cacheMarquees) {
-        if ((!cache) || (cache && cache->marqueeData.isNull())) {
-          getMarquee(game);
-        }
-      }
-      break;
-    case TEXTURE:
-      if (config->cacheTextures) {
-        if ((!cache) || (cache && cache->textureData.isNull())) {
-          getTexture(game);
-        }
-      }
-      break;
-    case VIDEO:
-      if((config->videos) && (!sharedBlobs.contains("video"))) {
-        if ((!cache) || (cache && cache->videoData == "")) {
-          getVideo(game);
-        }
-      }
-      break;
-    case MANUAL:
-      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
-        if ((!cache) || (cache && cache->manualData == "")) {
-          getManual(game);
-        }
-      }
-      break;
-    default:
-      ;
-    }
-  }
+  fetchGameResources(game, sharedBlobs, cache);
 }
 
 void ArcadeDB::getReleaseDate(GameEntry &game)
 {
-  game.releaseDate = jsonObj.value("year").toString();
+  game.releaseDate = StrTools::conformReleaseDate(jsonObj.value("year").toString());
 }
 
 void ArcadeDB::getPlayers(GameEntry &game)
 {
-  game.players = QString::number(jsonObj.value("players").toInt());
+  game.players = StrTools::conformPlayers(QString::number(jsonObj.value("players").toInt()));
+}
+
+void ArcadeDB::getRating(GameEntry &game)
+{
+  if(jsonObj.value("rate").toInt() > 0) {
+    game.rating = QString::number(jsonObj.value("rate").toInt()/100.0, 'f', 3);
+  }
 }
 
 void ArcadeDB::getTags(GameEntry &game)
 {
-  game.tags = jsonObj.value("genre").toString().replace(" / ", ", ");
+  game.tags = StrTools::conformTags(jsonObj.value("genre").toString().replace(" / ", ", "));
 }
 
 void ArcadeDB::getPublisher(GameEntry &game)
 {
   game.publisher = jsonObj.value("manufacturer").toString();
+}
+
+void ArcadeDB::getFranchises(GameEntry &game)
+{
+  game.franchises = StrTools::conformTags(jsonObj.value("serie").toString());
 }
 
 void ArcadeDB::getDescription(GameEntry &game)
@@ -293,7 +222,15 @@ void ArcadeDB::getVideo(GameEntry &game)
      game.videoData.length() > 4096) {
     game.videoFormat = "mp4";
   } else {
-    game.videoData = "";
+    netComm->request("https://www.progettosnaps.net/videosnaps/mp4/" + internalName + ".mp4");
+    q.exec();
+    game.videoData = netComm->getData();
+    if(netComm->getError() == QNetworkReply::NoError &&
+       game.videoData.length() > 4096) {
+      game.videoFormat = "mp4";
+    } else {    
+      game.videoData = "";
+    }
   }
 }
 
@@ -307,13 +244,29 @@ void ArcadeDB::getManual(GameEntry &game)
      game.manualData.length() > 4096) {
     game.manualFormat = "pdf";
   } else {
-    game.manualData = "";
+    netComm->request("https://www.progettosnaps.net/manuals/pdf/" + internalName + ".pdf");
+    q.exec();
+    game.manualData = netComm->getData();
+    if(netComm->getError() == QNetworkReply::NoError &&
+       game.manualData.length() > 4096) {
+      game.manualFormat = "pdf";
+    } else {    
+      game.manualData = "";
+    }
   }
 }
 
-QList<QString> ArcadeDB::getSearchNames(const QFileInfo &info)
+QStringList ArcadeDB::getSearchNames(const QFileInfo &info)
 {
-  QList<QString> searchNames;
-  searchNames.append(info.baseName());
+  QStringList searchNames;
+  if(info.isSymbolicLink() && info.suffix() == "mame") {
+    QFileInfo mameFile = info.symLinkTarget();
+    searchNames.append(mameFile.baseName());
+  } else {
+    searchNames.append(info.baseName());
+  }
+  if(config->verbosity >= 2) {
+    qDebug() << "Search Name:" << searchNames.first();
+  }
   return searchNames;
 }

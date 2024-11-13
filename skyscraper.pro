@@ -56,12 +56,16 @@ HEADERS += src/skyscraper.h \
            src/thegamesdb.h \
            src/launchbox.h \
            src/chiptune.h \
+           src/vgmaps.h \
+           src/vgfacts.h \
            src/customflags.h \
            src/worldofspectrum.h \
            src/screenscraper.h \
            src/crc32.h \
            src/mobygames.h \
            src/offlinemobygames.h \
+           src/gamefaqs.h \
+           src/rawg.h \
            src/igdb.h \
            src/giantbomb.h \
            src/arcadedb.h \
@@ -113,12 +117,16 @@ SOURCES += src/main.cpp \
            src/thegamesdb.cpp \
            src/launchbox.cpp \
            src/chiptune.cpp \
+           src/vgmaps.cpp \
+           src/vgfacts.cpp \
            src/customflags.cpp \
            src/worldofspectrum.cpp \
            src/screenscraper.cpp \
            src/crc32.cpp \
            src/mobygames.cpp \
            src/offlinemobygames.cpp \
+           src/gamefaqs.cpp \ 
+           src/rawg.cpp \
            src/igdb.cpp \
            src/giantbomb.cpp \
            src/arcadedb.cpp \

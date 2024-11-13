@@ -37,13 +37,11 @@ class MobyGames : public AbstractScraper
 
 public:
   MobyGames(Settings *config, QSharedPointer<NetManager> manager);
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QTimer limitTimer;
-  QEventLoop limiter;
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
@@ -58,13 +56,14 @@ private:
   void getWheel(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
   void getManual(GameEntry &game) override;
-  void loadConfig(const QString& configPath);
 
-  QString getPlatformId(const QString platform) override;
-
+private:
   QString getRegionShort(const QString &region);
 
-  QMap<QString, int> platformToId;
+  QTimer limitTimer;
+  QEventLoop limiter;
+
+  QString platformId;
   QJsonDocument jsonDoc;
   QJsonDocument jsonMedia;
   QJsonDocument jsonScreens;

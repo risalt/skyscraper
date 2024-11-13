@@ -35,7 +35,9 @@
 #include "platform.h"
 
 #include <QObject>
+#include <QList>
 #include <QFile>
+#include <QFileInfo>
 #include <QElapsedTimer>
 
 #include <QCommandLineParser>
@@ -52,9 +54,7 @@ public:
   QSharedPointer<Queue> queue;
   QSharedPointer<NetManager> manager;
   int state = 0;
-  inline static bool videos;
-  inline static bool manuals;
-  inline static bool chiptunes;
+  inline static Settings config;
 
 public slots:
   void run();
@@ -63,15 +63,16 @@ signals:
   void finished();
 
 private slots:
-  void entryReady(const GameEntry &entry, const QString &output, const QString &debug);
-  void checkThreads();
+  void entryReady(const GameEntry &entry, const QString &output,
+                  const QString &debug, const QString &lowMatch);
+  void checkThreads(const bool &stopNow = false);
 
 private:
-  Settings config;
   inline static QFile lockFile;
   void loadConfig(const QCommandLineParser &parser);
   void copyFile(const QString &distro, const QString &current, bool overwrite = true);
   QString secsToString(const int &seconds);
+  QList<QFileInfo> sliceFiles(const QDir &inputDir, bool &foundSliceStart, bool &foundsliceEnd);
   void checkForFolder(QDir &folder, bool create = true);
   void showHint();
   void doPrescrapeJobs();
@@ -87,7 +88,7 @@ private:
   QSharedPointer<Cache> cache;
 
   QList<GameEntry> gameEntries;
-  QList<QString> cliFiles;
+  QStringList cliFiles;
   QMutex entryMutex;
   QMutex checkThreadMutex;
   QElapsedTimer timer;

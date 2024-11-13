@@ -90,8 +90,8 @@ Scripter::Scripter()
   std::string platformStr = "";
   printf("\n");
   printf("Available platforms:\n");
-  QStringList platforms = Platform::get().getPlatforms();
-  for(const auto &platform: platforms) {
+  const auto platforms = Platform::get().getPlatforms();
+  for(const auto &platform: std::as_const(platforms)) {
     printf("* \033[1;33m%s\033[0m\n", platform.toStdString().c_str());
   }
   while(platformStr == "") {
@@ -150,10 +150,6 @@ Scripter::Scripter()
   printf("\033[1;34mDo you wish to force a refresh of all locally cached data\033[0m (y/N)? ");
   getline(std::cin, refreshStr);
 
-  std::string unpackStr = "";
-  printf("\033[1;34mDo you wish to checksum the files inside compressed files (Answer 'y' ONLY if you've manually compressed your roms)?\033[0m (y/N)? ");
-  getline(std::cin, unpackStr);
-
   QFile scriptFile(QDir::homePath() + "/.skyscraper/skyscript.sh");
   if(!scriptFile.open(QIODevice::WriteOnly)) {
     printf("Couldn't open '%s/.skyscraper/skyscript.sh' file for writing, please check permissions and rerun Skyscraper\nNow quitting...\n", QDir::homePath().toStdString().c_str());
@@ -194,8 +190,6 @@ Scripter::Scripter()
   gatherStr += " --flags unattend,skipped,";
   generateStr += " --flags unattend,skipped,";
 
-  if(unpackStr == "y" || unpackStr == "Y")
-    gatherStr += "unpack,";
   if(forceFilenameStr == "y" || forceFilenameStr == "Y")
     generateStr += "forcefilename,";
   if(bracketsStr == "n")
@@ -219,7 +213,8 @@ Scripter::Scripter()
   }
 
   scriptFile.write("#!/bin/bash\n");
-  for(const auto &scraper: Platform::get().getScrapers(QString(platformStr.c_str()))) {
+  const auto scrapers = Platform::get().getScrapers(QString(platformStr.c_str()));
+  for(const auto &scraper: std::as_const(scrapers)) {
     if(scraper != "cache") {
       scriptFile.write((baseStr + " -s " + scraper.toStdString() + gatherStr + "\n").c_str());
     } else {

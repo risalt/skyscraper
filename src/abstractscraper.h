@@ -36,6 +36,7 @@
 #include <QEventLoop>
 #include <QFileInfo>
 #include <QSettings>
+#include <QMultiMap>
 #include <QStringList>
 
 class AbstractScraper : public QObject
@@ -50,6 +51,12 @@ public:
   // Fill in the game skeleton with the data from the scraper service.
   virtual void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr);
 
+  // Redirects the scraper to fetch each resource valid for the scraper.
+  void fetchGameResources(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr);
+
+  // Applies alias/scummvm/amiga/mame filename to name conversion.
+  QString applyNameMappings(const QString &fileName);
+
   // Applies alias/scummvm/amiga/mame filename to name conversion.
   // Applies getUrlQuery conversion to the outcome, including space to
   // the special character needed by the scraping service.
@@ -58,7 +65,7 @@ public:
   // the first numeral.
   // Returns the full list of up to four possibilities, that will be checked
   // in order against the scraping service until a match is found.
-  virtual QList<QString> getSearchNames(const QFileInfo &info);
+  virtual QStringList getSearchNames(const QFileInfo &info);
 
   // Generates the name for the game until a scraper provides an official one.
   // This is used to calculate the search names and calculate the best entry and
@@ -69,20 +76,26 @@ public:
   // the outcome, executes the getSearchResults in sequence until a search name is successful.
   virtual void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &output, QString &debug);
 
-  bool supportsIncrementalScraping();
-
-  //void setConfig(Settings *config);
-
   int reqRemaining = -1;
+  int reqRemainingKO = -1;
 
 protected:
-  Settings *config;
-
   // Queries the scraping service with searchName and generates a skeleton
   // game in gameEntries for each candidate returned.
   virtual void getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
                                 QString platform);
 
+  // Executes the search in the generic multimaps that store the games database access
+  // information for the offline scrapers (the ones for which the database ids are fully
+  // accessible). Needs to be executed as part of the scraper overriden getSearchResults.
+  template <typename T> bool getSearchResultsOffline(QList<T> &gameIds, const QString &searchName,
+                                                     QMultiMap<QString, T> &fullTitles,
+                                                     QMultiMap<QString, T> &mainTitles);
+
+  void loadConfig(const QString &configPath, const QString &code, const QString &name);
+
+  virtual void getTitle(GameEntry &game);
+  virtual void getPlatform(GameEntry &game);
   virtual void getDescription(GameEntry &game);
   virtual void getDeveloper(GameEntry &game);
   virtual void getPublisher(GameEntry &game);
@@ -99,6 +112,9 @@ protected:
   virtual void getTexture(GameEntry &game);
   virtual void getVideo(GameEntry &game);
   virtual void getManual(GameEntry &game);
+  virtual void getGuides(GameEntry &game);
+  virtual void getVGMaps(GameEntry &game);
+  virtual void getTrivia(GameEntry &game);
   virtual void getChiptune(GameEntry &game);
   virtual void getCustomFlags(GameEntry &game);
 
@@ -109,67 +125,71 @@ protected:
   virtual bool platformMatch(QString found, QString platform);
 
   // Returns the scraping service id for the platform.
-  virtual QString getPlatformId(const QString);
+  virtual QString getPlatformId(const QString &platform);
 
   // Detects if nom is present in the non-consumed part of data.
   bool checkNom(const QString nom);
 
   void getOnlineVideo(QString videoUrl, GameEntry &game);
 
-  bool incrementalScraping;
-
+  Settings *config;
+  bool offlineScraper;
   QList<int> fetchOrder;
+  QMap<QString, QString> platformToId;
 
   QByteArray data;
-
   QString baseUrl;
   QString searchUrlPre;
   QString searchUrlPost;
-
   QString searchResultPre;
-
-  QList<QString> urlPre;
+  QStringList urlPre;
   QString urlPost;
-  QList<QString> titlePre;
+  QStringList titlePre;
   QString titlePost;
-  QList<QString> platformPre;
+  QStringList platformPre;
   QString platformPost;
-  QList<QString> descriptionPre;
+  QStringList descriptionPre;
   QString descriptionPost;
-  QList<QString> developerPre;
+  QStringList developerPre;
   QString developerPost;
-  QList<QString> publisherPre;
+  QStringList publisherPre;
   QString publisherPost;
-  QList<QString> playersPre;
+  QStringList playersPre;
   QString playersPost;
-  QList<QString> agesPre;
+  QStringList agesPre;
   QString agesPost;
-  QList<QString> tagsPre;
+  QStringList tagsPre;
   QString tagsPost;
-  QList<QString> franchisesPre;
+  QStringList franchisesPre;
   QString franchisesPost;
-  QList<QString> ratingPre;
+  QStringList ratingPre;
   QString ratingPost;
-  QList<QString> releaseDatePre;
+  QStringList releaseDatePre;
   QString releaseDatePost;
-  QList<QString> coverPre;
+  QStringList coverPre;
   QString coverPost;
-  QList<QString> screenshotPre;
+  QStringList screenshotPre;
   QString screenshotPost;
   QString screenshotCounter;
-  QList<QString> wheelPre;
+  QStringList wheelPre;
   QString wheelPost;
-  QList<QString> marqueePre;
+  QStringList marqueePre;
   QString marqueePost;
-  QList<QString> texturePre;
+  QStringList texturePre;
   QString texturePost;
-  QList<QString> videoPre;
+  QStringList videoPre;
   QString videoPost;
-  QList<QString> manualPre;
+  QStringList manualPre;
   QString manualPost;
+  QStringList guidesPre;
+  QString guidesPost;
+  QStringList vgmapsPre;
+  QString vgmapsPost;
+  QStringList triviaPre;
+  QString triviaPost;
 
   // This is used when file names have a region in them. The original regionPrios is in Settings
-  QList<QString> regionPrios;
+  QStringList regionPrios;
 
   NetComm *netComm;
   QEventLoop q; // Event loop for use when waiting for data from NetComm.

@@ -78,7 +78,7 @@ QImage FxGamebox::applyEffect(const QImage &src, const Layer &layer,
   trans.reset();
   trans.rotate(layer.delta, Qt::ZAxis);
   sideImage = sideImage.transformed(trans, Qt::SmoothTransformation);
-  if (!sideImage.isNull()) {
+  if(!sideImage.isNull()) {
     // Scale spine / side artwork
     if(layer.scaling == "") {
       // Autoscale
@@ -137,7 +137,7 @@ void FxGamebox::fillWithAvg(const QImage &src, QImage &dst)
   if(src.height() > 20 && src.width() > x) {
     double segDelta = (double)src.height() / 200.0;
     double segs = 20.0;
-    
+
     int samples = 0;
     for(double y = 0.0; y < segDelta * segs; y += segDelta) {
       QRgb *scanline = (QRgb *)src.constScanLine((int)y);

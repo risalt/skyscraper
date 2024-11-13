@@ -52,11 +52,22 @@ public:
   // Protected by mutex as there can be several scraper workers in parallel.
   void run();
 
+  // Calculate a percentage of match between two strings, taking into account their length
+  // and the Levenshtein-Damerau distance.
+  int getSearchMatch(const QString &title, const QString &compareTitle,
+                     const int lowestDistance, const int stringSize);
+
+  // Returns the entry from gameEntries with the lowest distance to compareTitle,
+  // and that lowest distance.
+  GameEntry getBestEntry(const QList<GameEntry> &gameEntries, QString compareTitle,
+                         int &lowestDistance, int &stringSize);
+
   bool forceEnd = false;
 
 signals:
-  void allDone();
-  void entryReady(const GameEntry &entry, const QString &output, const QString &debug);
+  void allDone(const bool &stopNow = false);
+  void entryReady(const GameEntry &entry, const QString &output,
+                  const QString &debug, const QString &lowMatch);
 
 private:
   AbstractScraper *scraper;
@@ -69,17 +80,8 @@ private:
 
   QString threadId;
 
-  // Returns the entry from gameEntries with the lowest distance to compareTitle,
-  // and that lowest distance.
-  GameEntry getBestEntry(const QList<GameEntry> &gameEntries, QString compareTitle,
-                         int &lowestDistance);
-
   GameEntry getEntryFromUser(const QList<GameEntry> &gameEntries, const GameEntry &suggestedGame,
                              const QString &compareTitle, int &lowestDistance);
-
-  // Calculate a percentage of match between two strings, taking into account their length
-  // and the Levenshtein-Damerau distance.
-  int getSearchMatch(const QString &title, const QString &compareTitle, const int &lowestDistance);
 
   bool limitReached(QString &output);
 };

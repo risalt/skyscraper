@@ -119,7 +119,7 @@ void FxShadow::boxBlurHorizontal(QRgb *buffer1, QRgb *buffer2, int width, int he
     for(int x = 0; x < radius; x++) {
       value += qAlpha(buffer1[currentIdx + x]);
     }
-    
+
     for(int x = 0; x <= radius ; x++) {
       value += qAlpha(buffer1[backIdx++]) - firstVal;
       buffer2[currentIdx++] = qPremultiply(qRgba(0, 0, 0, value / span));
@@ -148,7 +148,7 @@ void FxShadow::boxBlurTotal(QRgb *buffer1, QRgb *buffer2, int width, int height,
     for(int y = 0; y < radius; y++) {
       value += qAlpha(buffer1[currentIdx + y * width]);
     }
-    
+
     for(int y = 0; y <= radius ; y++) {
       value += qAlpha(buffer1[backIdx]) - firstVal;
       buffer2[currentIdx] = qPremultiply(qRgba(0, 0, 0, value / span));

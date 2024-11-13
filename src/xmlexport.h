@@ -38,7 +38,6 @@ public:
   bool skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue> queue) override;
   bool canSkip() override;
   bool loadOldGameList(const QString &gameListFileString) override;
-  void preserveFromOld(GameEntry &entry) override;
   QString getGameListFileName() override;
   QString getInputFolder() override;
   QString getGameListFolder() override;

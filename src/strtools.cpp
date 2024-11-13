@@ -25,10 +25,12 @@
 
 #include <QUrl>
 #include <QDate>
+#include <QLocale>
 #include <QRegularExpression>
 #include <QCryptographicHash>
 
 #include "strtools.h"
+#include "skyscraper.h"
 
 QString StrTools::xmlUnescape(QString str)
 {
@@ -107,54 +109,107 @@ QString StrTools::xmlEscape(QString str)
     replace("'", "&apos;");
 }
 
+// Only to be used to encode filenames (as the "/" symbols are respected)
 QString StrTools::uriEscape(QString str)
 {
   return QUrl::toPercentEncoding(str, "/");
 }
 
+QString StrTools::altUriEscape(const QString &str, const QString &spaceChar)
+{
+  QString newName = str;
+  if(spaceChar != " ") {
+    // A few game names have faulty "s's". Fix them to "s'"
+    // Finally change all spaces to requested char. Default is '+' since that's what most search engines seem to understand
+    return newName.replace("_", " ")
+                  .replace(" - ", " ")
+                  .replace(",", " ")
+                  .replace("&", "%26")
+                  .replace("+", " ")
+                  .replace("s's", "s'")
+                  .replace("'", "%27")
+                  .replace(" ", spaceChar)
+                  .simplified();
+  } else {
+    return newName.simplified();
+  }
+}
+
 QString StrTools::conformPlayers(const QString &str)
 {
-  if(QRegularExpression("^1 Player").match(str).hasMatch())
+  QString strRet = str.left(str.indexOf("(")).simplified();
+
+  if(QRegularExpression("^1 Player",
+                        QRegularExpression::CaseInsensitiveOption).match(str).hasMatch())
     return "1";
 
-  if(QRegularExpression("^1 Only").match(str).hasMatch())
+  if(QRegularExpression("^1 Only",
+                        QRegularExpression::CaseInsensitiveOption).match(str).hasMatch())
     return "1";
 
-  if(QRegularExpression("^single player").match(str).hasMatch())
+  if(QRegularExpression("^single player",
+                        QRegularExpression::CaseInsensitiveOption).match(str).hasMatch())
     return "1";
 
-  if(QRegularExpression("^1 or 2").match(str).hasMatch())
+  if(QRegularExpression("^1 or 2",
+                        QRegularExpression::CaseInsensitiveOption).match(str).hasMatch())
     return "2";
 
   if(QRegularExpression("^\\d-\\d\\d").match(str).hasMatch())
-    return str.mid(2, 2);
+    return strRet; //.mid(2, 2);
 
   if(QRegularExpression("^\\d-\\d").match(str).hasMatch())
-    return str.mid(2, 1);
+    return strRet; //.mid(2, 1);
 
   if(QRegularExpression("^\\d - \\d\\d").match(str).hasMatch())
-    return str.mid(4, 2);
+    return strRet.remove(' '); //.mid(4, 2);
 
   if(QRegularExpression("^\\d - \\d").match(str).hasMatch())
-    return str.mid(4, 1);
+    return strRet.remove(' '); //.mid(4, 1);
 
   // A faulty Openretro entry is necessary as it marks "1 - 6" as "1 -6"
   if(QRegularExpression("^\\d -\\d\\d").match(str).hasMatch())
-    return str.mid(3, 2);
+    return strRet.remove(' '); //.mid(3, 2);
 
   if(QRegularExpression("^\\d -\\d").match(str).hasMatch())
-    return str.mid(3, 1);
+    return strRet.remove(' '); //.mid(3, 1);
 
   if(QRegularExpression("^\\d to \\d\\d").match(str).hasMatch())
-    return str.mid(5, 2);
+    return strRet.replace(" to ", "-"); //.mid(5, 2);
 
   if(QRegularExpression("^\\d to \\d").match(str).hasMatch())
-    return str.mid(5, 1);
+    return strRet.replace(" to ", "-"); //.mid(5, 1);
 
   if(QRegularExpression("^\\d\\+").match(str).hasMatch())
-    return str.mid(0, 1);
+    return strRet; //.mid(0, 1);
 
-  return str;
+  return strRet;
+}
+
+QString StrTools::agesLabel(const QString &str) {
+  if(str == "1") {
+    return "E - Everyone";
+  } else if(str == "3") {
+    return "EC - Early Childhood";
+  } else if(str == "6") {
+    return "KA - Kids to Adults";
+  } else if(str == "8") {
+    return "G8+";
+  } else if(str == "10") {
+    return "E10+ - Everyone 10+";
+  } else if(str == "11") {
+    return "11+";
+  } else if(str == "13") {
+    return "T - Teen";
+  } else if(str == "15") {
+    return "MA15+";
+  } else if(str == "17") {
+    return "MA-17";
+  } else if(str == "18") {
+    return "18+ - Adults Only";
+  } else {
+    return "";
+  }
 }
 
 QString StrTools::conformAges(QString str)
@@ -246,33 +301,75 @@ QString StrTools::conformAges(QString str)
 
 QString StrTools::conformReleaseDate(QString str)
 {
-  if(QRegularExpression("^\\d{4}$").match(str).hasMatch()) {
+  if(str.isEmpty()) {
+    return str;
+  } else if(QRegularExpression("^\\d{4}$").match(str).hasMatch()) {
     str = QDate::fromString(str, "yyyy").toString("yyyyMMdd");
   } else if(QRegularExpression("^\\d{4}-[0-1]{1}\\d{1}$").match(str).hasMatch()) {
     str = QDate::fromString(str, "yyyy-MM").toString("yyyyMMdd");
+  } else if(QRegularExpression("^\\d{4}-\\d{1}$").match(str).hasMatch()) {
+    str = QDate::fromString(str, "yyyy-M").toString("yyyyMMdd");
   } else if(QRegularExpression("^\\d{4}-[0-1]{1}\\d{1}-[0-3]{1}\\d{1}$").match(str).hasMatch()) {
     str = QDate::fromString(str, "yyyy-MM-dd").toString("yyyyMMdd");
+  } else if(QRegularExpression("^\\d{4}-\\d{1}-[0-3]{1}\\d{1}$").match(str).hasMatch()) {
+    str = QDate::fromString(str, "yyyy-M-dd").toString("yyyyMMdd");
+  } else if(QRegularExpression("^\\d{4}-[0-1]{1}\\d{1}-\\d{1}$").match(str).hasMatch()) {
+    str = QDate::fromString(str, "yyyy-MM-d").toString("yyyyMMdd");
+  } else if(QRegularExpression("^\\d{4}-\\d{1}-\\d{1}$").match(str).hasMatch()) {
+    str = QDate::fromString(str, "yyyy-M-d").toString("yyyyMMdd");
   } else if(QRegularExpression("^[0-1]{1}\\d{1}/[0-3]{1}\\d{1}/\\d{4}$").match(str).hasMatch()) {
     str = QDate::fromString(str, "MM/dd/yyyy").toString("yyyyMMdd");
+  } else if(QRegularExpression("^[0-1]{1}\\d{1}/[0-3]{1}\\d{1}/[789012]{1}\\d{1}$").match(str).hasMatch()) {
+    QDate strDate = QDate::fromString(str, "MM/dd/yy");
+    if(strDate.isValid() && strDate.year() < 1950) {
+      strDate = strDate.addYears(100);
+    }
+    str = strDate.toString("yyyyMMdd");
   } else if(QRegularExpression("^\\d{4}-[a-zA-Z]{3}-[0-3]{1}\\d{1}$").match(str).hasMatch()) {
+    QLocale english(QLocale::English);
     str = QDate::fromString(str, "yyyy-MMM-dd").toString("yyyyMMdd");
   } else if(QRegularExpression("^[a-zA-z]{3}, \\d{4}$").match(str).hasMatch()) {
-    str = QDate::fromString(str, "MMM, yyyy").toString("yyyyMMdd");
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMM, yyyy").toString("yyyyMMdd");
+  } else if(QRegularExpression("^[a-zA-z]{4,9}, \\d{4}$").match(str).hasMatch()) {
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMMM, yyyy").toString("yyyyMMdd");
   } else if(QRegularExpression("^[a-zA-z]{3} [0-3]{1}\\d{1}, \\d{4}$").match(str).hasMatch()) {
-    str = QDate::fromString(str, "MMM dd, yyyy").toString("yyyyMMdd");
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMM dd, yyyy").toString("yyyyMMdd");
+  } else if(QRegularExpression("^[a-zA-z]{3} \\d{4}$").match(str).hasMatch()) {
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMM yyyy").toString("yyyyMMdd");
+  } else if(QRegularExpression("^[a-zA-z]{4,9} \\d{4}$").match(str).hasMatch()) {
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMMM yyyy").toString("yyyyMMdd");
+  } else if(QRegularExpression("^[a-zA-z]{4,9} [1-3]{0,1}\\d{1}, \\d{4}$").match(str).hasMatch()) {
+    QLocale english(QLocale::English);
+    str = english.toDate(str, "MMMM d, yyyy").toString("yyyyMMdd");
   } else if(QRegularExpression("^[12]{1}[019]{1}[0-9]{2}[0-1]{1}[0-9]{1}[0-3]{1}[0-9]{1}T[0-9]{6}$").match(str).hasMatch()) {
     str = str.left(8);
+  } else {
+    str = QDate::fromString(str, "yyyyMMdd").toString("yyyyMMdd");
   }
-  return str;
+  QDate finalDate = QDate::fromString(str, "yyyyMMdd");
+  if(finalDate < QDate::fromString("19711231", "yyyyMMdd") ||
+     finalDate > QDate::currentDate().addMonths(2) || !finalDate.isValid()) {
+    if(Skyscraper::config.scraper != "cache") {
+      printf("\nERROR: Incorrect date '%s'. Ignoring.\n", str.toStdString().c_str());
+    }
+    return "";
+  } else {
+    return str;
+  }
 }
 
 QString StrTools::conformTags(const QString &str)
 {
   QString tags = "";
 #if QT_VERSION >= 0x050e00
-  QList<QString> tagList = str.split(',', Qt::SkipEmptyParts);
+  QStringList tagList = str.split(',', Qt::SkipEmptyParts);
 #else
-  QList<QString> tagList = str.split(',', QString::SkipEmptyParts);
+  QStringList tagList = str.split(',', QString::SkipEmptyParts);
 #endif
   for(auto &tag: tagList) {
     tag = tag.simplified();
@@ -291,7 +388,8 @@ QString StrTools::getVersionHeader()
     dashesString += "-";
   }
 
-  return QString("\033[1;34m" + dashesString + "\033[0m\n\033[1;33m" + headerString + "\033[0m\n\033[1;34m" + dashesString + "\033[0m\n");
+  return QString("\033[1;34m" + dashesString + "\033[0m\n\033[1;33m" + headerString +
+                 "\033[0m\n\033[1;34m" + dashesString + "\033[0m\n");
 }
 
 QString StrTools::stripBrackets(const QString &str)
@@ -337,7 +435,7 @@ QString StrTools::sanitizeName(const QString &str, bool removeBrackets)
                .remove(QChar(0x2013))
                .replace("&", "and");
   sanitizedName = sanitizedName.toLower();
-  if (removeBrackets) {
+  if(removeBrackets) {
     return stripBrackets(sanitizedName).simplified();
   }
   else {
@@ -360,7 +458,7 @@ QString StrTools::getMd5Sum(const QByteArray &data)
   return md5.result().toHex();
 }
 
-int StrTools::distanceBetweenStrings(const QString &first, const QString &second, bool simplify) 
+int StrTools::distanceBetweenStrings(const QString &first, const QString &second, bool simplify)
 {
   QString firstStr = simplify ? first.simplified().toLower().replace(" ", "") : first;
   QString secondStr = simplify ? second.simplified().toLower().replace(" ", "") : second;
@@ -370,12 +468,13 @@ int StrTools::distanceBetweenStrings(const QString &first, const QString &second
   unsigned int *col = (unsigned int *) malloc(sizeof(unsigned int)*(len2+1));
   unsigned int *prevCol = (unsigned int *) malloc(sizeof(unsigned int)*(len2+1));
   unsigned int *aux;
-        
-  for (unsigned int i = 0; i < len2+1; i++)
+
+  for(unsigned int i = 0; i < len2+1; i++) {
     prevCol[i] = i;
-  for (unsigned int i = 0; i < len1; i++) {
+  }
+  for(unsigned int i = 0; i < len1; i++) {
     col[0] = i+1;
-    for (unsigned int j = 0; j < len2; j++)
+    for(unsigned int j = 0; j < len2; j++)
       // C++11 allows std::min({arg1, arg2, arg3}) but it's way slower
       col[j+1] = std::min(std::min(prevCol[1 + j] + 1, col[j] + 1), prevCol[j] + (s1[i]==s2[j] ? 0 : 1));
     aux = col;
@@ -391,10 +490,60 @@ int StrTools::distanceBetweenStrings(const QString &first, const QString &second
 QString StrTools::onlyNumbers(const QString &str)
 {
   QString result;
-  for (const QChar c : qAsConst(str)) {
-    if (c.isDigit()) {
+  for(const auto &c: std::as_const(str)) {
+    if(c.isDigit()) {
       result.append(c);
     }
   }
   return result;
+}
+
+bool StrTools::readCSVRow(QTextStream &in, QStringList *row)
+{
+  static const int delta[][5] = {
+        //  ,    "   \n    ?  eof
+        {   1,   2,  -1,   0,  -1  }, // 0: parsing (store char)
+        {   1,   2,  -1,   0,  -1  }, // 1: parsing (store column)
+        {   3,   4,   3,   3,  -2  }, // 2: quote entered (no-op)
+        {   3,   4,   3,   3,  -2  }, // 3: parsing inside quotes (store char)
+        {   1,   3,  -1,   0,  -1  }, // 4: quote exited (no-op)
+        // -1: end of row, store column, success
+        // -2: eof inside quotes
+  };
+
+  row->clear();
+
+  if(in.atEnd()) {
+    return false;
+  }
+
+  int state = 0, t;
+  char ch;
+  QString cell;
+
+  while(state >= 0) {
+    if(in.atEnd()) {
+      t = 4;
+    }
+    else {
+      in >> ch;
+      if(ch == ',') t = 0;
+      else if(ch == '\"') t = 1;
+      else if(ch == '\n') t = 2;
+      else t = 3;
+    }
+
+    state = delta[state][t];
+    if(state == 0 || state == 3) {
+      cell += ch;
+    } else if(state == -1 || state == 1) {
+      row->append(cell);
+      cell = "";
+    }
+  }
+
+  if(state == -2) {
+    printf("ERROR: End-of-file found while inside quotes.\n");
+  }
+  return true;
 }

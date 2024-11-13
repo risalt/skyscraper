@@ -16,13 +16,15 @@ The main changes have been:
 * Launchbox: A very inefficient but effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
 
 ## Fix Broken Scrapers
-* Notably OpenRetro, WorldOfSpectrum, but also fixes and improvements to IGDB, MobyGames ArcadeDB, TGDB and, of course the King Screenscraper.
+* Notably OpenRetro, WorldOfSpectrum, but also fixes and improvements to IGDB, MobyGames, ArcadeDB, TGDB and, of course the King Screenscraper.
 
 And of course:
 * Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files.
 * Support additional resources (music, manuals, usage data).
 * Refactoring, errors and typos fixes.
 * File-based locking mechanism to avoid/minimize corrupted cache databases.
+* Rescan feature to recheck the cache against the scraper databases (specially needed after changing the title matching logic).
+* Incremental scraping, for when new resources need to be added to already scraped games.
 * Improve the API keys and password management.
 * Generation of dummy thumbnails with text when no real thumbnail is available in the cache database.
 * Some changes to minimize the false positives from the scrapers, specially as I basically turned off the checksum/hash mechanisms (as my files are frequently modified and the checksum search would generally fail).

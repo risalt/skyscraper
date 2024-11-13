@@ -1,5 +1,5 @@
 /***************************************************************************
- *            offlinemobygames.h
+ *            gamefaqs.h
  *
  *  Fri Mar 30 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
@@ -23,22 +23,24 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#ifndef OFFLINEMOBYGAMES_H
-#define OFFLINEMOBYGAMES_H
+#ifndef GAMEFAQS_H
+#define GAMEFAQS_H
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QStringList>
 #include <QMultiMap>
 #include <QMap>
 
 #include "abstractscraper.h"
 
-class OfflineMobyGames : public AbstractScraper
+class GameFaqs : public AbstractScraper
 {
   Q_OBJECT
 
 public:
-  OfflineMobyGames(Settings *config, QSharedPointer<NetManager> manager);
+  GameFaqs(Settings *config, QSharedPointer<NetManager> manager);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
@@ -52,16 +54,11 @@ protected:
   void getDescription(GameEntry &game) override;
   void getAges(GameEntry &game) override;
   void getRating(GameEntry &game) override;
-  void getCover(GameEntry &game) override;
-  void getTexture(GameEntry &game) override;
-  void getMarquee(GameEntry &game) override;
-  void getWheel(GameEntry &game) override;
-  void getScreenshot(GameEntry &game) override;
-  void getManual(GameEntry &game) override;
+  void getFranchises(GameEntry &game) override;
+  void getGuides(GameEntry &game) override;
+  void getTrivia(GameEntry &game) override;
 
 private:
-  QString getRegionShort(const QString &region);
-
   QTimer limitTimer;
   QEventLoop limiter;
 
@@ -69,13 +66,15 @@ private:
   QMultiMap<QString, QPair<int, QString>> nameToId;
   QMultiMap<QString, QPair<int, QString>> nameToIdTitle;
   QMap<int, QJsonObject> idToGame;
+
   QJsonDocument jsonDoc;
   QJsonDocument jsonMedia;
-  QJsonDocument jsonScreens;
   QJsonObject jsonObj;
-  
-  bool offlineOnly = false;
+  QJsonArray jsonReleases;
+  QStringList gfRegions;
+
+  bool offlineOnly = true;
 
 };
 
-#endif // OFFLINEMOBYGAMES_H
+#endif // GAMEFAQS_H

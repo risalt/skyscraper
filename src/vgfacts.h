@@ -1,5 +1,5 @@
 /***************************************************************************
- *            offlinemobygames.h
+ *            vgfacts.h
  *
  *  Fri Mar 30 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
@@ -23,59 +23,46 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#ifndef OFFLINEMOBYGAMES_H
-#define OFFLINEMOBYGAMES_H
+#ifndef VGFACTS_H
+#define VGFACTS_H
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QMultiMap>
+#include <QPair>
 #include <QMap>
 
 #include "abstractscraper.h"
 
-class OfflineMobyGames : public AbstractScraper
+class VGFacts : public AbstractScraper
 {
   Q_OBJECT
 
 public:
-  OfflineMobyGames(Settings *config, QSharedPointer<NetManager> manager);
+  VGFacts(Settings *config, QSharedPointer<NetManager> manager);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
   void getReleaseDate(GameEntry &game) override;
-  void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
-  void getPublisher(GameEntry &game) override;
-  void getDescription(GameEntry &game) override;
-  void getAges(GameEntry &game) override;
-  void getRating(GameEntry &game) override;
+  void getFranchises(GameEntry &game) override;
+  void getTrivia(GameEntry &game) override;
   void getCover(GameEntry &game) override;
-  void getTexture(GameEntry &game) override;
   void getMarquee(GameEntry &game) override;
-  void getWheel(GameEntry &game) override;
-  void getScreenshot(GameEntry &game) override;
-  void getManual(GameEntry &game) override;
 
 private:
-  QString getRegionShort(const QString &region);
-
   QTimer limitTimer;
   QEventLoop limiter;
 
-  QString platformId;
-  QMultiMap<QString, QPair<int, QString>> nameToId;
-  QMultiMap<QString, QPair<int, QString>> nameToIdTitle;
-  QMap<int, QJsonObject> idToGame;
-  QJsonDocument jsonDoc;
-  QJsonDocument jsonMedia;
-  QJsonDocument jsonScreens;
+  QMultiMap<QString, QPair<QString, QString>> nameToId;
+  QMultiMap<QString, QPair<QString, QString>> nameToIdTitle;
+  QMap<QString, QJsonObject> idToGame;
   QJsonObject jsonObj;
-  
-  bool offlineOnly = false;
 
 };
 
-#endif // OFFLINEMOBYGAMES_H
+#endif // VGFACTS_H

@@ -50,8 +50,12 @@ struct Settings {
   QString dbPassword = "";
   QString giantBombDb = "";
   QString mobygamesDb = "";
+  QString gamefaqsDb = "";
+  QString vgfactsDb = "";
   QString launchBoxDb = "";
-  QString launchBoxMameDb = "";
+  bool generateLbDb = false;
+  QString guidesPath = "";
+  QString vgmapsPath = "";
   QString igdbToken = "";
   QString apiKey = "";
   QString inputFolder = "";
@@ -71,6 +75,7 @@ struct Settings {
   int threads = 4;
   bool threadsSet = false;
   int minMatch = 65;
+  int minMatchDetection = 80;
   bool minMatchSet = false;
   int notFound = 0;
   int found = 0;
@@ -79,6 +84,7 @@ struct Settings {
   int maxLength = 2500;
   bool brackets = true;
   bool refresh = false;
+  bool rescan = false;
   QString cacheOptions = "";
   bool cacheResize = true;
   int jpgQuality = 95;
@@ -105,7 +111,6 @@ struct Settings {
   bool relativePaths = false;
   QString extensions = "";
   QString addExtensions = "";
-  bool unpack = false;
   bool theInFront = false;
   bool gameListBackup = false;
   bool preserveOldGameList = true;
@@ -119,6 +124,8 @@ struct Settings {
   bool videos = false;
   bool videoPreferNormalized = true;
   int videoSizeLimit = 100*1024*1024;
+  bool guides = false;
+  bool vgmaps = false;
   bool manuals = false;
   int manualSizeLimit = 100*1024*1024;
   QString videoConvertCommand = "";
@@ -141,7 +148,7 @@ struct Settings {
   bool chiptunes = false;
   QString navidromeDb = "";
   bool cacheGb = false;
-  
+
   QString user = "";
   QString password = "";
   QString lang = "";
@@ -156,8 +163,8 @@ struct Settings {
   QMap<QString, QString> aliasMap;
   QMap<QString, QPair<QString, QString> > whdLoadMap;
 
-  QList<QString> regionPrios;
-  QList<QString> langPrios;
+  QStringList regionPrios;
+  QStringList langPrios;
 
 };
 

@@ -37,7 +37,7 @@ class WorldOfSpectrum : public AbstractScraper
 public:
   WorldOfSpectrum(Settings *config, QSharedPointer<NetManager> manager);
 
-private:
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
   void getDescription(GameEntry &game) override;
@@ -50,8 +50,10 @@ private:
   void getVideo(GameEntry &game) override;
   void getReleaseDate(GameEntry &game) override;
   void getTags(GameEntry &game) override;
-  
+
+private:
   QMap <QString, QString> resources;
+
 };
 
 #endif // WORLDOFSPECTRUM_H

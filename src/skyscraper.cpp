@@ -88,14 +88,14 @@ void Skyscraper::setLock()
   bool lockAcquired = false;
   bool keepTrying = true;
   printf("\nINFO: Locking the cache for the platform...");
-  while (keepTrying) {
-    if (Skyscraper::lockFile.open(QIODevice::NewOnly)) {
+  while(keepTrying) {
+    if(Skyscraper::lockFile.open(QIODevice::NewOnly)) {
       lockAcquired = true;
       keepTrying = false;
       printf(" Success!\n");
     }
     else {
-      if (config.waitIfConcurrent) {
+      if(config.waitIfConcurrent) {
         sleep(5);
         printf(".");
       }
@@ -104,7 +104,7 @@ void Skyscraper::setLock()
       }
     }
   }
-  if (!lockAcquired) {
+  if(!lockAcquired) {
     printf(" ERROR: There is another instance scraping the same platform or frontend+platform). Exiting.\n");
     exit(3);
   }
@@ -112,8 +112,8 @@ void Skyscraper::setLock()
 
 void Skyscraper::removeLockAndExit(int exitCode)
 {
-  if (Skyscraper::lockFile.isOpen()) {
-    if (!Skyscraper::lockFile.remove()) {
+  if(Skyscraper::lockFile.isOpen()) {
+    if(!Skyscraper::lockFile.remove()) {
       printf("ERROR: Could not remove lockfile.\n");
     }
   }
@@ -161,19 +161,6 @@ void Skyscraper::run()
   found = 0;
   avgCompleteness = 0;
   avgSearchMatch = 0;
-
-  {
-    if(config.unpack) {
-      QProcess decProc;
-      decProc.setReadChannel(QProcess::StandardOutput);
-      decProc.start("which", QStringList({"7z"}));
-      decProc.waitForFinished(20000);
-      if(!decProc.readAllStandardOutput().contains("7z")) {
-        printf("Couldn't find '7z' command. 7z is required by the '--flags unpack' flag. On Debian derivatives such as RetroPie you can install it with 'sudo apt install p7zip-full'.\n\nNow quitting...\n");
-        Skyscraper::removeLockAndExit(1);
-      }
-    }
-  }
 
   if(!config.cacheFolder.isEmpty()) {
     cache = QSharedPointer<Cache>(new Cache(config.cacheFolder));
@@ -243,7 +230,7 @@ void Skyscraper::run()
   cache->readPriorities();
 
   QDir inputDir(config.inputFolder, Platform::get().getFormats(config.platform, config.extensions, config.addExtensions), QDir::Name, QDir::Files);
-  if(!inputDir.exists()) {
+  if(!inputDir.exists() && !config.generateLbDb) {
     printf("Input folder '\033[1;32m%s\033[0m' doesn't exist or can't be seen by current user. Please check path and permissions.\n", inputDir.absolutePath().toStdString().c_str());
     Skyscraper::removeLockAndExit(1);
   }
@@ -275,7 +262,7 @@ void Skyscraper::run()
   config.marqueesFolder = marqueesDir.absolutePath();
 
   QDir texturesDir(config.texturesFolder);
-  if (config.scraper == "cache" && !config.pretend)
+  if(config.scraper == "cache" && !config.pretend)
     checkForFolder(texturesDir);
   config.texturesFolder = texturesDir.absolutePath();
 
@@ -302,40 +289,13 @@ void Skyscraper::run()
   QFile gameListFile(gameListFileString);
 
   // Create shared queue with files to process
+  bool foundSliceStart = false;
+  bool foundSliceEnd = false;
+  QList<QFileInfo> infoList = sliceFiles(inputDir, foundSliceStart, foundSliceEnd);
   queue = QSharedPointer<Queue>(new Queue());
-  QList<QFileInfo> infoList = inputDir.entryInfoList();
-  if(config.scraper != "cache" && QFileInfo::exists(config.inputFolder + "/.skyscraperignore")) {
-    infoList.clear();
+  if(!infoList.isEmpty()) {
+    queue->append(infoList);
   }
-  if(!config.startAt.isEmpty() && !infoList.isEmpty()) {
-    QFileInfo startAt(config.startAt);
-    if(!startAt.exists()) {
-      startAt.setFile(config.currentDir + "/" + config.startAt);
-    }
-    if(!startAt.exists()) {
-      startAt.setFile(inputDir.absolutePath() + "/" + config.startAt);
-    }
-    if(startAt.exists()) {
-      while(infoList.first().fileName() != startAt.fileName() && !infoList.isEmpty()) {
-        infoList.removeFirst();
-      }
-    }
-  }
-  if(!config.endAt.isEmpty() && !infoList.isEmpty()) {
-    QFileInfo endAt(config.endAt);
-    if(!endAt.exists()) {
-      endAt.setFile(config.currentDir + "/" + config.endAt);
-    }
-    if(!endAt.exists()) {
-      endAt.setFile(inputDir.absolutePath() + "/" + config.endAt);
-    }
-    if(endAt.exists()) {
-      while(infoList.last().fileName() != endAt.fileName() && !infoList.isEmpty()) {
-        infoList.removeLast();
-      }
-    }
-  }
-  queue->append(infoList);
   if(config.subdirs) {
     QDirIterator dirIt(config.inputFolder,
                        QDir::Dirs | QDir::NoDotAndDotDot,
@@ -357,7 +317,10 @@ void Skyscraper::run()
         continue;
       }
       inputDir.setPath(subdir);
-      queue->append(inputDir.entryInfoList());
+      QList<QFileInfo> infoListDir = sliceFiles(inputDir, foundSliceStart, foundSliceEnd);
+      if(!infoListDir.isEmpty()) {
+        queue->append(infoListDir);
+      }
       if(config.verbosity > 0) {
         printf("Adding files from subdir: '%s'\n", subdir.toStdString().c_str());
       }
@@ -374,7 +337,7 @@ void Skyscraper::run()
 
   if(!cliFiles.isEmpty()) {
     queue->clear();
-    for(const auto &cliFile: cliFiles) {
+    for(const auto &cliFile: std::as_const(cliFiles)) {
       queue->append(QFileInfo(cliFile));
     }
   }
@@ -388,7 +351,7 @@ void Skyscraper::run()
     if(excludeFromInfo.exists()) {
       QFile excludeFrom(excludeFromInfo.absoluteFilePath());
       if(excludeFrom.open(QIODevice::ReadOnly)) {
-        QList<QString> excludes;
+        QStringList excludes;
         while(!excludeFrom.atEnd()) {
           excludes.append(QString(excludeFrom.readLine().simplified()));
         }
@@ -485,13 +448,13 @@ void Skyscraper::run()
   totalFiles = queue->length();
 
   if(config.romLimit != -1 && totalFiles > config.romLimit && !config.onlyMissing) {
-    printf("\n\033[1;33mRestriction overrun!\033[0m This scraping module only allows for scraping up to %d roms at a time. You can either supply a few rom filenames on command line, or make use of the '--startat' and / or '--endat' command line options to adhere to this. Please check '--help' for more info.\n\nNow quitting...\n", config.romLimit);
+    printf("\n\033[1;33mRestriction overrun!\033[0m This scraping module only allows for scraping up to %d roms at a time. You can either supply a few rom filenames on command line, or make use of the '--startat' and / or '--endat' command line options to adhere to this. Alternatively, you can use the --cache onlymissing option so that only games without any relevant resource in other scrapers are attempted. Please check '--help' for more info.\n\nNow quitting...\n", config.romLimit);
     Skyscraper::removeLockAndExit(0);
   }
   printf("\n");
   if(totalFiles > 0) {
     printf("Starting scraping run on \033[1;32m%d\033[0m files using \033[1;32m%d\033[0m threads.\nSit back, relax and let me do the work! :)\n\n", totalFiles, config.threads);
-  } else {
+  } else if(!config.generateLbDb) {
     printf("\nNo entries to scrape...\n\n");
   }
 
@@ -515,10 +478,59 @@ void Skyscraper::run()
     }
   }
   // Ready, set, GO! Start all threads
-  for(const auto thread: threadList) {
+  for(const auto thread: std::as_const(threadList)) {
     thread->start();
     state = 3;
   }
+}
+
+QList<QFileInfo> Skyscraper::sliceFiles(const QDir &inputDir, bool &foundSliceStart, bool &foundSliceEnd)
+{
+  QList<QFileInfo> infoList = inputDir.entryInfoList();
+  if(config.scraper != "cache" && QFileInfo::exists(config.inputFolder + "/.skyscraperignore")) {
+    infoList.clear();
+  }
+  if(foundSliceEnd) {
+    infoList.clear();
+  }
+  if(!config.startAt.isEmpty() && !infoList.isEmpty() && !foundSliceStart) {
+    QFileInfo startAt(config.startAt);
+    if(!startAt.exists()) {
+      startAt.setFile(config.currentDir + "/" + config.startAt);
+    }
+    if(!startAt.exists()) {
+      startAt.setFile(inputDir.absolutePath() + "/" + config.startAt);
+    }
+    if(startAt.exists()) {
+      while(!infoList.isEmpty() && infoList.first().fileName() != startAt.fileName()) {
+        infoList.removeFirst();
+      }
+      if(!infoList.isEmpty()) {
+        foundSliceStart = true;
+      }
+    }
+  }
+  if(!config.endAt.isEmpty() && !infoList.isEmpty()) {
+    QList<QFileInfo> infoListCopy(infoList);
+    QFileInfo endAt(config.endAt);
+    if(!endAt.exists()) {
+      endAt.setFile(config.currentDir + "/" + config.endAt);
+    }
+    if(!endAt.exists()) {
+      endAt.setFile(inputDir.absolutePath() + "/" + config.endAt);
+    }
+    if(endAt.exists()) {
+      while(!infoList.isEmpty() && infoList.last().fileName() != endAt.fileName()) {
+        infoList.removeLast();
+      }
+      if(!infoList.isEmpty()) {
+        foundSliceEnd = true;
+      } else {
+        infoList = infoListCopy;
+      }
+    }
+  }
+  return infoList;
 }
 
 void Skyscraper::checkForFolder(QDir &folder, bool create)
@@ -559,7 +571,7 @@ QString Skyscraper::secsToString(const int &secs)
   return hours + ":" + minutes + ":" + seconds;
 }
 
-void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const QString &debug)
+void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const QString &debug, const QString &lowMatch)
 {
   QMutexLocker locker(&entryMutex);
 
@@ -579,6 +591,7 @@ void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const
     QFile skippedFile(skippedFileString);
     skippedFile.open(QIODevice::Append);
     skippedFile.write(entry.absoluteFilePath.toUtf8() + "\n");
+    skippedFile.write(lowMatch.toUtf8());
     skippedFile.close();
     if(config.skipped) {
       gameEntries.append(entry);
@@ -623,7 +636,7 @@ void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const
 #endif
 }
 
-void Skyscraper::checkThreads()
+void Skyscraper::checkThreads(const bool &stopNow)
 {
   QMutexLocker locker(&checkThreadMutex);
 
@@ -631,52 +644,55 @@ void Skyscraper::checkThreads()
   if(doneThreads != config.threads)
     return;
 
-  if(!config.pretend && config.scraper == "cache") {
-    printf("\033[1;34m---- Game list generation run completed! YAY! ----\033[0m\n");
-    if(!config.cacheFolder.isEmpty()) {
-      state = 1; // Ignore ctrl+c
-      cache->write(true);
-      state = 0;
-    }
-    QString finalOutput;
-    frontend->sortEntries(gameEntries);
-    printf("Assembling game list...");
-    frontend->assembleList(finalOutput, gameEntries);
-    printf(" \033[1;32mDone!\033[0m\n");
-    if (!finalOutput.isNull()) {
-      QFile gameListFile(gameListFileString);
-      printf("Now writing '\033[1;33m%s\033[0m'... ", gameListFileString.toStdString().c_str());
-      fflush(stdout);
-      if(gameListFile.open(QIODevice::WriteOnly)) {
+  if(!stopNow) {
+    if(!config.pretend && config.scraper == "cache") {
+      printf("\033[1;34m---- Game list generation run completed! YAY! ----\033[0m\n");
+      if(!config.cacheFolder.isEmpty()) {
         state = 1; // Ignore ctrl+c
-        gameListFile.write(finalOutput.toUtf8());
+        cache->write(true);
         state = 0;
-        gameListFile.close();
-        printf("\033[1;32mSuccess!\033[0m\n\n");
-      } else {
-        printf("\033[1;31mCouldn't open file for writing!\nAll that work for nothing... :(\033[0m\n");
+      }
+      QString finalOutput;
+      frontend->sortEntries(gameEntries);
+      printf("Assembling game list...");
+      frontend->assembleList(finalOutput, gameEntries);
+      printf(" \033[1;32mDone!\033[0m\n");
+      if(!finalOutput.isNull()) {
+        QFile gameListFile(gameListFileString);
+        printf("Now writing '\033[1;33m%s\033[0m'... ", gameListFileString.toStdString().c_str());
+        fflush(stdout);
+        if(gameListFile.open(QIODevice::WriteOnly)) {
+          state = 1; // Ignore ctrl+c
+          gameListFile.write(finalOutput.toUtf8());
+          state = 0;
+          gameListFile.close();
+          printf("\033[1;32mSuccess!\033[0m\n\n");
+        } else {
+          printf("\033[1;31mCouldn't open file for writing!\nAll that work for nothing... :(\033[0m\n");
+        }
+      }
+    } else {
+      printf("\033[1;34m---- Resource gathering run completed! YAY! ----\033[0m\n");
+      if(!config.cacheFolder.isEmpty()) {
+        state = 1; // Ignore ctrl+c
+        cache->write();
+        state = 0;
       }
     }
-  } else {
-    printf("\033[1;34m---- Resource gathering run completed! YAY! ----\033[0m\n");
-    if(!config.cacheFolder.isEmpty()) {
-      state = 1; // Ignore ctrl+c
-      cache->write();
-      state = 0;
-    }
-  }
 
-  printf("\033[1;34m---- And here are some neat stats :) ----\033[0m\n");
-  printf("Total completion time: \033[1;33m%s\033[0m\n\n", secsToString(timer.elapsed()).toStdString().c_str());
-  if(found > 0) {
-    printf("Average search match: \033[1;33m%d%%\033[0m\n",
-           (int)((double)avgSearchMatch / (double)found));
-    printf("Average entry completeness: \033[1;33m%d%%\033[0m\n\n",
-           (int)((double)avgCompleteness / (double)found));
+    printf("\033[1;34m---- And here are some neat stats :) ----\033[0m\n");
+    printf("Total completion time: \033[1;33m%s\033[0m\n\n", secsToString(timer.elapsed()).toStdString().c_str());
+    if(found > 0) {
+      printf("Average search match: \033[1;33m%d%%\033[0m\n",
+             (int)((double)avgSearchMatch / (double)found));
+      printf("Average entry completeness: \033[1;33m%d%%\033[0m\n\n",
+             (int)((double)avgCompleteness / (double)found));
+    }
+    printf("\033[1;34mTotal number of games: %d\033[0m\n", totalFiles);
+    printf("\033[1;32mSuccessfully processed games: %d\033[0m\n", found);
+    printf("\033[1;33mSkipped games: %d\033[0m (Filenames saved to '\033[1;33m%s/.skyscraper/%s\033[0m')\n\n",
+           notFound, QDir::homePath().toStdString().c_str(), skippedFileString.toStdString().c_str());
   }
-  printf("\033[1;34mTotal number of games: %d\033[0m\n", totalFiles);
-  printf("\033[1;32mSuccessfully processed games: %d\033[0m\n", found);
-  printf("\033[1;33mSkipped games: %d\033[0m (Filenames saved to '\033[1;33m%s/.skyscraper/%s\033[0m')\n\n", notFound, QDir::homePath().toStdString().c_str(), skippedFileString.toStdString().c_str());
 
   // All done, now clean up and exit to terminal
   emit finished();
@@ -715,7 +731,14 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   copyFile("/usr/local/etc/skyscraper/platforms.json", "platforms.json", false); // False means it won't overwrite if it exists
   copyFile("/usr/local/etc/skyscraper/mobygames.json", "mobygames.json", false);
   copyFile("/usr/local/etc/skyscraper/screenscraper.json", "screenscraper.json", false);
+  copyFile("/usr/local/etc/skyscraper/thegamesdb.json", "thegamesdb.json", false);
+  copyFile("/usr/local/etc/skyscraper/tgdb_developers.json", "tgdb_developers.json", false);
+  copyFile("/usr/local/etc/skyscraper/tgdb_publishers.json", "tgdb_publishers.json", false);
+  copyFile("/usr/local/etc/skyscraper/launchbox.json", "launchbox.json", false);
   copyFile("/usr/local/etc/skyscraper/giantbomb.json", "giantbomb.json", false);
+  copyFile("/usr/local/etc/skyscraper/rawg.json", "rawg.json", false);
+  copyFile("/usr/local/etc/skyscraper/openretro.json", "openretro.json", false);
+  copyFile("/usr/local/etc/skyscraper/thegamesdb.json", "thegamesdb.json", false);
   copyFile("/usr/local/etc/skyscraper/config.ini.example", "config.ini", false);
   copyFile("/usr/local/etc/skyscraper/artwork.xml", "artwork.xml", false);
   copyFile("/usr/local/etc/skyscraper/aliasMap.csv", "aliasMap.csv", false);
@@ -747,7 +770,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
                            parser.value("f") == "xmlexport" ||
                            parser.value("f") == "koillection")) {
     config.frontend = parser.value("f");
-  } else if (parser.isSet("f")) {
+  } else if(parser.isSet("f")) {
     printf("Frontend: '\033[1;32m%s\033[0m' is not supported. Please select a valid one.\n", parser.value("f").toStdString().c_str());
     Skyscraper::removeLockAndExit(1);
   }
@@ -794,9 +817,6 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("pretend")) {
     config.pretend = settings.value("pretend").toBool();
   }
-  if(settings.contains("unpack")) {
-    config.unpack = settings.value("unpack").toBool();
-  }
   if(settings.contains("interactive")) {
     config.interactive = settings.value("interactive").toBool();
   }
@@ -831,20 +851,29 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("launch")) {
     config.frontendExtra = settings.value("launch").toString();
   }
+  if(settings.contains("guidesPath")) {
+    config.guidesPath = settings.value("guidesPath").toString();
+  }
+  if(settings.contains("vgmapsPath")) {
+    config.vgmapsPath = settings.value("vgmapsPath").toString();
+  }
   if(settings.contains("chiptunes")) {
     config.chiptunes = settings.value("chiptunes").toBool();
-    chiptunes = config.chiptunes;
+  }
+  if(settings.contains("guides")) {
+    config.guides = settings.value("guides").toBool();
+  }
+  if(settings.contains("vgmaps")) {
+    config.vgmaps = settings.value("vgmaps").toBool();
   }
   if(settings.contains("manuals")) {
     config.manuals = settings.value("manuals").toBool();
-    manuals = config.manuals;
   }
   if(settings.contains("manualSizeLimit")) {
     config.manualSizeLimit = settings.value("manualSizeLimit").toInt() * 1024 * 1024;
   }
   if(settings.contains("videos")) {
     config.videos = settings.value("videos").toBool();
-    videos = config.videos;
   }
   if(settings.contains("videoSizeLimit")) {
     config.videoSizeLimit = settings.value("videoSizeLimit").toInt() * 1024 * 1024;
@@ -933,7 +962,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("onlyMissing")) {
     config.onlyMissing = settings.value("onlyMissing").toBool();
   }
-  if(settings.contains("cacheRefresh")) {
+  if(settings.contains("cacheRefresh") && !config.rescan) {
     config.refresh = settings.value("cacheRefresh").toBool();
   }
   if(settings.contains("cacheResize")) {
@@ -942,7 +971,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("cacheCovers")) {
     config.cacheCovers = settings.value("cacheCovers").toBool();
   }
-  if (settings.contains("cacheTextures")) {
+  if(settings.contains("cacheTextures")) {
     config.cacheTextures = settings.value("cacheTextures").toBool();
   }
   if(settings.contains("cacheScreenshots")) {
@@ -966,7 +995,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     config.platform = parser.value("p");
   } else {
     if((!parser.isSet("flags") && parser.value("flags") != "help") &&
-       (!parser.isSet("cache") && parser.value("cache") != "help")) {
+       (!parser.isSet("cache") && parser.value("cache") != "help") &&
+       (!parser.isSet("generatelbdb"))) {
       printf("Please set a valid platform with '-p [platform]'\nCheck '--help' for a list of supported platforms.\n");
       Skyscraper::removeLockAndExit(1);
     }
@@ -1062,7 +1092,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("cacheCovers")) {
     config.cacheCovers = settings.value("cacheCovers").toBool();
   }
-  if (settings.contains("cacheTextures")) {
+  if(settings.contains("cacheTextures")) {
     config.cacheTextures = settings.value("cacheTextures").toBool();
   }
   if(settings.contains("cacheScreenshots")) {
@@ -1120,21 +1150,24 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("videos")) {
     config.videos = settings.value("videos").toBool();
-    videos = config.videos;
   }
   if(settings.contains("videoSizeLimit")) {
     config.videoSizeLimit = settings.value("videoSizeLimit").toInt() * 1000 * 1000;
   }
   if(settings.contains("manuals")) {
     config.manuals = settings.value("manuals").toBool();
-    manuals = config.manuals;
   }
   if(settings.contains("manualSizeLimit")) {
     config.manualSizeLimit = settings.value("manualSizeLimit").toInt() * 1000 * 1000;
   }
+  if(settings.contains("guides")) {
+    config.guides = settings.value("guides").toBool();
+  }
+  if(settings.contains("vgmaps")) {
+    config.vgmaps = settings.value("vgmaps").toBool();
+  }
   if(settings.contains("chiptunes")) {
     config.chiptunes = settings.value("chiptunes").toBool();
-    chiptunes = config.chiptunes;
   }
   if(settings.contains("symlink")) {
     config.symlink = settings.value("symlink").toBool();
@@ -1150,9 +1183,6 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("pretend")) {
     config.pretend = settings.value("pretend").toBool();
-  }
-  if(settings.contains("unpack")) {
-    config.unpack = settings.value("unpack").toBool();
   }
   if(settings.contains("unattend")) {
     config.unattend = settings.value("unattend").toBool();
@@ -1215,7 +1245,11 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
                            parser.value("s") == "offlinemobygames" ||
                            parser.value("s") == "screenscraper" ||
                            parser.value("s") == "launchbox" ||
+                           parser.value("s") == "gamefaqs" ||
+                           parser.value("s") == "vgfacts" ||
+                           parser.value("s") == "rawg" ||
                            parser.value("s") == "chiptune" ||
+                           parser.value("s") == "vgmaps" ||
                            parser.value("s") == "customflags" ||
                            parser.value("s") == "esgamelist" ||
                            parser.value("s") == "cache" ||
@@ -1313,15 +1347,24 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("videos")) {
     config.videos = settings.value("videos").toBool();
-    videos = config.videos;
   }
   if(settings.contains("manuals")) {
     config.manuals = settings.value("manuals").toBool();
-    manuals = config.manuals;
+  }
+  if(settings.contains("guidesPath")) {
+    config.guidesPath = settings.value("guidesPath").toString();
+  }
+  if(settings.contains("guides")) {
+    config.guides = settings.value("guides").toBool();
+  }
+  if(settings.contains("vgmapsPath")) {
+    config.vgmapsPath = settings.value("vgmapsPath").toString();
+  }
+  if(settings.contains("vgmaps")) {
+    config.vgmaps = settings.value("vgmaps").toBool();
   }
   if(settings.contains("chiptunes")) {
     config.chiptunes = settings.value("chiptunes").toBool();
-    chiptunes = config.chiptunes;
   }
   if(settings.contains("symlink")) {
     config.symlink = settings.value("symlink").toBool();
@@ -1406,16 +1449,25 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("mobygamesDb")) {
     config.mobygamesDb = settings.value("mobygamesDb").toString();
   }
+  if(settings.contains("gamefaqsDb")) {
+    config.gamefaqsDb = settings.value("gamefaqsDb").toString();
+  }
+  if(settings.contains("vgfactsDb")) {
+    config.vgfactsDb = settings.value("vgfactsDb").toString();
+  }
+  if(settings.contains("guidesPath")) {
+    config.guidesPath = settings.value("guidesPath").toString();
+  }
+  if(settings.contains("vgmapsPath")) {
+    config.vgmapsPath = settings.value("vgmapsPath").toString();
+  }
   if(settings.contains("launchBoxDb")) {
     config.launchBoxDb = settings.value("launchBoxDb").toString();
-  }
-  if(settings.contains("launchBoxMameDb")) {
-    config.launchBoxMameDb = settings.value("launchBoxMameDb").toString();
   }
   if(settings.contains("onlyMissing")) {
     config.onlyMissing = settings.value("onlyMissing").toBool();
   }
-  if(settings.contains("cacheRefresh")) {
+  if(settings.contains("cacheRefresh") && !config.rescan) {
     config.refresh = settings.value("cacheRefresh").toBool();
   }
   if(settings.contains("cacheResize")) {
@@ -1424,7 +1476,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   if(settings.contains("cacheCovers")) {
     config.cacheCovers = settings.value("cacheCovers").toBool();
   }
-  if (settings.contains("cacheTextures")) {
+  if(settings.contains("cacheTextures")) {
     config.cacheTextures = settings.value("cacheTextures").toBool();
   }
   if(settings.contains("cacheScreenshots")) {
@@ -1438,18 +1490,21 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("chiptunes")) {
     config.chiptunes = settings.value("chiptunes").toBool();
-    chiptunes = config.chiptunes;
+  }
+  if(settings.contains("guides")) {
+    config.guides = settings.value("guides").toBool();
+  }
+  if(settings.contains("vgmaps")) {
+    config.vgmaps = settings.value("vgmaps").toBool();
   }
   if(settings.contains("manuals")) {
     config.manuals = settings.value("manuals").toBool();
-    manuals = config.manuals;
   }
   if(settings.contains("manualSizeLimit")) {
     config.manualSizeLimit = settings.value("manualSizeLimit").toInt() * 1000 * 1000;
   }
   if(settings.contains("videos")) {
     config.videos = settings.value("videos").toBool();
-    videos = config.videos;
   }
   if(settings.contains("videoSizeLimit")) {
     config.videoSizeLimit = settings.value("videoSizeLimit").toInt() * 1000 * 1000;
@@ -1515,16 +1570,16 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
       printf("Showing '\033[1;33m--flags\033[0m' help\n");
       printf("Use comma-separated flags (eg. '--flags FLAG1,FLAG2') to enable multiple flags.\nThe following is a list of valid flags and what they do:\n");
 
-      printf("  \033[1;33mchiptunes\033[0m: Enables scraping of chiptunes for the scraping modules that support them.\n");
+      printf("  \033[1;33mchiptunes\033[0m: Enables management of chiptunes for the scraping modules and frontends that support them.\n");
       printf("  \033[1;33mforcefilename\033[0m: Use filename as game name instead of the returned game title when generating a game list. Consider using 'nameTemplate' config.ini option instead.\n");
       printf("  \033[1;33mgetmissingresources\033[0m: If a game is already in the cache, has some missing multimedia resources for the scraper service, and refresh is not set, then check and download the missing multimedia resources if they are now available, and refresh the non-multimedia (text) resources.\n");
+      printf("  \033[1;33mguides\033[0m: Enables management of guides for the scraping modules and frontends that support them.\n");
       printf("  \033[1;33minteractive\033[0m: Always ask user to choose best returned result from the scraping modules.\n");
       printf("  \033[1;33mmanuals\033[0m: Enables scraping and caching of manuals for the scraping modules that support them. Beware, this takes up a lot of disk space!.\n");
       printf("  \033[1;33mnobrackets\033[0m: Disables any [] and () tags in the frontend game titles. Consider using 'nameTemplate' config.ini option instead.\n");
       printf("  \033[1;33mnocovers\033[0m: Disable covers/boxart from being cached locally. Only do this if you do not plan to use the cover artwork in 'artwork.xml'\n");
       printf("  \033[1;33mnocropblack\033[0m: Disables cropping away black borders around screenshot resources when compositing the final gamelist artwork.\n");
       printf("  \033[1;33mnohints\033[0m: Disables the 'DID YOU KNOW:' hints when running Skyscraper.\n");
-      printf("  \033[1;33mwaitifconcurrent\033[0m: Stops execution of the scraping if another instance of Skyscraper is scraping the same platform.\n");
       printf("  \033[1;33mnomarquees\033[0m: Disable marquees from being cached locally. Only do this if you do not plan to use the marquee artwork in 'artwork.xml'\n");
       printf("  \033[1;33mnoresize\033[0m: Disable resizing of artwork when saving it to the resource cache. Normally they are resized to save space.\n");
       printf("  \033[1;33mnoscreenshots\033[0m: Disable screenshots/snaps from being cached locally. Only do this if you do not plan to use the screenshot artwork in 'artwork.xml'\n");
@@ -1535,24 +1590,25 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
       printf("  \033[1;33mpretend\033[0m: Only relevant when generating a game list. It disables the game list generator and artwork compositor and only outputs the results of the potential game list generation to the terminal. Use it to check what and how the data will be combined from cached resources.\n");
       printf("  \033[1;33mrelative\033[0m: Forces all gamelist paths to be relative to rom location.\n");
       printf("  \033[1;33mskipexistingcovers\033[0m: When generating gamelists, skip processing covers that already exist in the media output folder.\n");
+      printf("  \033[1;33mskipexistingmanuals\033[0m: When generating gamelists, skip copying manuals that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingmarquees\033[0m: When generating gamelists, skip processing marquees that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingscreenshots\033[0m: When generating gamelists, skip processing screenshots that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingtextures\033[0m: When generating gamelists, skip processing textures, covers, disc art that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingvideos\033[0m: When generating gamelists, skip copying videos that already exist in the media output folder.\n");
-      printf("  \033[1;33mskipexistingmanuals\033[0m: When generating gamelists, skip copying manuals that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingwheels\033[0m: When generating gamelists, skip processing wheels that already exist in the media output folder.\n");
       printf("  \033[1;33mskipped\033[0m: When generating a gamelist, also include games that do not have any cached data.\n");
       printf("  \033[1;33msymlink\033[0m: Forces cached videos and manuals to be symlinked to game list destination to save space. WARNING! Deleting or moving files from your cache can invalidate the links!\n");
       printf("  \033[1;33mtheinfront\033[0m: Forces Skyscraper to always try and move 'The' to the beginning of the game title when generating gamelists. By default 'The' will be moved to the end of the game titles.\n");
       printf("  \033[1;33munattend\033[0m: Skip initial questions when scraping. It will then always overwrite existing gamelist and not skip existing entries.\n");
       printf("  \033[1;33munattendskip\033[0m: Skip initial questions when scraping. It will then always overwrite existing gamelist and always skip existing entries.\n");
-      printf("  \033[1;33munpack\033[0m: Unpacks and checksums the file inside 7z or zip files instead of the compressed file itself. Be aware that this option requires '7z' to be installed on the system to work. Only relevant for 'screenscraper' scraping module.\n");
+      printf("  \033[1;33mvgmaps\033[0m: Enables management of game maps for the scraping modules and frontends that support them.\n");
       printf("  \033[1;33mvideos\033[0m: Enables scraping and caching of videos for the scraping modules that support them. Beware, this takes up a lot of disk space!.\n");
+      printf("  \033[1;33mwaitifconcurrent\033[0m: Stops execution of the scraping if another instance of Skyscraper is scraping the same platform.\n");
       printf("\n");
       Skyscraper::removeLockAndExit(0);
     } else {
-      QList<QString> flags = parser.value("flags").split(",");
-      for(const auto &flag: flags) {
+      const auto flags = parser.value("flags").split(",");
+      for(const auto &flag: std::as_const(flags)) {
         if(flag == "forcefilename") {
           config.forceFilename = true;
         } else if(flag == "interactive") {
@@ -1563,7 +1619,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
           config.getMissingResources = true;
         } else if(flag == "nocovers") {
           config.cacheCovers = false;
-        } else if (flag == "notextures") {
+        } else if(flag == "notextures") {
           config.cacheTextures = false;
         } else if(flag == "nocropblack") {
           config.cropBlack = false;
@@ -1599,7 +1655,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
           config.skipExistingManuals = true;
         } else if(flag == "skipexistingwheels") {
           config.skipExistingWheels = true;
-        } else if (flag == "skipexistingtextures") {
+        } else if(flag == "skipexistingtextures") {
           config.skipExistingTextures = true;
         } else if(flag == "skipped") {
           config.skipped = true;
@@ -1611,17 +1667,16 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
           config.unattend = true;
         } else if(flag == "unattendskip") {
           config.unattendSkip = true;
-        } else if(flag == "unpack") {
-          config.unpack = true;
         } else if(flag == "videos") {
           config.videos = true;
-          videos = config.videos;
         } else if(flag == "manuals") {
           config.manuals = true;
-          manuals = config.manuals;
+        } else if(flag == "guides") {
+          config.guides = true;
+        } else if(flag == "vgmaps") {
+          config.vgmaps = true;
         } else if(flag == "chiptunes") {
           config.chiptunes = true;
-          chiptunes = config.chiptunes;
         } else {
           printf("Unknown flag '%s', please check '--flags help' for a list of valid flags. Exiting...\n", flag.toStdString().c_str());
           Skyscraper::removeLockAndExit(1);
@@ -1631,6 +1686,13 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(parser.isSet("addext")) {
     config.addExtensions = parser.value("addext");
+  }
+  if(parser.isSet("generatelbdb")) {
+    config.generateLbDb = true;
+    if(config.scraper != "launchbox") {
+      printf("Launchbox SQLite DB generation requested, but the scraper is not 'launchbox'. Exiting.\n");
+      Skyscraper::removeLockAndExit(1);
+    }
   }
   if(parser.isSet("cachegb")) {
     config.cacheGb = true;
@@ -1645,10 +1707,14 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
       Skyscraper::removeLockAndExit(1);
     }
   }
-  if(parser.isSet("refresh")) {
+  if(parser.isSet("refresh") && !config.rescan) {
     config.refresh = true;
   }
-  if(parser.isSet("removeSubtitle")) {
+  if(parser.isSet("rescan")) {
+    config.rescan = true;
+    config.refresh = false;
+  }
+  if(parser.isSet("removesubtitle")) {
     config.keepSubtitle = false;
   }
   if(parser.isSet("fuzzysearch")) {
@@ -1656,21 +1722,21 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(parser.isSet("cache")) {
     config.cacheOptions = parser.value("cache");
-    if(config.cacheOptions == "refresh") {
+    if(config.cacheOptions == "refresh" && !config.rescan) {
       config.refresh = true;
     } else if(config.cacheOptions == "help") {
       printf("Showing '\033[1;33m--cache\033[0m' help\n");
-      printf("  \033[1;33m--cache show\033[0m: Prints a status of all cached resources for the selected platform.\n");
-      printf("  \033[1;33m--cache validate\033[0m: Checks the consistency of the cache for the selected platform.\n");
       printf("  \033[1;33m--cache edit\033[0m: Let's you edit resources for the selected platform for all files or a range of files. Add a filename on command line to edit cached resources for just that one file, use '--includefrom' to edit files created with the '--cache report' option or use '--startat' and '--endat' to edit a range of roms.\n");
       printf("  \033[1;33m--cache edit:new=<TYPE>\033[0m: Let's you batch add resources of <TYPE> to the selected platform for all files or a range of files. Add a filename on command line to edit cached resources for just that one file, use '--includefrom' to edit files created with the '--cache report' option or use '--startat' and '--endat' to edit a range of roms.\n");
-      printf("  \033[1;33m--cache vacuum\033[0m: Compares your romset to any cached resource and removes the resources that you no longer have roms for.\n");
-      printf("  \033[1;33m--cache scrapingerrors\033[0m: Compares your romset to the scraped titles and identify possible false positives.\n");
-      printf("  \033[1;33m--cache report:missing=<OPTION>\033[0m: Generates reports with all files that are missing the specified resources. Check '--cache report:missing=help' for more info.\n");
       printf("  \033[1;33m--cache merge:<PATH>\033[0m: Merges two resource caches together. It will merge the resource cache specified by <PATH> into the local resource cache by default. To merge into a non-default destination cache folder set it with '-d <PATH>'. Both should point to folders with the 'db.xml' inside.\n");
       printf("  \033[1;33m--cache purge:all\033[0m: Removes ALL cached resources for the selected platform.\n");
       printf("  \033[1;33m--cache purge:m=<MODULE>,t=<TYPE>\033[0m: Removes cached resources related to the selected module(m) and / or type(t). Either one can be left out in which case ALL resources from the selected module or ALL resources from the selected type will be removed.\n");
-      printf("  \033[1;33m--cache refresh\033[0m: Forces a refresh of existing cached resources for any scraping module. Requires a scraping module set with '-s'. Similar to '--refresh'.\n");
+      printf("  \033[1;33m--cache refresh\033[0m: Forces a refresh of existing cached resources for any scraping module. Requires a scraping module set with '-s'. Similar to '--refresh'. Incompatible with --rescan.\n");
+      printf("  \033[1;33m--cache report:missing=<OPTION>\033[0m: Generates reports with all files that are missing the specified resources. Check '--cache report:missing=help' for more info.\n");
+      printf("  \033[1;33m--cache scrapingerrors\033[0m: Compares your romset to the scraped titles and identify possible false positives.\n");
+      printf("  \033[1;33m--cache show\033[0m: Prints a status of all cached resources for the selected platform.\n");
+      printf("  \033[1;33m--cache vacuum\033[0m: Compares your romset to any cached resource and removes the resources that you no longer have roms for.\n");
+      printf("  \033[1;33m--cache validate\033[0m: Checks the consistency of the cache for the selected platform.\n");
       printf("\n");
       Skyscraper::removeLockAndExit(0);
     }
@@ -1746,19 +1812,17 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     config.importFolder.append((config.importFolder.right(1) == "/"?"":"/") + config.platform);
   }
 
-  // Set minMatch to 0 for cache, arcadedb and screenscraper
+  // Set minMatch to 0 for cache, arcadedb, import and esgamelist
   // We know these results are always accurate
-  if(/*config.minMatchSet == false &&*/ (config.scraper == "cache" ||
-                                     config.scraper == "arcadedb" ||
-                                     config.scraper == "esgamelist" ||
-                                     config.scraper == "import")) {
+  if((config.scraper == "cache"  || config.scraper == "arcadedb" ||
+      config.scraper == "import" || config.scraper == "esgamelist")) {
     config.minMatch = 0;
   }
 
   skippedFileString = "skipped-" + config.platform + "-" + config.scraper + ".txt";
 
   // Grab all requested files from cli, if any
-  QList<QString> requestedFiles = parser.positionalArguments();
+  QStringList requestedFiles = parser.positionalArguments();
 
   // Add files from '--includefrom', if any
   if(!config.includeFrom.isEmpty()) {
@@ -1781,7 +1845,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
 
   // Verify requested files and add the ones that exist
-  for(const auto &requestedFile: requestedFiles) {
+  for(const auto &requestedFile: std::as_const(requestedFiles)) {
     QFileInfo requestedFileInfo(requestedFile);
     if(!requestedFileInfo.exists()) {
       requestedFileInfo.setFile(config.currentDir + "/" + requestedFile);
@@ -1791,10 +1855,12 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     }
     if(requestedFileInfo.exists()) {
       cliFiles.append(requestedFileInfo.absoluteFilePath());
-      // Always set refresh and unattend true if user has supplied filenames on
+      // Always set refresh or rescan and unattend true if user has supplied filenames on
       // command line. That way they are cached, but game list is not changed and user isn't
       // asked about skipping and overwriting.
-      config.refresh = true;
+      if(!config.rescan) {
+        config.refresh = true;
+      }
       config.unattend = true;
     } else {
       printf("Filename: '\033[1;32m%s\033[0m' requested either on command line or with '--includefrom' not found!\n\nPlease verify the filename and try again...\n", requestedFile.toStdString().c_str());
@@ -1813,9 +1879,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
 
   if(config.startAt != "" || config.endAt != "") {
-    config.refresh = true;
+    // config.refresh = true;
     config.unattend = true;
-    config.subdirs = false;
+    // config.subdirs = false;
   }
 
   // If interactive is set, force 1 thread and always accept the chosen result
@@ -1823,28 +1889,31 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     if(config.scraper == "cache" ||
        config.scraper == "import" ||
        config.scraper == "arcadedb" ||
-       config.scraper == "esgamelist" ||
-       config.scraper == "screenscraper") {
+       config.scraper == "esgamelist") {
       config.interactive = false;
     } else {
       config.threads = 1;
       config.minMatch = 0;
-      config.refresh = true;
+      if(!config.rescan) {
+        config.refresh = true;
+      }
     }
   }
 
   if(config.scraper == "import") {
     // Always force the cache to be refreshed when using import scraper
     config.refresh = true;
+    config.rescan = false;
     config.videos = true;
     config.manuals = true;
-    videos = config.videos;
-    manuals = config.manuals;
+    config.guides = true;
+    config.vgmaps = true;
+    config.chiptunes = true;
     // minMatch set to 0 further up
   }
 
   if(!config.userCreds.isEmpty() && config.userCreds.contains(":")) {
-    QList<QString> userCreds = config.userCreds.split(":");
+    QStringList userCreds = config.userCreds.split(":");
     if(userCreds.length() == 2) {
       config.user = userCreds.at(0);
       config.password = userCreds.at(1);
@@ -1957,7 +2026,7 @@ void Skyscraper::doPrescrapeJobs()
   } else if(config.scraper == "igdb") {
     if(config.threads > 4) {
       printf("\033[1;33mAdjusting to 4 threads to accomodate limits in the IGDB API\033[0m\n\n");
-      printf("\033[1;32mTHIS MODULE IS POWERED BY IGDB.COM\033[0m\n");
+      printf("\033[1;32mThis module is powered by IGDB.com\033[0m\n");
       config.threads = 4; // Don't change! This limit was set by request from IGDB
     }
     if(config.user.isEmpty() || config.password.isEmpty()) {
@@ -1997,7 +2066,7 @@ void Skyscraper::doPrescrapeJobs()
         printf("Token '%s' acquired, ready to scrape!\n", config.igdbToken.toStdString().c_str());
         tokenLife = (QDateTime::currentMSecsSinceEpoch() / 1000) + jsonObj["expires_in"].toInt();
         if(tokenFile.open(QIODevice::WriteOnly)) {
-          tokenFile.write(config.user.toUtf8() + ";" + config.igdbToken.toUtf8() + ";" + QByteArray::number((QDateTime::currentMSecsSinceEpoch() / 1000) + tokenLife));
+          tokenFile.write(config.user.toUtf8() + ";" + config.igdbToken.toUtf8() + ";" + QByteArray::number(tokenLife));
           tokenFile.close();
         }
       } else {
@@ -2044,6 +2113,14 @@ void Skyscraper::doPrescrapeJobs()
             config.threads = (allowedThreads <= 8?allowedThreads:8);
             printf("Setting threads to \033[1;32m%d\033[0m as allowed for the supplied user credentials.\n\n", config.threads);
           }
+        }
+        int maxRequestsDay = jsonObj["response"].toObject()["ssuser"].toObject()["maxrequestsperday"].toString().toInt();
+        int currentRequests = jsonObj["response"].toObject()["ssuser"].toObject()["requeststoday"].toString().toInt();
+        int maxKORequestsDay = jsonObj["response"].toObject()["ssuser"].toObject()["maxrequestskoperday"].toString().toInt();
+        int currentKORequests = jsonObj["response"].toObject()["ssuser"].toObject()["requestskotoday"].toString().toInt();
+        if((maxRequestsDay <= currentRequests) || (maxKORequestsDay <= currentKORequests)) {
+          printf("\033[1;33mThe daily user limits at ScreenScraper have been reached. Please wait until the next day.\033[0m\n\n");
+          Skyscraper::removeLockAndExit(1);
         }
       }
     }
@@ -2135,7 +2212,8 @@ void Skyscraper::setRegionPrios()
 
   // Load custom region prioritizations
   if(!config.regionPriosStr.isEmpty()) {
-    for(const auto &region: config.regionPriosStr.split(",")) {
+    const auto regions = config.regionPriosStr.split(",");
+    for(const auto &region: std::as_const(regions)) {
       config.regionPrios.append(region.trimmed());
     }
   } else {
@@ -2178,7 +2256,8 @@ void Skyscraper::setLangPrios()
 
   // Load custom lang prioritizations
   if(!config.langPriosStr.isEmpty()) {
-    for(const auto &lang: config.langPriosStr.split(",")) {
+    const auto langs = config.langPriosStr.split(",");
+    for(const auto &lang: std::as_const(langs)) {
       config.langPrios.append(lang.trimmed());
     }
   } else {

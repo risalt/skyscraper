@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <QString>
 #include <QStringList>
+#include <QMultiMap>
 #include <QEventLoop>
 #include <QJsonObject>
 #include <QJsonDocument>
@@ -69,16 +70,11 @@ class LaunchBox : public AbstractScraper
 
 public:
   LaunchBox(Settings *config, QSharedPointer<NetManager> manager);
-  ~LaunchBox();
-  virtual QList<QString> getSearchNames(const QFileInfo &info) override;
-  
-private:
-  QTimer limitTimer;
-  QEventLoop limiter;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
@@ -95,18 +91,21 @@ private:
   void getTexture(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
 
+private:
+  void loadMaps();
+
+  QTimer limitTimer;
+  QEventLoop limiter;
+
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
   QMap<int, GameEntry> launchBoxDb;
-  QMultiMap<QString, int> searchNameToId;
-  
-  void loadMaps();
-  QMap<QString, QString> platformCodeToFinalCode;
-  QMap<QString, QString> platformNameToFinalCode;
+  QMultiMap<QString, QPair<int, QString>> searchNameToId;
+  QMultiMap<QString, QPair<int, QString>> searchNameToIdTitle;
+
   QMap<QString, int> schema;
   QMap<int, QStringList> priorityImages;
   QStringList priorityRegions;
-  QMap<QString, QString> mameNameToLongName;
 
 };
 

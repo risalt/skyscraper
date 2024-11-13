@@ -38,11 +38,11 @@ public:
   QFileInfo takeEntry();
   void clearAll();
   void filterFiles(const QString &patterns, const bool &include = false);
-  void removeFiles(const QList<QString> &files);
+  void removeFiles(const QStringList &files);
 
 private:
   QMutex queueMutex;
-  QList<QString> getRegExpPatterns(QString patterns);
+  QStringList getRegExpPatterns(QString patterns);
 
 };
 

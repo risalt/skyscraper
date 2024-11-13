@@ -37,11 +37,11 @@ class TheGamesDb : public AbstractScraper
 
 public:
   TheGamesDb(Settings *config, QSharedPointer<NetManager> manager);
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getDeveloper(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
@@ -57,14 +57,16 @@ private:
   void getTexture(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
 
+private:
+  void loadMaps();
+
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
 
-  void loadMaps();
-  QMap<int, QString> platformMap;
   QMap<int, QString> genreMap;
   QMap<int, QString> developerMap;
   QMap<int, QString> publisherMap;
+
 };
 
 #endif // THEGAMESDB_H

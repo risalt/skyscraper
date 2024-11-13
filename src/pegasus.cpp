@@ -55,23 +55,19 @@ QString Pegasus::makeAbsolute(const QString &filePath, const QString &inputFolde
 }
 
 
-bool Pegasus::skipExisting(QList<GameEntry> &, QSharedPointer<Queue>) 
+bool Pegasus::skipExisting(QList<GameEntry> &, QSharedPointer<Queue>)
 {
   return false;
-}
-
-void Pegasus::preserveFromOld(GameEntry &)
-{
-  return;
 }
 
 QString Pegasus::toPegasusFormat(const QString &key, const QString &value)
 {
   QString pegasusFormat = value;
-  
+
   QRegularExpressionMatch match;
   match = QRegularExpression("\\n[\\t ]*\\n").match(pegasusFormat);
-  for(const auto &capture: match.capturedTexts()) {
+  const auto captures = match.capturedTexts();
+  for(const auto &capture: std::as_const(captures)) {
     pegasusFormat.replace(capture, "###NEWLINE###" + tab + ".###NEWLINE###" + tab);
   }
   pegasusFormat.replace("\n", "\n" + tab);
@@ -87,7 +83,7 @@ void Pegasus::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
   if(!gameEntries.isEmpty()) {
     finalOutput.append("collection: " + Platform::get().getAliases(config->platform).at(1) + "\n");
     finalOutput.append("shortname: " + config->platform + "\n");
-    if (Platform::get().getSortBy(config->platform).isEmpty()) {
+    if(Platform::get().getSortBy(config->platform).isEmpty()) {
         finalOutput.append("sortby: 0000\n");
     }
     else {
@@ -115,13 +111,11 @@ void Pegasus::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
     }
     dots++;
 
-    preserveFromOld(entry);
-
     if(config->relativePaths) {
       entry.path.replace(config->inputFolder, ".");
     }
     QString sanitizedName = entry.title;
-    if (sanitizedName.isEmpty()) {
+    if(sanitizedName.isEmpty()) {
       sanitizedName = "N/A";
     }
     finalOutput.append(toPegasusFormat("game", sanitizedName) + "\n");
@@ -172,7 +166,7 @@ void Pegasus::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
       finalOutput.append(toPegasusFormat("assets.manual", (config->relativePaths?entry.manualFile.replace(config->inputFolder, "."):entry.manualFile)) + "\n");
     }
     if(!entry.pSValuePairs.isEmpty()) {
-      for(const auto &pair: entry.pSValuePairs) {
+      for(const auto &pair: std::as_const(entry.pSValuePairs)) {
         finalOutput.append(toPegasusFormat(pair.first, pair.second) + "\n");
       }
     }

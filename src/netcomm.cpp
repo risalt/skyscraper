@@ -48,19 +48,19 @@ void NetComm::request(QString query, QString postData, QList<QPair<QString, QStr
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
   if(!headers.isEmpty()) {
-    for(const auto &header: headers) {
+    for(const auto &header: std::as_const(headers)) {
       request.setRawHeader(header.first.toUtf8(), header.second.toUtf8());
     }
   }
 
-  if (operation.isEmpty()) {
+  if(operation.isEmpty()) {
     if(postData.isNull()) {
       reply = manager->getRequest(request);
     } else {
       reply = manager->postRequest(request, postData.toUtf8());
     }
   }
-  else if (operation == "DELETE") {
+  else if(operation == "DELETE") {
     reply = manager->deleteRequest(request);
   }
   else {
@@ -152,7 +152,7 @@ void NetComm::dataDownloaded(qint64 bytesReceived, qint64)
 }
 
 void NetComm::requestTimeout()
-{ 
+{
   printf("\033[1;33mRequest timed out, server might be busy / overloaded...\033[0m\n");
   reply->abort();
 }

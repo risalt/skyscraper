@@ -23,6 +23,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
+#include <QUrl>
 #include <QProcess>
 #include <QByteArray>
 #include <QTemporaryFile>
@@ -44,7 +45,8 @@ WorldOfSpectrum::WorldOfSpectrum(Settings *config,
   urlPost = "\" ";
   titlePre.append("title=\"Get direct link to this entry\">");
   titlePost = "</a>";
-  platformPre.append("<dt>Machine type</dt>\n<dd>");
+  platformPre.append("<dt>Machine type</dt>");
+  platformPre.append("<dd>");
   platformPost = "</dd>";
 
   releaseDatePre.append("<table class=\"item-releases\">");
@@ -95,28 +97,32 @@ WorldOfSpectrum::WorldOfSpectrum(Settings *config,
 void WorldOfSpectrum::getSearchResults(QList<GameEntry> &gameEntries,
                                  QString searchName, QString platform)
 {
-  // searchName = searchName.replace("the+", "");
   // Match English, German, French, Spanish articles:
   // Exceptions: "Las Vegas", "Die Hard"
-  searchName = NameTools::removeArticle(searchName, "+");
+  searchName = QUrl::toPercentEncoding(NameTools::removeArticle(searchName));
   QString url = "https://worldofspectrum.net/infoseek/";
-  netComm->request(url + "?regexp=" + searchName + "&model=spectrum&loadpics=3");
-  // qDebug() << url + "?regexp=" + searchName + "&model=spectrum&loadpics=3";
+  netComm->request(url + "?regexp=" + searchName + "&contenttype=software&loadpics=3");
+  if(config->verbosity >= 1) {
+    qDebug() << url + "?regexp=" + searchName + "&contenttype=software&loadpics=3";
+  }
   q.exec();
   data = netComm->getData();
+  if(config->verbosity >= 3) {
+    qDebug() << data;
+  }
   GameEntry game;
 
   while(data.indexOf(searchResultPre.toUtf8()) != -1) {
     nomNom(searchResultPre);
 
     // Digest until url
-    for(const auto &nom: urlPre) {
+    for(const auto &nom: std::as_const(urlPre)) {
       nomNom(nom);
     }
     game.url = data.left(data.indexOf(urlPost.toUtf8()));
 
     // Digest until title
-    for(const auto &nom: titlePre) {
+    for(const auto &nom: std::as_const(titlePre)) {
       nomNom(nom);
     }
     game.title = data.left(data.indexOf(titlePost.toUtf8()));
@@ -125,13 +131,13 @@ void WorldOfSpectrum::getSearchResults(QList<GameEntry> &gameEntries,
     // Three digit articles in English, German, French, Spanish:
     game.title = NameTools::moveArticle(game.title, true);
 
-    // Digest until url
-    for(const auto &nom: platformPre) {
+    // Digest until platform
+    for(const auto &nom: std::as_const(platformPre)) {
       nomNom(nom);
     }
     QString platformGame = data.left(data.indexOf(platformPost.toUtf8()));
 
-    game.platform = Platform::get().getAliases(platform).at(1);
+    game.platform = platformGame;
 
     if(platformMatch(platformGame, platform)) {
       gameEntries.append(game);
@@ -141,12 +147,12 @@ void WorldOfSpectrum::getSearchResults(QList<GameEntry> &gameEntries,
 
 void WorldOfSpectrum::getCover(GameEntry &game)
 {
-  for(const auto &nom: coverPre) {
+  for(const auto &nom: std::as_const(coverPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: coverPre) {
+  for(const auto &nom: std::as_const(coverPre)) {
     nomNom(nom);
   }
   QString downloads = data.left(data.indexOf(screenshotPost.toUtf8()));
@@ -161,7 +167,7 @@ void WorldOfSpectrum::getCover(GameEntry &game)
       type = "manual";
     } else if(type.contains("instructions") && url.endsWith(".txt", Qt::CaseInsensitive)) {
       type = "description";
-    } else if(type.contains("poster") || 
+    } else if(type.contains("poster") ||
               type.contains("advertisement") ||
               type.contains("sketches") ||
               type.contains("photo") ||
@@ -174,7 +180,7 @@ void WorldOfSpectrum::getCover(GameEntry &game)
       resources[type] = url;
     }
   }
-  
+
   QString url = resources["inlay - front"];
   if(!url.isEmpty()) {
     if(url.indexOf("http") != -1) {
@@ -265,8 +271,7 @@ void WorldOfSpectrum::getWheel(GameEntry &game)
           converter.start(command, commandArgs, QIODevice::ReadOnly);
           converter.waitForFinished(10000);
           converter.close();
-          tempFile.chop(extension.size());
-          QFile imageFile(tempFile + "png");
+          QFile imageFile(tempFile.chopped(extension.size()) + "png");
           if(imageFile.open(QIODevice::ReadOnly)) {
             game.wheelData = imageFile.readAll();
             if(!image.loadFromData(game.wheelData)) {
@@ -277,7 +282,7 @@ void WorldOfSpectrum::getWheel(GameEntry &game)
             printf("ERROR: Error %d accessing the temporary file.\n", imageFile.error());
           }
           imageFile.remove();
-          QFile::remove(tempFile + extension);
+          QFile::remove(tempFile);
         } else {
           printf("ERROR: Error when creating a temporary file to download a video.\n");
         }
@@ -361,7 +366,7 @@ void WorldOfSpectrum::getManual(GameEntry &game)
        !contentType.isEmpty() && game.manualData.size() > 4096) {
       game.manualFormat = contentType.mid(contentType.indexOf("/") + 1,
                                           contentType.length() - contentType.indexOf("/") + 1);
-      if (game.manualFormat.length()>4) {
+      if(game.manualFormat.length()>4) {
         game.manualFormat = "pdf";
       }
     } else {
@@ -410,15 +415,15 @@ void WorldOfSpectrum::getDescription(GameEntry &game)
 
 void WorldOfSpectrum::getReleaseDate(GameEntry &game)
 {
-  for(const auto &nom: releaseDatePre) {
+  for(const auto &nom: std::as_const(releaseDatePre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: releaseDatePre) {
+  for(const auto &nom: std::as_const(releaseDatePre)) {
     nomNom(nom);
   }
-  game.releaseDate = data.left(data.indexOf(releaseDatePost.toUtf8())).simplified();
+  game.releaseDate = StrTools::conformReleaseDate(data.left(data.indexOf(releaseDatePost.toUtf8())).simplified());
 
   bool isInt = true;
   game.releaseDate.toInt(&isInt);
@@ -432,16 +437,17 @@ void WorldOfSpectrum::getTags(GameEntry &game)
   if(tagsPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: tagsPre) {
+  for(const auto &nom: std::as_const(tagsPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: tagsPre) {
+  for(const auto &nom: std::as_const(tagsPre)) {
     nomNom(nom);
   }
-  game.tags = data.left(data.indexOf(tagsPost.toUtf8()));
+  game.tags = data.left(data.indexOf(tagsPost.toUtf8())).simplified();
   if(game.tags.contains(": ")) {
     game.tags.remove(0, game.tags.indexOf(": ") + 2);
   }
+  game.tags = StrTools::conformTags(game.tags);
 }

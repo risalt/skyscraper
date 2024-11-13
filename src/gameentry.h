@@ -45,15 +45,22 @@ constexpr int FRANCHISES = 15;
 constexpr int MANUAL = 16;
 constexpr int CHIPTUNE = 17;
 constexpr int CUSTOMFLAGS = 18;
+constexpr int GUIDES = 19;
+constexpr int PLATFORM = 20;
+constexpr int TRIVIA = 21;
+constexpr int VGMAPS = 22;
 
 #include <QImage>
+#include <QByteArray>
+#include <QDataStream>
 
 class GameEntry {
 public:
   GameEntry();
-  int getCompleteness() const;
+  GameEntry(const QByteArray & buffer);
+  QByteArray serialize() const;
   void resetMedia();
-  // operator QString() const { return "TEST\n"; };
+  int getCompleteness() const;
 
   QString id = "";
   QString path = "";
@@ -63,6 +70,8 @@ public:
   QString platformSrc = "";
   QString description = "";
   QString descriptionSrc = "";
+  QString trivia = "";
+  QString triviaSrc = "";
   QString releaseDate = "";
   QString releaseDateSrc = "";
   QString developer = "";
@@ -83,9 +92,9 @@ public:
   bool favourite = false;
   bool played = false;
   unsigned int timesPlayed = 0;
-  unsigned int lastPlayed = 0;
-  unsigned int  firstPlayed = 0;
-  unsigned int timePlayed = 0;
+  qint64 lastPlayed = 0;
+  qint64 firstPlayed = 0;
+  qint64 timePlayed = 0;
 
   QByteArray coverData = QByteArray();
   QString coverFile = "";
@@ -113,6 +122,10 @@ public:
   QByteArray manualData = "";
   QString manualFile = "";
   QString manualSrc = "";
+  QString guides = "";
+  QString guidesSrc = "";
+  QString vgmaps = "";
+  QString vgmapsSrc = "";
   QString chiptuneId = "";
   QString chiptuneIdSrc = "";
   QString chiptunePath = "";
@@ -159,6 +172,8 @@ public:
 
 };
 
+QDataStream &operator<<(QDataStream &out, const GameEntry &game);
+QDataStream &operator>>(QDataStream &in, GameEntry &game);
 QDebug operator<<(QDebug dbg, const GameEntry &game);
 
 #endif // GAMEENTRY_H

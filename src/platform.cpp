@@ -36,12 +36,12 @@
 
 #include "platform.h"
 
-void Platform::loadConfig(const QString& configPath)
+void Platform::loadConfig(const QString &configPath)
 {
     clearConfigData();
 
     QFile configFile(configPath);
-    if (!configFile.open(QIODevice::ReadOnly))
+    if(!configFile.open(QIODevice::ReadOnly))
         return;
 
     QByteArray saveData = configFile.readAll();
@@ -51,7 +51,7 @@ void Platform::loadConfig(const QString& configPath)
         return;
 
     QJsonArray platformsArray = json["platforms"].toArray();
-    for (int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
+    for(int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
         QJsonObject platformObject = platformsArray[platformIndex].toObject();
 
         QString platformName = platformObject["name"].toString();
@@ -64,19 +64,19 @@ void Platform::loadConfig(const QString& configPath)
         platformToFamily[platformName].push_back(platformFamily);
 
         QJsonArray scrapersArray = platformObject["scrapers"].toArray();
-        for (int scraperIndex = 0; scraperIndex < scrapersArray.size(); ++scraperIndex) {
+        for(int scraperIndex = 0; scraperIndex < scrapersArray.size(); ++scraperIndex) {
             QString scraperName = scrapersArray[scraperIndex].toString();
             platformToScrapers[platformName].push_back(scraperName);
         }
 
         QJsonArray formatsArray = platformObject["formats"].toArray();
-        for (int formatIndex = 0; formatIndex < formatsArray.size(); ++formatIndex) {
+        for(int formatIndex = 0; formatIndex < formatsArray.size(); ++formatIndex) {
             QString formatName = formatsArray[formatIndex].toString();
             platformToFormats[platformName].push_back(formatName);
         }
 
         QJsonArray aliasesArray = platformObject["aliases"].toArray();
-        for (int aliasIndex = 0; aliasIndex < aliasesArray.size(); ++aliasIndex) {
+        for(int aliasIndex = 0; aliasIndex < aliasesArray.size(); ++aliasIndex) {
             QString aliasName = aliasesArray[aliasIndex].toString();
             platformToAliases[platformName].push_back(aliasName);
         }
@@ -94,7 +94,7 @@ void Platform::clearConfigData()
     platformToAliases.clear();
 }
 
-Platform& Platform::get()
+Platform & Platform::get()
 {
     static Platform platform;
     return platform;

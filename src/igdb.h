@@ -37,16 +37,11 @@ class Igdb : public AbstractScraper
 
 public:
   Igdb(Settings *config, QSharedPointer<NetManager> manager);
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QTimer limitTimer;
-  QEventLoop limiter;
-
-  QList<QPair<QString, QString > > headers;
-  
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
   void getTags(GameEntry &game) override;
@@ -61,10 +56,14 @@ private:
   void getMarquee(GameEntry &game) override;
   void getVideo(GameEntry &game) override;
 
-  QList<QString> getSearchNames(const QFileInfo &info) override;
+private:
+  QTimer limitTimer;
+  QEventLoop limiter;
 
+  QList<QPair<QString, QString > > headers;
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
+
 };
 
 #endif // IGDB_H

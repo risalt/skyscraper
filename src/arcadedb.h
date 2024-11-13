@@ -37,16 +37,18 @@ class ArcadeDB : public AbstractScraper
 
 public:
   ArcadeDB(Settings *config, QSharedPointer<NetManager> manager);
+  QStringList getSearchNames(const QFileInfo &info) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QList<QString> getSearchNames(const QFileInfo &info) override;
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getReleaseDate(GameEntry &game) override;
   void getPlayers(GameEntry &game) override;
+  void getRating(GameEntry &game) override;
   void getTags(GameEntry &game) override;
   void getPublisher(GameEntry &game) override;
+  void getFranchises(GameEntry &game) override;
   void getDescription(GameEntry &game) override;
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
@@ -56,6 +58,7 @@ private:
   void getVideo(GameEntry &game) override;
   void getManual(GameEntry &game) override;
 
+private:
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
   QString internalName;

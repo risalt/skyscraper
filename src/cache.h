@@ -50,6 +50,7 @@ struct ResCounts {
   int titles;
   int platforms;
   int descriptions;
+  int trivias;
   int publishers;
   int developers;
   int players;
@@ -65,6 +66,8 @@ struct ResCounts {
   int textures;
   int videos;
   int manuals;
+  int guides;
+  int vgmaps;
   int chiptunes;
 };
 
@@ -90,8 +93,9 @@ public:
   void validate();
   void addResources(GameEntry &entry, const Settings &config, QString &output);
   void fillBlanks(GameEntry &entry, const QString scraper = "");
+  bool removeResources(const QString &cacheId, const QString scraper = "");
   bool hasEntries(const QString &cacheId, const QString scraper = "");
-  bool hasMeaningfulEntries(const QString &cacheId, const QString scraper = "");
+  bool hasMeaningfulEntries(const QString &cacheId, const QString scraper = "", bool reverseLogic = false);
   bool hasEntriesOfType(const QString &cacheId, const QString &type, const QString scraper = "");
   void addQuickId(const QFileInfo &info, const QString &cacheId);
   QString getQuickId(const QFileInfo &info);
@@ -103,7 +107,7 @@ public:
   QMutex cacheMutex;
   QMutex quickIdMutex;
 
-  QMap<QString, QList<QString> > prioMap;
+  QMap<QString, QStringList > prioMap;
 
   QMap<QString, ResCounts> resCountsMap;
 
@@ -111,7 +115,7 @@ public:
   QMap<QString, QPair<qint64, QString> > quickIds; // filePath, timestamp + cacheId for quick lookup
 
   QList<QFileInfo> getFileInfos(const QString &inputFolder, const QString &filter, const bool subdirs = true);
-  QList<QString> getCacheIdList(const QList<QFileInfo> &fileInfos);
+  QStringList getCacheIdList(const QList<QFileInfo> &fileInfos);
 
   void addToResCounts(const QString source, const QString type);
   void addResource(Resource &resource, GameEntry &entry, const QString &cacheAbsolutePath,

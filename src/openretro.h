@@ -26,6 +26,7 @@
 #ifndef OPENRETRO_H
 #define OPENRETRO_H
 
+#include <QMap>
 #include <QTimer>
 #include <QEventLoop>
 
@@ -36,20 +37,25 @@ class OpenRetro : public AbstractScraper
   Q_OBJECT
 
 public:
-  QTimer limitTimer;
-  QEventLoop limiter;
   OpenRetro(Settings *config, QSharedPointer<NetManager> manager);
+  QStringList getSearchNames(const QFileInfo &info) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QList<QString> getSearchNames(const QFileInfo &info) override;
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
                         QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getDescription(GameEntry &game) override;
   void getTags(GameEntry &game) override;
   void getRating(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
   void getManual(GameEntry &game) override;
+
+private:
+  QTimer limitTimer;
+  QEventLoop limiter;
+
+  QString platformId;
+
 };
 
 #endif // OPENRETRO_H

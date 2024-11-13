@@ -34,18 +34,21 @@ Q_OBJECT
 
 public:
   ESGameList(Settings *config, QSharedPointer<NetManager> manager);
+  QStringList getSearchNames(const QFileInfo &info) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-private:
-  QList<QString> getSearchNames(const QFileInfo &info) override;
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
                         QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
+
+private:
   QByteArray loadImageData(const QString fileName);
   void loadVideoData(GameEntry &game, const QString fileName);
   QString getAbsoluteFileName(const QString fileName);
 
   QDomNodeList games;
   QDomNode gameNode;
+
 };
 
 #endif // ESGAMELIST_H

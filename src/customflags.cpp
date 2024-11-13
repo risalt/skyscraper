@@ -36,72 +36,26 @@ CustomFlags::CustomFlags(Settings *config, QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
   fetchOrder.append(CUSTOMFLAGS);
+  offlineScraper = true;
 }
 
-CustomFlags::~CustomFlags()
+QStringList CustomFlags::getSearchNames(const QFileInfo &info)
 {
-}
-
-QList<QString> CustomFlags::getSearchNames(const QFileInfo &info)
-{
-  QList<QString> searchNames = { info.filePath() };
+  QStringList searchNames = { info.filePath() };
   return searchNames;
 }
 
 void CustomFlags::getSearchResults(QList<GameEntry> &gameEntries,
-                                 QString searchName, QString)
+                                   QString searchName, QString)
 {
   GameEntry game;
   game.path = searchName;
-  game.completed = QFileInfo::exists(game.path + ".completed") ? true : false;
-  game.favourite = QFileInfo::exists(game.path + ".favourite") ? true : false;
-  QFile inputFile(game.path + ".played");
-  game.played = inputFile.exists() ? true : false;
-  if (game.played) {
-    if (inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-      QTextStream in(&inputFile);
-      while (!in.atEnd()) {
-        QString line = in.readLine();
-        QStringList startEndPlayTime = line.split(";", Qt::SkipEmptyParts);
-        if (startEndPlayTime.size() > 0) {
-          unsigned int firstEpoch = startEndPlayTime.at(0).toUInt();
-          if (firstEpoch) {
-            if (!game.firstPlayed) {
-              game.firstPlayed = firstEpoch;
-            }
-            game.timesPlayed++;
-            game.lastPlayed = firstEpoch;
-            if (startEndPlayTime.size() == 2 && startEndPlayTime.at(1).toUInt()) {
-              unsigned int timePlayed = startEndPlayTime.at(1).toUInt() - firstEpoch;
-              if (timePlayed>0) {
-                game.timePlayed += timePlayed;
-              }
-            }
-          }
-        }
-      }
-      inputFile.close();
-    }
-  }
   gameEntries.append(game);
 }
 
-void CustomFlags::getGameData(GameEntry & game, QStringList &, GameEntry *cache = nullptr)
+void CustomFlags::getGameData(GameEntry & game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
-  for(int a = 0; a < fetchOrder.length(); ++a) {
-    switch(fetchOrder.at(a)) {
-    case CUSTOMFLAGS:
-      getCustomFlags(game);
-      break;
-    default:
-      ;
-    }
-  }
+  fetchGameResources(game, sharedBlobs, cache);
 }
 
 void CustomFlags::getCustomFlags(GameEntry & game)
@@ -110,23 +64,23 @@ void CustomFlags::getCustomFlags(GameEntry & game)
   game.favourite = QFileInfo::exists(game.path + ".favourite") ? true : false;
   QFile inputFile(game.path + ".played");
   game.played = inputFile.exists() ? true : false;
-  if (game.played) {
-    if (inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+  if(game.played) {
+    if(inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
       QTextStream in(&inputFile);
-      while (!in.atEnd()) {
+      while(!in.atEnd()) {
         QString line = in.readLine();
         QStringList startEndPlayTime = line.split(";", Qt::SkipEmptyParts);
-        if (startEndPlayTime.size() > 0) {
-          unsigned int firstEpoch = startEndPlayTime.at(0).toUInt();
-          if (firstEpoch) {
-            if (!game.firstPlayed) {
+        if(!startEndPlayTime.isEmpty()) {
+          qint64 firstEpoch = startEndPlayTime.at(0).toLongLong();
+          if(firstEpoch) {
+            if(!game.firstPlayed) {
               game.firstPlayed = firstEpoch;
             }
             game.timesPlayed++;
             game.lastPlayed = firstEpoch;
-            if (startEndPlayTime.size() == 2 && startEndPlayTime.at(1).toUInt()) {
-              unsigned int timePlayed = startEndPlayTime.at(1).toUInt() - firstEpoch;
-              if (timePlayed>0) {
+            if(startEndPlayTime.size() == 2 && startEndPlayTime.at(1).toLongLong()) {
+              qint64 timePlayed = startEndPlayTime.at(1).toLongLong() - firstEpoch;
+              if(timePlayed>0) {
                 game.timePlayed += timePlayed;
               }
             }

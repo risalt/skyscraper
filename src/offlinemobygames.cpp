@@ -40,18 +40,19 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
   : AbstractScraper(config, manager)
 {
   QString platformDb;
-  incrementalScraping = true;
-  
+  offlineScraper = true;
+
   connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
   limitTimer.setInterval(10000); // 10 second request limit
   limitTimer.setSingleShot(false);
   limitTimer.start();
 
-  loadConfig("mobygames.json");
+  loadConfig("mobygames.json", "platform_name", "platform_id");
   platformId = getPlatformId(config->platform);
-  if (platformId == "na") {
+  if(platformId == "na") {
     printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
-    Skyscraper::removeLockAndExit(1);
+    reqRemaining = 0;
+    return;
   }
 
   QFile dbFile(config->mobygamesDb + "/" + config->platform + ".json");
@@ -59,7 +60,8 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
     dbFile.close();
     printf("\nERROR: Database file %s cannot be accessed. ", dbFile.fileName().toStdString().c_str());
     printf("Please regenerate it using the program 'Moby Games Platform Scraper'.\n");
-    Skyscraper::removeLockAndExit(1);
+    reqRemaining = 0;
+    return;
   }
   printf("INFO: Reading MobyGames header game database...");
   fflush(stdout);
@@ -67,14 +69,15 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
   dbFile.close();
 
   jsonDoc = QJsonDocument::fromJson(platformDb.toUtf8());
-  if (jsonDoc.isNull()) {
+  if(jsonDoc.isNull()) {
     printf("\nERROR: The MobyGames database file for the platform is missing, empty or corrupted. "
            "Please regenerate it using the program 'Moby Games Platform Scraper'.\n");
-    Skyscraper::removeLockAndExit(1);
+    reqRemaining = 0;
+    return;
   } else {
     QJsonArray jsonGames = jsonDoc.array();
     // Load offline mobygames database
-    for(const auto &jsonGameRef: jsonGames) {
+    for(const auto &jsonGameRef: std::as_const(jsonGames)) {
       int gameId = 0;
       QJsonObject jsonGame;
       if(jsonGameRef.isObject()) {
@@ -87,25 +90,33 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
       }
       QStringList gameAliases = { jsonGame["title"].toString() };
       QJsonArray gameAlternates = jsonGame["alternate_titles"].toArray();
-      for(const auto &alternate: gameAlternates) {
+      for(const auto &alternate: std::as_const(gameAlternates)) {
         gameAliases << alternate.toObject()["title"].toString();
       }
+      gameAliases.removeDuplicates();
       if(gameId) {
-        for(auto &gameAlias: gameAliases) {
-          QString sanitizedGame = gameAlias.replace("&", " and ").remove("'");
-          sanitizedGame = NameTools::convertToIntegerNumeral(sanitizedGame);
-          QString sanitizedGameMain = sanitizedGame;
-          sanitizedGame = NameTools::getUrlQueryName(NameTools::removeArticle(sanitizedGame), -1, " ");
-          // TODO: Danger false positives: sanitizedGameMain = NameTools::getUrlQueryName(NameTools::removeArticle(sanitizedGameMain), -1, " ", true);
-          sanitizedGame = StrTools::sanitizeName(sanitizedGame, true);
-          sanitizedGameMain = StrTools::sanitizeName(sanitizedGameMain, true);
-          /*qDebug() << "New name/alias;" << gameId << ";" << gameAlias <<
-                   ";" << sanitizedGame << ";" << sanitizedGameMain; */
-          if(!nameToId.contains(sanitizedGame, gameId)) {
-            nameToId.insert(sanitizedGame, gameId);
+        for(const auto &gameAlias: std::as_const(gameAliases)) {
+          QStringList safeVariations, unsafeVariations;
+          NameTools::generateSearchNames(gameAlias, safeVariations, unsafeVariations, true);
+          for(const auto &name: std::as_const(safeVariations)) {
+            const auto idTitle = qMakePair(gameId, gameAlias);
+            if(!nameToId.contains(name, idTitle)) {
+              if(config->verbosity > 2) {
+                printf("Adding full variation: %s -> %s\n",
+                       gameAlias.toStdString().c_str(), name.toStdString().c_str());
+              }
+              nameToId.insert(name, idTitle);
+            }
           }
-          if(!nameToId.contains(sanitizedGameMain, gameId)) {
-            nameToId.insert(sanitizedGameMain, gameId);
+          for(const auto &name: std::as_const(unsafeVariations)) {
+            const auto idTitle = qMakePair(gameId, gameAlias);
+            if(!nameToIdTitle.contains(name, idTitle)) {
+              if(config->verbosity > 2) {
+                printf("Adding title variation: %s -> %s\n",
+                       gameAlias.toStdString().c_str(), name.toStdString().c_str());
+              }
+              nameToIdTitle.insert(name, idTitle);
+            }
           }
         }
         idToGame[gameId] = jsonGame;
@@ -120,13 +131,13 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
   fetchOrder.append(RELEASEDATE); // could be offline
-  fetchOrder.append(TAGS); // could be offline
+  fetchOrder.append(TAGS);        // could be offline
   fetchOrder.append(PLAYERS);
   fetchOrder.append(DESCRIPTION); // could be offline
   fetchOrder.append(AGES);
-  fetchOrder.append(RATING); // could be offline
-  fetchOrder.append(COVER); // sometimes could be offline
-  fetchOrder.append(SCREENSHOT); // sometimes could be offline
+  fetchOrder.append(RATING);      // could be offline
+  fetchOrder.append(COVER);       // sometimes could be offline
+  fetchOrder.append(SCREENSHOT);  // sometimes could be offline
   fetchOrder.append(TEXTURE);
   fetchOrder.append(MARQUEE);
   fetchOrder.append(WHEEL);
@@ -136,100 +147,45 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
 void OfflineMobyGames::getSearchResults(QList<GameEntry> &gameEntries,
                                 QString searchName, QString)
 {
-  QList<int> matches = {};
-  QList<int> match = {};
-  QListIterator<int> matchIterator(matches);
-  if (nameToId.contains(searchName)) {
-    match = nameToId.values(searchName);
-    matchIterator = QListIterator<int> (match);
-    while (matchIterator.hasNext()) {
-      int databaseId = matchIterator.next();
-      if (!matches.contains(databaseId)) {
-        matches << databaseId;
-      }
-    }
-  }
-  
-  // If not matches found, try using a fuzzy matcher based on the Damerau/Levenshtein text distance: 
-  if(matches.isEmpty()) {
-    if(config->fuzzySearch && searchName.size() >= 6) {
-      int maxDistance = config->fuzzySearch;
-      if((searchName.size() <= 10) || (config->fuzzySearch < 0)) {
-        maxDistance = 1;
-      }
-      QListIterator<QString> keysIterator(nameToId.keys());
-      while (keysIterator.hasNext()) {
-        QString name = keysIterator.next();
-        if(StrTools::onlyNumbers(name) == StrTools::onlyNumbers(searchName)) {
-          int distance = StrTools::distanceBetweenStrings(searchName, name);
-          if(distance <= maxDistance) {
-            printf("FuzzySearch: Found %s = %s (distance %d)!\n",
-                   searchName.toStdString().c_str(),
-                   name.toStdString().c_str(), distance);
-            match = nameToId.values(name);
-            matchIterator = QListIterator<int> (match);
-            while (matchIterator.hasNext()) {
-              int databaseId = matchIterator.next();
-              if (!matches.contains(databaseId)) {
-                matches << databaseId;
-              }
-            }
+  QList<QPair<int, QString>> matches = {};
+
+  if(getSearchResultsOffline(matches, searchName, nameToId, nameToIdTitle)) {
+    for(const auto &databaseId: std::as_const(matches)) {
+      if(idToGame.contains(databaseId.first)) {
+        GameEntry game;
+        QJsonObject jsonGame = idToGame.value(databaseId.first);
+        game.id = QString::number(databaseId.first);
+        game.title = databaseId.second;
+        game.miscData = QJsonDocument(jsonGame).toJson(QJsonDocument::Compact);
+
+        QJsonArray jsonPlatforms = jsonGame["platforms"].toArray();
+        while(!jsonPlatforms.isEmpty()) {
+          QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
+          QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
+          if(platformId.split(",").contains(gamePlatformId)) {
+            game.url = searchUrlPre + "/" + game.id + "/platforms/" +
+                       gamePlatformId + "?api_key=" + config->userCreds;
+            game.platform = jsonPlatform["platform_name"].toString();
+            gameEntries.append(game);
           }
+          jsonPlatforms.removeFirst();
         }
+      } else {
+        printf("ERROR: Internal error: Database Id '%d' not found in the in-memory database.\n",
+               databaseId.first);
       }
     }
   }
-
-  // qDebug() << "Matches;" << matches;
-  QJsonArray jsonGames;
-  matchIterator = QListIterator<int> (matches);
-  while (matchIterator.hasNext()) {
-    int databaseId = matchIterator.next();
-    if (idToGame.contains(databaseId)) {
-      jsonGames.append(idToGame[databaseId]);
-    }
-    else {
-      printf("ERROR: Internal error: Database Id '%d' not found in the in-memory database.\n",
-             databaseId);
-    }
-  }
-
-  while(!jsonGames.isEmpty()) {
-    GameEntry game;
-    QJsonObject jsonGame = jsonGames.first().toObject();
-    game.id = QString::number(jsonGame["game_id"].toInt());
-    game.title = jsonGame["title"].toString();
-    game.miscData = QJsonDocument(jsonGame).toJson(QJsonDocument::Compact);
-
-    QJsonArray jsonPlatforms = jsonGame["platforms"].toArray();
-    while(!jsonPlatforms.isEmpty()) {
-      QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
-      QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
-      if (gamePlatformId == platformId ) {
-        game.url = searchUrlPre + "/" + game.id + "/platforms/" +
-                   QString::number(jsonPlatform["platform_id"].toInt()) +
-                   "?api_key=" + config->userCreds;
-        game.platform = jsonPlatform["platform_name"].toString();
-        gameEntries.append(game);
-      }
-      jsonPlatforms.removeFirst();
-    }
-    jsonGames.removeFirst();
-  }
-  // qDebug() << "Detected:" << gameEntries;
 }
 
 void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
   if(sharedBlobs.contains("offlineonly")) {
     printf("Offline mode activated: reduced set of data will be retrieved from disk database.\n");
+    offlineOnly = true;
   } else {
     printf("Waiting to get game data...\n");
+    offlineOnly = false;
     limiter.exec();
     netComm->request(game.url);
     q.exec();
@@ -244,12 +200,12 @@ void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, Ga
 
   jsonObj = QJsonDocument::fromJson(game.miscData).object();
 
-  if(sharedBlobs.contains("offlineonly")) {
-  } else {
+  if(!offlineOnly) {
     printf("Waiting to get media data...\n");
     limiter.exec();
     netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" +
-                     game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+                     game.url.mid(game.url.indexOf("?api_key="),
+                                  game.url.length() - game.url.indexOf("?api_key=")));
     q.exec();
     data = netComm->getData();
     jsonMedia = QJsonDocument::fromJson(data);
@@ -257,108 +213,14 @@ void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, Ga
     printf("Waiting to get screenshot data...\n");
     limiter.exec();
     netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" +
-                     game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+                     game.url.mid(game.url.indexOf("?api_key="),
+                                  game.url.length() - game.url.indexOf("?api_key=")));
     q.exec();
     data = netComm->getData();
     jsonScreens = QJsonDocument::fromJson(data);
   }
 
-  for(int a = 0; a < fetchOrder.length(); ++a) {
-    switch(fetchOrder.at(a)) {
-    case DESCRIPTION:
-      getDescription(game);
-      break;
-    case DEVELOPER:
-      if(!sharedBlobs.contains("offlineonly")) {
-        getDeveloper(game);
-      }
-      break;
-    case PUBLISHER:
-      if(!sharedBlobs.contains("offlineonly")) {
-        getPublisher(game);
-      }
-      break;
-    case PLAYERS:
-      if(!sharedBlobs.contains("offlineonly")) {
-        getPlayers(game);
-      }
-      break;
-    case AGES:
-      if(!sharedBlobs.contains("offlineonly")) {
-        getAges(game);
-      }
-      break;
-    case RATING:
-      getRating(game);
-      break;
-    case TAGS:
-      getTags(game);
-      break;
-    case FRANCHISES:
-      if(!sharedBlobs.contains("offlineonly")) {
-        getFranchises(game);
-      }
-      break;
-    case RELEASEDATE:
-      getReleaseDate(game);
-      break;
-    case COVER:
-      if(config->cacheCovers && !sharedBlobs.contains("offlineonly")) {
-        if ((!cache) || (cache && cache->coverData.isNull())) {
-          if(!sharedBlobs.contains("offlineonly")) {
-            getCover(game);
-          }
-        }
-      }
-      break;
-    case SCREENSHOT:
-      if(config->cacheScreenshots && !sharedBlobs.contains("offlineonly")) {
-        if ((!cache) || (cache && cache->screenshotData.isNull())) {
-          if(!sharedBlobs.contains("offlineonly")) {
-            getScreenshot(game);
-          }
-        }
-      }
-      break;
-    case WHEEL:
-      if(config->cacheWheels && !sharedBlobs.contains("offlineonly")) {
-        if ((!cache) || (cache && cache->wheelData.isNull())) {
-          getWheel(game);
-        }
-      }
-      break;
-    case MARQUEE:
-      if(config->cacheMarquees && !sharedBlobs.contains("offlineonly")) {
-        if ((!cache) || (cache && cache->marqueeData.isNull())) {
-          getMarquee(game);
-        }
-      }
-      break;
-    case TEXTURE:
-      if (config->cacheTextures && !sharedBlobs.contains("offlineonly")) {
-        if ((!cache) || (cache && cache->textureData.isNull())) {
-          getTexture(game);
-        }
-      }
-      break;
-    case VIDEO:
-      if((config->videos) && !sharedBlobs.contains("offlineonly") && (!sharedBlobs.contains("video"))) {
-        if ((!cache) || (cache && cache->videoData == "")) {
-          getVideo(game);
-        }
-      }
-      break;
-    case MANUAL:
-      if((config->manuals) && !sharedBlobs.contains("offlineonly") && (!sharedBlobs.contains("manual"))) {
-        if ((!cache) || (cache && cache->manualData == "")) {
-          getManual(game);
-        }
-      }
-      break;
-    default:
-      ;
-    }
-  }
+  fetchGameResources(game, sharedBlobs, cache);
 }
 
 void OfflineMobyGames::getReleaseDate(GameEntry &game)
@@ -368,8 +230,8 @@ void OfflineMobyGames::getReleaseDate(GameEntry &game)
   while(!jsonPlatforms.isEmpty()) {
     QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
     QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
-    if (gamePlatformId == platformId ) {
-      game.releaseDate = jsonPlatform["first_release_date"].toString();
+    if(platformId.split(",").contains(gamePlatformId)) {
+      game.releaseDate = StrTools::conformReleaseDate(jsonPlatform["first_release_date"].toString());
       break;
     }
     jsonPlatforms.removeFirst();
@@ -378,11 +240,13 @@ void OfflineMobyGames::getReleaseDate(GameEntry &game)
 
 void OfflineMobyGames::getPlayers(GameEntry &game)
 {
-  QJsonArray jsonAttribs = jsonDoc.object()["attributes"].toArray();
-  for(int a = 0; a < jsonAttribs.count(); ++a) {
-    QString players = jsonAttribs.at(a).toObject()["attribute_category_name"].toString();
-    if(players == "Number of Players Supported" || players == "Number of Offline Players") {
-      game.players = players;
+  if(!offlineOnly) {
+    QJsonArray jsonAttribs = jsonDoc.object()["attributes"].toArray();
+    for(int a = 0; a < jsonAttribs.count(); ++a) {
+      QString players = jsonAttribs.at(a).toObject()["attribute_category_name"].toString();
+      if(players == "Number of Players Supported" || players == "Number of Offline Players") {
+        game.players = StrTools::conformPlayers(players);
+      }
     }
   }
 }
@@ -393,77 +257,82 @@ void OfflineMobyGames::getTags(GameEntry &game)
   for(int a = 0; a < jsonGenres.count(); ++a) {
     game.tags.append(jsonGenres.at(a).toObject()["genre_name"].toString() + ", ");
   }
-  game.tags = game.tags.left(game.tags.length() - 2);
+  game.tags = StrTools::conformTags(game.tags.left(game.tags.length() - 2));
 }
 
 void OfflineMobyGames::getAges(GameEntry &game)
 {
-  QJsonArray jsonAges = jsonDoc.object()["ratings"].toArray();
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "PEGI Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+  if(!offlineOnly) {
+    QJsonArray jsonAges = jsonDoc.object()["ratings"].toArray();
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "PEGI Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "ELSPA Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "ELSPA Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "ESRB Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "ESRB Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "USK Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "USK Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "OFLC (Australia) Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "OFLC (Australia) Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "SELL Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "SELL Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "BBFC Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "BBFC Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "OFLC (New Zealand) Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "OFLC (New Zealand) Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
-  }
-  for(int a = 0; a < jsonAges.count(); ++a) {
-    if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "VRC Rating") {
-      game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
-      break;
+    for(int a = 0; a < jsonAges.count(); ++a) {
+      if(jsonAges.at(a).toObject()["rating_system_name"].toString() == "VRC Rating") {
+        game.ages = jsonAges.at(a).toObject()["rating_name"].toString();
+        break;
+      }
     }
+    game.ages = StrTools::conformAges(game.ages);
   }
 }
 
 void OfflineMobyGames::getPublisher(GameEntry &game)
 {
-  QJsonArray jsonReleases = jsonDoc.object()["releases"].toArray();
-  for(int a = 0; a < jsonReleases.count(); ++a) {
-    QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
-    for(int b = 0; b < jsonCompanies.count(); ++b) {
-      if(jsonCompanies.at(b).toObject()["role"].toString() == "Published by") {
-        game.publisher = jsonCompanies.at(b).toObject()["company_name"].toString();
-        return;
+  if(!offlineOnly) {
+    QJsonArray jsonReleases = jsonDoc.object()["releases"].toArray();
+    for(int a = 0; a < jsonReleases.count(); ++a) {
+      QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
+      for(int b = 0; b < jsonCompanies.count(); ++b) {
+        if(jsonCompanies.at(b).toObject()["role"].toString() == "Published by") {
+          game.publisher = jsonCompanies.at(b).toObject()["company_name"].toString();
+          return;
+        }
       }
     }
   }
@@ -471,13 +340,15 @@ void OfflineMobyGames::getPublisher(GameEntry &game)
 
 void OfflineMobyGames::getDeveloper(GameEntry &game)
 {
-  QJsonArray jsonReleases = jsonDoc.object()["releases"].toArray();
-  for(int a = 0; a < jsonReleases.count(); ++a) {
-    QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
-    for(int b = 0; b < jsonCompanies.count(); ++b) {
-      if(jsonCompanies.at(b).toObject()["role"].toString() == "Developed by") {
-        game.developer = jsonCompanies.at(b).toObject()["company_name"].toString();
-        return;
+  if(!offlineOnly) {
+    QJsonArray jsonReleases = jsonDoc.object()["releases"].toArray();
+    for(int a = 0; a < jsonReleases.count(); ++a) {
+      QJsonArray jsonCompanies = jsonReleases.at(a).toObject()["companies"].toArray();
+      for(int b = 0; b < jsonCompanies.count(); ++b) {
+        if(jsonCompanies.at(b).toObject()["role"].toString() == "Developed by") {
+          game.developer = jsonCompanies.at(b).toObject()["company_name"].toString();
+          return;
+        }
       }
     }
   }
@@ -504,14 +375,14 @@ void OfflineMobyGames::getRating(GameEntry &game)
 
 void OfflineMobyGames::getCover(GameEntry &game)
 {
-  if(jsonMedia.isEmpty()) {
+  if(offlineOnly || jsonMedia.isEmpty()) {
     return;
   }
 
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -548,7 +419,7 @@ void OfflineMobyGames::getCover(GameEntry &game)
   }
 
   // For some reason the links are http but they are always redirected to https
-  coverUrl.replace("http://", "https://"); 
+  coverUrl.replace("http://", "https://");
 
   if(!coverUrl.isEmpty()) {
     printf("Retrieving cover data...\n");
@@ -564,14 +435,14 @@ void OfflineMobyGames::getCover(GameEntry &game)
 
 void OfflineMobyGames::getManual(GameEntry &game)
 {
-  if(jsonMedia.isEmpty()) {
+  if(offlineOnly || jsonMedia.isEmpty()) {
     return;
   }
 
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -623,26 +494,26 @@ void OfflineMobyGames::getManual(GameEntry &game)
          !contentType.isEmpty() && game.manualData.size() > 4096) {
         game.manualFormat = contentType.mid(contentType.indexOf("/") + 1,
                                             contentType.length() - contentType.indexOf("/") + 1);
-        if (game.manualFormat.length()>4) {
+        if(game.manualFormat.length()>4) {
           game.manualFormat = "webp";
         }
       } else {
         game.manualData = "";
-      }      
+      }
     }
   }
 }
 
 void OfflineMobyGames::getMarquee(GameEntry &game)
 {
-  if(jsonMedia.isEmpty()) {
+  if(offlineOnly || jsonMedia.isEmpty()) {
     return;
   }
 
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -695,14 +566,14 @@ void OfflineMobyGames::getMarquee(GameEntry &game)
 
 void OfflineMobyGames::getTexture(GameEntry &game)
 {
-  if(jsonMedia.isEmpty()) {
+  if(offlineOnly || jsonMedia.isEmpty()) {
     return;
   }
 
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -738,8 +609,8 @@ void OfflineMobyGames::getTexture(GameEntry &game)
     }
   }
 
-  if (coverUrl.isEmpty()) {
-    for(const auto &region: regionPrios) {
+  if(coverUrl.isEmpty()) {
+    for(const auto &region: std::as_const(regionPrios)) {
       QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
       while(!jsonCoverGroups.isEmpty()) {
         bool foundRegion = false;
@@ -843,41 +714,6 @@ void OfflineMobyGames::getScreenshot(GameEntry &game)
   }
 }
 
-QString OfflineMobyGames::getPlatformId(const QString platform)
-{
-  auto it = platformToId.find(platform);
-  if(it != platformToId.cend())
-      return QString::number(it.value());
-
-  return "na";
-}
-
-void OfflineMobyGames::loadConfig(const QString& configPath)
-{
-  platformToId.clear();
-
-  QFile configFile(configPath);
-  if (!configFile.open(QIODevice::ReadOnly))
-    return;
-
-  QByteArray saveData = configFile.readAll();
-  QJsonDocument json(QJsonDocument::fromJson(saveData));
-
-  if(json.isNull() || json.isEmpty())
-    return;
-
-  QJsonArray platformsArray = json["platforms"].toArray();
-  for (int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
-    QJsonObject platformObject = platformsArray[platformIndex].toObject();
-
-    QString platformName = platformObject["platform_name"].toString().toLower();
-    int platformId = platformObject["platform_id"].toInt(-1);
-
-    if(platformId > 0)
-      platformToId[platformName] = platformId;
-  }
-}
-
 QString OfflineMobyGames::getRegionShort(const QString &region)
 {
   if(region == "Germany") {
@@ -944,43 +780,4 @@ QString OfflineMobyGames::getRegionShort(const QString &region)
     return "us";
   }
   return "na";
-}
-
-QList<QString> OfflineMobyGames::getSearchNames(const QFileInfo &info)
-{
-  QString name = info.completeBaseName();
-  QString original = name;
-  if (Platform::get().getFamily(config->platform) == "arcade") {
-    // Convert filename from short mame-style to regular one
-    name = name.toLower();
-    if (config->mameMap.contains(name)) {
-      name = config->mameMap.value(name);
-      printf("INFO: 1 Short Mame-style name '%s' converted to '%s'.\n",
-             original.toStdString().c_str(),
-             name.toStdString().c_str());
-    }
-  }
-
-  QString sanitizedName = name.replace("&", " and ").remove("'");
-  sanitizedName = NameTools::convertToIntegerNumeral(sanitizedName);
-  original = sanitizedName;
-  sanitizedName = NameTools::getUrlQueryName(NameTools::removeArticle(sanitizedName), -1, " ");
-  sanitizedName = StrTools::sanitizeName(sanitizedName, true);
-
-  QList<QString> searchNames = { sanitizedName };
-
-  // Searching for subtitles generates many false positives. Deprecated.
-  /* if(original.contains(":") || original.contains(" - ")) {
-    QString noSubtitle = original.left(original.indexOf(":")).simplified();
-    noSubtitle = noSubtitle.left(noSubtitle.indexOf(" - ")).simplified();
-    // Only add if longer than 3. We don't want to search for "the" for instance
-    if(noSubtitle.length() > 3) {
-      noSubtitle = NameTools::getUrlQueryName(noSubtitle, -1, " ");
-      noSubtitle = StrTools::sanitizeName(noSubtitle, true);
-      searchNames.append(noSubtitle);
-    }
-  } */
-  // printf("D: %s\n", sanitizedName.toStdString().c_str());
-  // qDebug() << "Search Names;" << name << ";" << searchNames;
-  return searchNames;
 }

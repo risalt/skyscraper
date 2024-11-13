@@ -69,13 +69,8 @@ void ESGameList::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-void ESGameList::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
+void ESGameList::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
   if(gameNode.isNull())
     return;
 
@@ -132,9 +127,9 @@ QString ESGameList::getAbsoluteFileName(QString fileName)
   return "";
 }
 
-QList<QString> ESGameList::getSearchNames(const QFileInfo &info)
+QStringList ESGameList::getSearchNames(const QFileInfo &info)
 {
-  QList<QString> searchNames;
+  QStringList searchNames;
   searchNames.append(info.fileName());
   return searchNames;
 }

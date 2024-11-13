@@ -60,14 +60,9 @@ bool Koillection::loadOldGameList(const QString &)
   return false;
 }
 
-bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue>) 
+bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue>)
 {
   return false;
-}
-
-void Koillection::preserveFromOld(GameEntry &)
-{
-  return;
 }
 
 void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
@@ -78,7 +73,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   db.setDatabaseName(config->koiDb);
   db.setUserName(config->dbUser);
   db.setPassword(config->dbPassword);
-  if (!db.open()) {
+  if(!db.open()) {
     printf("ERROR: Connection to Koillection database has failed.\n");
   }
 
@@ -87,7 +82,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
                    headers);
   q.exec();
   jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
-  if (jsonObj.contains("token")) {
+  if(jsonObj.contains("token")) {
     koiToken = jsonObj["token"].toString();
     headers.append(QPair<QString, QString>("Authorization", "Bearer " + koiToken));
     headersPatch.append(QPair<QString, QString>("Authorization", "Bearer " + koiToken));
@@ -100,7 +95,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString collectionId;
   QString queryString = "select id from koi_collection where platform='" + config->platform + "'";
   QSqlQuery query(queryString);
-  if (query.next()) {
+  if(query.next()) {
     collectionId = query.value(0).toString();
   }
   else {
@@ -109,12 +104,12 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   query.finish();
   QMap<QString, QString> platformsList;
   queryString = "select id, platform from koi_tag where platform is not null";
-  if (query.exec(queryString)) {
-    while (query.next()) {
+  if(query.exec(queryString)) {
+    while(query.next()) {
       platformsList[query.value(1).toString()] = query.value(0).toString();
     }
   }
-  if (platformsList.isEmpty()) {
+  if(platformsList.isEmpty()) {
     printf("ERROR: The Platforms category cannot be extracted, verify the Koillection configuration.");
   }
   query.finish();
@@ -122,7 +117,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString categoryCatalog;
   queryString = "select id from koi_tag_category where label='Catalog Status'";
   query.exec(queryString);
-  if (query.next()) {
+  if(query.next()) {
     categoryCatalog = query.value(0).toString();
   }
   else {
@@ -130,14 +125,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   query.finish();
   QMap<QString, QString> catalogTagList;
-  if (!categoryCatalog.isEmpty()) {
+  if(!categoryCatalog.isEmpty()) {
     queryString = "select id, label from koi_tag where category_id='" + categoryCatalog + "'";
-    if (query.exec(queryString)) {
-      while (query.next()) {
+    if(query.exec(queryString)) {
+      while(query.next()) {
         catalogTagList[query.value(1).toString()] = query.value(0).toString();
       }
     }
-    if (catalogTagList.isEmpty()) {
+    if(catalogTagList.isEmpty()) {
       printf("ERROR: The Catalog Category tags cannot be extracted, verify the Koillection configuration.");
     }
     query.finish();
@@ -146,7 +141,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString categoryYears;
   queryString = "select id from koi_tag_category where label='Year'";
   query.exec(queryString);
-  if (query.next()) {
+  if(query.next()) {
     categoryYears = query.value(0).toString();
   }
   else {
@@ -154,14 +149,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   query.finish();
   QMap<QString, QString> yearsList;
-  if (!categoryYears.isEmpty()) {
+  if(!categoryYears.isEmpty()) {
     queryString = "select id, label from koi_tag where category_id='" + categoryYears + "'";
-    if (query.exec(queryString)) {
-      while (query.next()) {
+    if(query.exec(queryString)) {
+      while(query.next()) {
         yearsList[query.value(1).toString()] = query.value(0).toString();
       }
     }
-    if (yearsList.isEmpty()) {
+    if(yearsList.isEmpty()) {
       printf("ERROR: The Years category cannot be extracted, verify the Koillection configuration.");
     }
     query.finish();
@@ -170,7 +165,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString categoryGenres;
   queryString = "select id from koi_tag_category where label='Genre'";
   query.exec(queryString);
-  if (query.next()) {
+  if(query.next()) {
     categoryGenres = query.value(0).toString();
   }
   else {
@@ -178,14 +173,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   query.finish();
   QMap<QString, QString> genresList;
-  if (!categoryGenres.isEmpty()) {
+  if(!categoryGenres.isEmpty()) {
     queryString = "select id, label from koi_tag where category_id='" + categoryGenres + "'";
-    if (query.exec(queryString)) {
-      while (query.next()) {
+    if(query.exec(queryString)) {
+      while(query.next()) {
         genresList[query.value(1).toString()] = query.value(0).toString();
       }
     }
-    if (genresList.isEmpty()) {
+    if(genresList.isEmpty()) {
       printf("ERROR: The Genres tags cannot be extracted, verify the Koillection configuration.");
     }
     query.finish();
@@ -194,7 +189,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString categoryFranchises;
   queryString = "select id from koi_tag_category where label='Franchise'";
   query.exec(queryString);
-  if (query.next()) {
+  if(query.next()) {
     categoryFranchises = query.value(0).toString();
   }
   else {
@@ -202,14 +197,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   query.finish();
   QMap<QString, QString> franchisesList;
-  if (!categoryFranchises.isEmpty()) {
+  if(!categoryFranchises.isEmpty()) {
     queryString = "select id, label from koi_tag where category_id='" + categoryFranchises + "'";
-    if (query.exec(queryString)) {
-      while (query.next()) {
+    if(query.exec(queryString)) {
+      while(query.next()) {
         franchisesList[query.value(1).toString()] = query.value(0).toString();
       }
     }
-    if (franchisesList.isEmpty()) {
+    if(franchisesList.isEmpty()) {
       printf("ERROR: The Franchises tags cannot be extracted, verify the Koillection configuration.");
     }
     query.finish();
@@ -218,7 +213,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   QString videogamesTemplate;
   queryString = "select id from koi_template where name='Videogames'";
   query.exec(queryString);
-  if (query.next()) {
+  if(query.next()) {
     videogamesTemplate = query.value(0).toString();
   }
   else {
@@ -226,10 +221,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   query.finish();
   QMap<QString, QMap<QString, QString>> templateDefinition;
-  if (!videogamesTemplate.isEmpty()) {
+  if(!videogamesTemplate.isEmpty()) {
     queryString = "select name, owner_id, type, position, choice_list_id from koi_field where template_id='" + videogamesTemplate + "'";
     query.exec(queryString);
-    while (query.next()) {
+    while(query.next()) {
       QMap<QString, QString> fieldDefinition;
       fieldDefinition["owner_id"] = query.value(1).toString();
       fieldDefinition["type"] = query.value(2).toString();
@@ -237,13 +232,13 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       fieldDefinition["choice_list_id"] = query.value(4).toString();
       templateDefinition[query.value(0).toString()] = fieldDefinition;
     }
-    if (templateDefinition.isEmpty()) {
+    if(templateDefinition.isEmpty()) {
       printf("ERROR: The Videogames template cannot be extracted, verify the Koillection configuration.\n");
     }
     query.finish();
   }
 
-  if (collectionId.isEmpty() || koiToken.isEmpty() || categoryYears.isEmpty() || 
+  if(collectionId.isEmpty() || koiToken.isEmpty() || categoryYears.isEmpty() ||
       categoryGenres.isEmpty() || videogamesTemplate.isEmpty() || templateDefinition.isEmpty() ||
       genresList.isEmpty() || platformsList.isEmpty() || yearsList.isEmpty() ||
       categoryFranchises.isEmpty() || franchisesList.isEmpty() ||
@@ -257,36 +252,34 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   if(dotMod == 0)
     dotMod = 1;
 
-  for(auto &entry: gameEntries) {
+  for(const auto &entry: std::as_const(gameEntries)) {
     if(dots % dotMod == 0) {
       printf(".");
       fflush(stdout);
     }
     dots++;
 
-    // Preserve certain data from old game list entry, but only for empty data
-    preserveFromOld(entry);
-
+    QString entryPath = entry.path;
     if(config->relativePaths) {
-      entry.path.replace(config->inputFolder, ".");
+      entryPath.replace(config->inputFolder, ".");
     }
 
     // Prepare the contents fields:
     QString name = entry.title;
-    if (name.isEmpty()) {
+    if(name.isEmpty()) {
       name = "N/A";
     }
-    QString fullName = QFileInfo(entry.path).completeBaseName();
-    if (Platform::get().getFamily(config->platform) == "arcade" &&
+    QString fullName = QFileInfo(entryPath).completeBaseName();
+    if(Platform::get().getFamily(config->platform) == "arcade" &&
         !config->mameMap[fullName.toLower()].isEmpty()) {
       fullName = config->mameMap[fullName.toLower()];
     }
     QString platformCode = config->platform;
     QString platform = "[\"" + Platform::get().getAliases(config->platform).at(1) + "\"]";
-    QString gameFile = entry.path;
+    QString gameFile = entryPath;
     gameFile = StrTools::uriEscape(gameFile).replace("/share/Games/", "/uploads/games/");
-    QString launch = "retro://" + config->platform + StrTools::uriEscape(entry.path);
-    
+    QString launch = "retro://" + config->platform + StrTools::uriEscape(entryPath);
+
     bool anyData = false;
     float rating = 0.0;
     if(!entry.rating.isEmpty()) {
@@ -297,21 +290,30 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     QString searchString = platform + " " + name;
     youtubeSearch = youtubeSearch + StrTools::uriEscape(searchString) + "&sp=EgIQAQ%253D%253D"; */
     QString addedOn = "";
-    if(QFileInfo(entry.path).exists()) {
-      addedOn = QFileInfo(entry.path).lastModified().date().toString("yyyy/MM/dd");
+    if(QFileInfo(entryPath).exists()) {
+      addedOn = QFileInfo(entryPath).lastModified().date().toString("yyyy/MM/dd");
     }
     QString releasedOn = "";
-    if(!entry.releaseDate.isEmpty() && 
-       entry.releaseDate != "19700101" && entry.releaseDate != "19600101") {
+    if(!entry.releaseDate.isEmpty()) {
       releasedOn = QDate::fromString(entry.releaseDate, "yyyyMMdd").toString("yyyy/MM/dd");
       anyData = true;
     }
     QString description = "";
     if(!entry.description.isEmpty()) {
       description = entry.description.trimmed();
-      while (description.contains("\n\n")) {
+      /*while(description.contains("\n\n")) {
         description.replace("\n\n", "\n");
+      }*/
+      anyData = true;
+    }
+    QString trivia = "";
+    if(!entry.trivia.isEmpty()) {
+      trivia = entry.trivia.trimmed();
+      while(trivia.contains("\n\n")) {
+        trivia.replace("\n\n", "</li><li class=\"trivia\">");
       }
+      trivia.prepend("<ul class=\"trivia\"><li class=\"trivia\">");
+      trivia.append("</li></ul><br>");
       anyData = true;
     }
     QString developer = "";
@@ -324,9 +326,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       editor = entry.publisher;
       anyData = true;
     }
-    int maxPlayers = 0;
+    QString maxPlayers = "";
     if(!entry.players.isEmpty()) {
-      maxPlayers = entry.players.toInt();
+      maxPlayers = entry.players;
+      anyData = true;
+    }
+    QString ageRating = "";
+    if(!entry.ages.isEmpty()) {
+      ageRating = StrTools::agesLabel(entry.ages);
       anyData = true;
     }
     QStringList genres = {};
@@ -338,6 +345,15 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     if(!entry.franchises.isEmpty()) {
       franchises = entry.franchises.split(", ");
       anyData = true;
+    }
+    QStringList guides = {};
+    if(!entry.guides.isEmpty()) {
+      guides = entry.guides.split(" ");
+      guides.sort();
+    }
+    QStringList vgmaps = {};
+    if(!entry.vgmaps.isEmpty()) {
+      vgmaps = entry.vgmaps.split(" ");
     }
     QDateTime dateEpoch;
     QString firstPlayed = "";
@@ -352,8 +368,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
     QString timePlayed = "";
     if(entry.timePlayed) {
-      unsigned int minutesPlayed = entry.timePlayed / 60;
-      unsigned int hoursPlayed = (minutesPlayed > 60) ? minutesPlayed / 60 : 0;
+      qint64 minutesPlayed = entry.timePlayed / 60;
+      qint64 hoursPlayed = (minutesPlayed > 60) ? minutesPlayed / 60 : 0;
       minutesPlayed -= hoursPlayed * 60;
       timePlayed = QString::number(hoursPlayed) + " hours, " + QString::number(minutesPlayed) + " minutes";
     }
@@ -372,7 +388,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       // to be relative if '-o' hasn't been set. So this will only make it relative if the path is equal to
       // inputFolder which is what we want.
       mainPicture = config->relativePaths?QString(entry.coverFile).replace(config->inputFolder, "."):entry.coverFile;
-      if (!entry.coverSrc.isEmpty()) {
+      if(!entry.coverSrc.isEmpty()) {
         anyImage = true;
       }
     }
@@ -436,8 +452,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     QStringList tagList = {};
 
     // Year
-    if (!releasedOn.isEmpty()) {
-      if (yearsList.contains(releasedOn.left(4))) {
+    if(!releasedOn.isEmpty()) {
+      if(yearsList.contains(releasedOn.left(4))) {
         tagList << yearsList[releasedOn.left(4)];
       }
       else {
@@ -448,13 +464,13 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     tagList << platformsList[platformCode];
     // Genres
     QString genreId = "";
-    if (!genres.isEmpty()) {
-      for (auto genre : genres) {
-        if (!genre.isEmpty()) {
+    if(!genres.isEmpty()) {
+      for(const auto &genre: std::as_const(genres)) {
+        if(!genre.isEmpty()) {
           QString sanitizedGenre = genre;
           sanitizedGenre.replace('"', "'");
           sanitizedGenre.replace("\\", "-");
-          if (!genresList.contains(sanitizedGenre)) {
+          if(!genresList.contains(sanitizedGenre)) {
             printf("\nINFO: Creating new genre tag '%s'... ", genre.toStdString().c_str());
             // JSON request contents must never contain the double quote (") or backslash (\) characters
             QString request = "{\"label\": \"" + sanitizedGenre + "\", " +
@@ -463,7 +479,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             netComm->request("http://www.localnet.priv:88/api/tags", request, headers);
             q.exec();
             jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
-            if (jsonObj.contains("id")) {
+            if(jsonObj.contains("id")) {
               genreId = jsonObj["id"].toString();
               genresList[sanitizedGenre] = genreId;
               printf(" Done.");
@@ -478,13 +494,13 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
     // Franchises
     QString franchiseId = "";
-    if (!franchises.isEmpty()) {
-      for (auto franchise : franchises) {
-        if (!franchise.isEmpty()) {
+    if(!franchises.isEmpty()) {
+      for(const auto &franchise: std::as_const(franchises)) {
+        if(!franchise.isEmpty()) {
           QString sanitizedFranchise = franchise;
           sanitizedFranchise.replace('"', "'");
           sanitizedFranchise.replace("\\", "-");
-          if (!franchisesList.contains(sanitizedFranchise)) {
+          if(!franchisesList.contains(sanitizedFranchise)) {
             printf("\nINFO: Creating new franchise tag '%s'... ", franchise.toStdString().c_str());
             // JSON request contents must never contain the double quote (") or backslash (\) characters
             QString request = "{\"label\": \"" + sanitizedFranchise + "\", " +
@@ -493,7 +509,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             netComm->request("http://www.localnet.priv:88/api/tags", request, headers);
             q.exec();
             jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
-            if (jsonObj.contains("id")) {
+            if(jsonObj.contains("id")) {
               franchiseId = jsonObj["id"].toString();
               franchisesList[sanitizedFranchise] = franchiseId;
               printf(" Done.");
@@ -508,28 +524,34 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
     // Catalog
     QString catalogTag = "";
-    if (!audioUrl.isEmpty()) {
+    if(!audioUrl.isEmpty()) {
       tagList << catalogTagList.value("With Soundtrack");
     }
-    if (!video.isEmpty()) {
+    if(!video.isEmpty()) {
       tagList << catalogTagList.value("With Video");
     }
-    if (!manual.isEmpty()) {
+    if(!manual.isEmpty()) {
       tagList << catalogTagList.value("With Handbook");
     }
-    if (!anyImage) {
+    if(!guides.isEmpty()) {
+      tagList << catalogTagList.value("With Guides");
+    }
+    if(!vgmaps.isEmpty()) {
+      tagList << catalogTagList.value("With Guides");
+    }
+    if(!anyImage) {
       tagList << catalogTagList.value("Missing Images");
     }
-    if (!anyData) {
+    if(!anyData) {
       tagList << catalogTagList.value("Missing Data");
     }
-    if (entry.favourite) {
+    if(entry.favourite) {
       tagList << catalogTagList.value("Favourite");
     }
-    if (entry.completed) {
+    if(entry.completed) {
       tagList << catalogTagList.value("Completed");
     }
-    if (entry.played) {
+    if(entry.played) {
       tagList << catalogTagList.value("Played");
     }
     tagList.removeDuplicates();
@@ -537,18 +559,18 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     // Find if game is already in the database:
     QString itemId = "";
     query.prepare("select id, ext_idx from koi_item where ext_idx = :gameFile");
-    query.bindValue(":gameFile", entry.path);
-    if (query.exec()) {
-      while (query.next()) {
-        if (entry.path == query.value(1).toString()) {
+    query.bindValue(":gameFile", entryPath);
+    if(query.exec()) {
+      while(query.next()) {
+        if(entryPath == query.value(1).toString()) {
           itemId = query.value(0).toString();
         }
       }
     }
     query.finish();
-    
+
     //If it does not exist, create game in the database:
-    if (itemId.isEmpty()) {
+    if(itemId.isEmpty()) {
       // JSON request contents must never contain the double quote (") or backslash (\) characters
       QString sanitizedName = name;
       sanitizedName.replace('"', "'");
@@ -561,7 +583,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       netComm->request("http://www.localnet.priv:88/api/items", request, headers);
       q.exec();
       jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
-      if (jsonObj.contains("id")) {
+      if(jsonObj.contains("id")) {
         itemId = jsonObj["id"].toString();
       }
       else {
@@ -573,26 +595,26 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       bool mustUpdate = false;
       QStringList tagsForItem = {};
       query.exec("select tag_id from koi_item_tag WHERE item_id='" + itemId + "'");
-      while (query.next()) {
+      while(query.next()) {
         tagsForItem << query.value(0).toString();
       }
-      if (tagsForItem.count() != tagList.count()) {
+      if(tagsForItem.count() != tagList.count()) {
         mustUpdate = true;
       }
       else {
-        for (auto tag : tagList) {
-          if (!tagsForItem.contains(tag)) {
+        for(const auto &tag: std::as_const(tagList)) {
+          if(!tagsForItem.contains(tag)) {
             mustUpdate = true;
           }
         }
       }
-      if (mustUpdate) {
+      if(mustUpdate) {
         printf("\nINFO: Tags for the existing item %s are not updated, fixing...", itemId.toStdString().c_str());
         QString request = "{\"tags\": [ \"/api/tags/" + tagList.join("\", \"/api/tags/") + "\" ]}";
         netComm->request("http://www.localnet.priv:88/api/items/" + itemId, request, headersPatch, "PATCH");
         q.exec();
         jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
-        if (jsonObj.contains("id")) {
+        if(jsonObj.contains("id")) {
           itemId = jsonObj["id"].toString();
         }
         else {
@@ -602,14 +624,14 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
       printf("\nINFO: Updating existing item in database: %s ", fullName.toStdString().c_str());
     }
-    if (itemId.isEmpty()) {
+    if(itemId.isEmpty()) {
       continue;
     }
 
     QMap<QString, QPair<QString, QPair<QString, QString>>> datumsItemValues;
     query.exec("select id, label, type, value, image, position from koi_datum where item_id='" + itemId + "'");
-    while (query.next()) {
-      if (query.value(2).toString() == "image") {
+    while(query.next()) {
+      if(query.value(2).toString() == "image") {
         datumsItemValues[query.value(1).toString()] = qMakePair(query.value(0).toString(), qMakePair(query.value(4).toString(), query.value(5).toString()));
       }
       else {
@@ -622,9 +644,9 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     query.bindValue(":image", mainPicture);
     query.bindValue(":name", fullName);
     query.bindValue(":collection_id", collectionId);
-    query.bindValue(":ext_idx", entry.path);
+    query.bindValue(":ext_idx", entryPath);
     query.bindValue(":id", itemId);
-    if (!query.exec()) {
+    if(!query.exec()) {
       qDebug() << query.lastError();
       printf("ERROR: Failed database update of the item header.\n");
     }
@@ -635,25 +657,53 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     QStringList videoFields = {"Gameplay Video", "Soundtrack Player"};
     QStringList choiceFields = {"Platform"};
     QList<QPair <QString, QString>> datumsItem = {};
-    if (genres.length() > 0) {
+    if(!genres.isEmpty()) {
       datumsItem << QPair<QString, QString>("Genres", "[\"" + genres.join("\",\"") + "\"]");
     }
     else {
       datumsItem << QPair<QString, QString>("Genres", "");
     }
-    if (franchises.length() > 0) {
+    if(!franchises.isEmpty()) {
       datumsItem << QPair<QString, QString>("Franchises", "[\"" + franchises.join("\",\"") + "\"]");
     }
     else {
       datumsItem << QPair<QString, QString>("Franchises", "");
     }
-    datumsItem << QPair<QString, QString>("Max. Players", maxPlayers ? QString::number(maxPlayers) : "");
+    if(!guides.isEmpty()) {
+      QString guidesLinks;
+      int pos = 1;
+      for(const auto &link: std::as_const(guides)) {
+        guidesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+        pos++;
+      }
+      datumsItem << QPair<QString, QString>("Guides", guidesLinks.replace(config->guidesPath, "/uploads/guides"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Guides", "");
+    }
+    if(!vgmaps.isEmpty()) {
+      QString vgmapsLinks;
+      for(const auto &link: std::as_const(vgmaps)) {
+        QFileInfo map(link);
+        QString mapPlatform = map.absolutePath();
+        map.setFile(mapPlatform);
+        mapPlatform = map.baseName();
+        vgmapsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + mapPlatform + "</a> ";
+      }
+      datumsItem << QPair<QString, QString>("Maps", vgmapsLinks.replace(config->vgmapsPath, "/uploads/vgmaps"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Maps", "");
+    }
+    datumsItem << QPair<QString, QString>("Players", maxPlayers);
+    datumsItem << QPair<QString, QString>("Age Rating", ageRating);
     datumsItem << QPair<QString, QString>("Editor", editor);
     datumsItem << QPair<QString, QString>("Developer", developer);
     datumsItem << QPair<QString, QString>("Description", description);
+    datumsItem << QPair<QString, QString>("Trivia", trivia);
     datumsItem << QPair<QString, QString>("Released on", releasedOn);
     datumsItem << QPair<QString, QString>("Added on", addedOn);
-    if (rating > 0.0) {
+    if(rating > 0.0) {
       datumsItem << QPair<QString, QString>("Rating", QString::number(rating, 'f', 1));
     }
     else {
@@ -682,26 +732,26 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     bool doRollback = false;
     bool postTransaction = true;
     bool postStatement = false;
-    if (!db.transaction()) {
+    if(!db.transaction()) {
       printf("ERROR: The database does not support transactions. Please review the configuration. Moving forward with atomic inserts.\n");
       postTransaction = false;
     }
 
     QMapIterator<QString, QPair<QString, QPair<QString, QString>>> iterator(datumsItemValues);
-    while (iterator.hasNext()) {
+    while(iterator.hasNext()) {
       iterator.next();
       bool notInTemplate = true;
-      for (auto datum : datumsItem) {
-        if (notInTemplate && datum.first == iterator.key()) {
+      for(const auto &datum: std::as_const(datumsItem)) {
+        if(notInTemplate && datum.first == iterator.key()) {
           notInTemplate = false;
           break;
         }
       }
-      if (notInTemplate) {
+      if(notInTemplate) {
         // Delete obsoleted fields
         query.prepare("delete from koi_datum where id = :id");
         query.bindValue(":id", iterator.value().first);
-        if (!query.exec()) {
+        if(!query.exec()) {
           printf("ERROR: Could not delete obsolete field '%s' from the database.\n", iterator.key().toStdString().c_str());
           doRollback = true;
           qDebug() << query.lastError();
@@ -710,22 +760,22 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
     }
 
-    for (auto datumItem : datumsItem) {
-      if (datumsItemValues.contains(datumItem.first) &&
+    for(const auto &datumItem: std::as_const(datumsItem)) {
+      if(datumsItemValues.contains(datumItem.first) &&
           templateDefinition.contains(datumItem.first)) {
         // Existing field in the DB
-        if ((datumsItemValues[datumItem.first].second.first != datumItem.second ||
+        if((datumsItemValues[datumItem.first].second.first != datumItem.second ||
             datumItem.second.isEmpty()) &&
             !noUpdateFields.contains(datumItem.first)) {
           // Value has to be updated
-          if (datumItem.second.isEmpty()) {
+          if(datumItem.second.isEmpty()) {
             query.prepare("delete from koi_datum where id = :id");
           }
           else {
-            if (imageFields.contains(datumItem.first)) {
-              query.prepare("update koi_datum set image = :value, position = :position where id = :id");            
+            if(imageFields.contains(datumItem.first)) {
+              query.prepare("update koi_datum set image = :value, position = :position where id = :id");
             }
-            else if (videoFields.contains(datumItem.first)) {
+            else if(videoFields.contains(datumItem.first)) {
               query.prepare("update koi_datum set video = :value, position = :position where id = :id");
             }
             else {
@@ -737,7 +787,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
           query.bindValue(":id", datumsItemValues[datumItem.first].first);
           postStatement = true;
         }
-        else if (datumsItemValues[datumItem.first].second.second !=
+        else if(datumsItemValues[datumItem.first].second.second !=
                  templateDefinition[datumItem.first]["position"]) {
           // Update position of the field if necessary
           query.prepare("update koi_datum set position = :position where id = :id");
@@ -746,17 +796,17 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
           postStatement = true;
         }
       }
-      else if (templateDefinition.contains(datumItem.first) && !datumItem.second.isEmpty()) {
+      else if(templateDefinition.contains(datumItem.first) && !datumItem.second.isEmpty()) {
         // Missing field to be added to the DB
-        if (!datumItem.second.isEmpty() && imageFields.contains(datumItem.first)) {
+        if(!datumItem.second.isEmpty() && imageFields.contains(datumItem.first)) {
           query.prepare("insert into koi_datum (id, item_id, owner_id, type, label, image, position)"
                                        "values (:id, :item_id, :owner_id, :type, :label, :value, :position)");
         }
-        else if (!datumItem.second.isEmpty() && videoFields.contains(datumItem.first)) {
+        else if(!datumItem.second.isEmpty() && videoFields.contains(datumItem.first)) {
           query.prepare("insert into koi_datum (id, item_id, owner_id, type, label, video, position)"
                                        "values (:id, :item_id, :owner_id, :type, :label, :value, :position)");
         }
-        else if (choiceFields.contains(datumItem.first)) {
+        else if(choiceFields.contains(datumItem.first)) {
           query.prepare("insert into koi_datum (id, item_id, owner_id, type, label, value, position, choice_list_id)"
                                        "values (:id, :item_id, :owner_id, :type, :label, :value, :position, :choice_list_id)");
           query.bindValue(":choice_list_id", templateDefinition[datumItem.first]["choice_list_id"]);
@@ -774,8 +824,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         query.bindValue(":position", templateDefinition[datumItem.first]["position"]);
         postStatement = true;
       }
-      if (postStatement) {
-        if (!query.exec()) {
+      if(postStatement) {
+        if(!query.exec()) {
           printf("ERROR: Could not create/update field '%s' in the database.\n", datumItem.first.toStdString().c_str());
           doRollback = true;
           qDebug() << query.lastError();
@@ -787,10 +837,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
 
     datumsItemValues.clear();
     datumsItem.clear();
-    if (doRollback && postTransaction) {
+    if(doRollback && postTransaction) {
       db.rollback();
     }
-    else if (postTransaction && !db.commit()) {
+    else if(postTransaction && !db.commit()) {
       printf("ERROR: Database commit failed. Trying rollback.\n");
       db.rollback();
     }
@@ -798,7 +848,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   // Delete entries that do not exist anymore:
   printf("\nSearching for obsolete game entries...\n");
   query.exec("select id, ext_idx from koi_item where collection_id = '" + collectionId + "'");
-  while (query.next()) {
+  while(query.next()) {
     bool presentInCache = false;
     QString fileToCheck = query.value(1).toString();
     QFileInfo gamePath(fileToCheck);
@@ -806,12 +856,12 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       if(config->relativePaths) {
         entryCheck.path.replace(config->inputFolder, ".");
       }
-      if (entryCheck.path == fileToCheck) {
+      if(entryCheck.path == fileToCheck) {
         presentInCache = true;
         break;
       }
     }
-    if (!gamePath.isFile() || !presentInCache) {
+    if(!gamePath.isFile() || !presentInCache) {
       printf("INFO: Item '%s' corresponding to a non-existant file will be deleted.\n", query.value(0).toString().toStdString().c_str());
       QString request = "";
       netComm->request("http://www.localnet.priv:88/api/items/" + query.value(0).toString(), request, headers, "DELETE");

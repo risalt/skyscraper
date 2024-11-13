@@ -47,7 +47,7 @@ bool RetroBat::loadOldGameList(const QString &gameListFileString)
   return false;
 }
 
-bool RetroBat::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue> queue) 
+bool RetroBat::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue> queue)
 {
   gameEntries = oldEntries;
 
@@ -83,7 +83,7 @@ bool RetroBat::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue>
 
 void RetroBat::preserveFromOld(GameEntry &entry)
 {
-  for(const auto &oldEntry: oldEntries) {
+  for(const auto &oldEntry: std::as_const(oldEntries)) {
     QString oldFileName = oldEntry.path.mid(oldEntry.path.lastIndexOf("/"), oldEntry.path.length());
     QString fileName = entry.path.mid(entry.path.lastIndexOf("/"), entry.path.length());
     if(oldFileName == fileName) {
@@ -191,7 +191,7 @@ void RetroBat::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
     } else {
       finalOutput.append("    <marquee>" + (config->relativePaths?StrTools::xmlEscape(entry.marqueeFile).replace(config->inputFolder, "."):StrTools::xmlEscape(entry.marqueeFile)) + "</marquee>\n");
     }
-    if (entry.textureFile.isEmpty()) {
+    if(entry.textureFile.isEmpty()) {
       finalOutput.append("    <texture />\n");
     } else {
       finalOutput.append("    <texture>" + (config->relativePaths?StrTools::xmlEscape(entry.textureFile).replace(config->inputFolder, "."):StrTools::xmlEscape(entry.textureFile)) + "</texture>\n");

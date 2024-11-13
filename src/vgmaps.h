@@ -1,7 +1,7 @@
 /***************************************************************************
- *            platform.h
+ *            vgmaps.h
  *
- *  Sat Dec 23 10:00:00 CEST 2017
+ *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
  *  muldjordlars@gmail.com
  ****************************************************************************/
@@ -23,37 +23,33 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#ifndef PLATFORM_H
-#define PLATFORM_H
+#ifndef VGMAPS_H
+#define VGMAPS_H
 
-#include <QObject>
-#include <QStringList>
 #include <QMap>
+#include <QPair>
+#include <QString>
+#include <QStringList>
 
-class Platform : public QObject
+#include "abstractscraper.h"
+#include "gameentry.h"
+
+class VGMaps : public AbstractScraper
 {
   Q_OBJECT
+
 public:
-    static Platform & get();
+  VGMaps(Settings *config, QSharedPointer<NetManager> manager);
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
-    void loadConfig(const QString &configPath);
-    void clearConfigData();
-
-    QStringList getPlatforms() const;
-    QString getSortBy(QString platform) const;
-    QString getFamily(QString platform) const;
-    QStringList getScrapers(QString platform) const;
-    QString getFormats(QString platform, QString extensions, QString addExtensions) const;
-    QString getDefaultScraper() const;
-    QStringList getAliases(QString platform) const;
+protected:
+  void getSearchResults(QList<GameEntry> &gameEntries,
+                        QString searchName, QString platform) override;
 
 private:
-    QStringList platforms;
-    QMap<QString, QString> platformToSortBy;
-    QMap<QString, QString> platformToFamily;
-    QMap<QString, QStringList> platformToScrapers;
-    QMap<QString, QStringList> platformToFormats;
-    QMap<QString, QStringList> platformToAliases;
+  QMultiMap<QString, QPair<QString, QString>> nameToGame;
+  QMultiMap<QString, QPair<QString, QString>> nameToGameTitle;
+
 };
 
-#endif // PLATFORM_H
+#endif // VGMAPS_H

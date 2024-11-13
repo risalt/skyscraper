@@ -28,6 +28,7 @@
 
 #include <QString>
 #include <QObject>
+#include <QTextStream>
 
 class StrTools : public QObject
 {
@@ -35,6 +36,8 @@ public:
   static QString xmlUnescape(QString str);
   static QString xmlEscape(QString str);
   static QString uriEscape(QString str);
+  static QString altUriEscape(const QString &str, const QString &spaceChar);
+  static QString agesLabel(const QString &str);
   static QString conformPlayers(const QString &str);
   static QString conformAges(QString str);
   static QString conformReleaseDate(QString str);
@@ -47,6 +50,7 @@ public:
   static int distanceBetweenStrings(const QString &first, const QString &second,
                                     bool simplify = true);
   static QString onlyNumbers(const QString &str);
+  static bool readCSVRow(QTextStream &in, QStringList *row);
 };
 
 #endif // STRTOOLS_H

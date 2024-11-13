@@ -86,7 +86,7 @@ void FxBlur::boxBlurHorizontal(QRgb *buffer1, QRgb *buffer2, int width, int heig
       valueB += qBlue(buffer1[currentIdx + x]);
       valueA += qAlpha(buffer1[currentIdx + x]);
     }
-    
+
     for(int x = 0; x <= radius ; x++) {
       valueR += qRed(buffer1[backIdx]) - firstValR;
       valueG += qGreen(buffer1[backIdx]) - firstValG;
@@ -139,7 +139,7 @@ void FxBlur::boxBlurTotal(QRgb *buffer1, QRgb *buffer2, int width, int height, i
       valueB += qBlue(buffer1[currentIdx + y * width]);
       valueA += qAlpha(buffer1[currentIdx + y * width]);
     }
-    
+
     for(int y = 0; y <= radius ; y++) {
       valueR += qRed(buffer1[backIdx]) - firstValR;
       valueG += qGreen(buffer1[backIdx]) - firstValG;

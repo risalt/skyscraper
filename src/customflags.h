@@ -39,13 +39,12 @@ class CustomFlags : public AbstractScraper
 
 public:
   CustomFlags(Settings *config, QSharedPointer<NetManager> manager);
-  ~CustomFlags();
-  virtual QList<QString> getSearchNames(const QFileInfo &info) override;
-  
-private:
+  virtual QStringList getSearchNames(const QFileInfo &info) override;
+  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
+
+protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
-  void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   void getCustomFlags(GameEntry &game) override;
 
 };

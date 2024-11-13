@@ -34,12 +34,15 @@
 #include <QFile>
 #include <QProcess>
 #include <QTemporaryFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 AbstractScraper::AbstractScraper(Settings *config,
                                  QSharedPointer<NetManager> manager)
   : config(config)
 {
-  incrementalScraping = false;
+  offlineScraper = false;
   netComm = new NetComm(manager);
   connect(netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
 }
@@ -47,11 +50,6 @@ AbstractScraper::AbstractScraper(Settings *config,
 AbstractScraper::~AbstractScraper()
 {
   delete netComm;
-}
-
-bool AbstractScraper::supportsIncrementalScraping()
-{
-  return incrementalScraping;
 }
 
 // Queries the scraping service with searchName and generates a skeleton
@@ -69,19 +67,19 @@ void AbstractScraper::getSearchResults(QList<GameEntry> &gameEntries,
     nomNom(searchResultPre);
 
     // Digest until url
-    for(const auto &nom: urlPre) {
+    for(const auto &nom: std::as_const(urlPre)) {
       nomNom(nom);
     }
     game.url = baseUrl + "/" + data.left(data.indexOf(urlPost.toUtf8()));
 
     // Digest until title
-    for(const auto &nom: titlePre) {
+    for(const auto &nom: std::as_const(titlePre)) {
       nomNom(nom);
     }
     game.title = data.left(data.indexOf(titlePost.toUtf8()));
 
     // Digest until platform
-    for(const auto &nom: platformPre) {
+    for(const auto &nom: std::as_const(platformPre)) {
       nomNom(nom);
     }
     game.platform = data.left(data.indexOf(platformPost.toUtf8()));
@@ -92,77 +90,139 @@ void AbstractScraper::getSearchResults(QList<GameEntry> &gameEntries,
   }
 }
 
-// Fill in the game skeleton with the data from the scraper service.
-void AbstractScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache)
+// Redirects the scraper to fetch each resource valid for the scraper.
+void AbstractScraper::fetchGameResources(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
-  netComm->request(game.url);
-  q.exec();
-  data = netComm->getData();
-  //printf("URL IS: '%s'\n", game.url.toStdString().c_str());
-  //printf("DATA IS:\n'%s'\n", data.data());
-
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
+    case TITLE:
+      if((!cache) || (cache && cache->title.isEmpty())) {
+        getTitle(game);
+      }
+      break;
+    case PLATFORM:
+      if((!cache) || (cache && cache->platform.isEmpty())) {
+        getPlatform(game);
+      }
+      break;
     case DESCRIPTION:
-      getDescription(game);
+      if((!cache) || (cache && cache->description.isEmpty())) {
+        getDescription(game);
+      }
+      break;
+    case TRIVIA:
+      if((!cache) || (cache && cache->trivia.isEmpty())) {
+        getTrivia(game);
+      }
       break;
     case DEVELOPER:
-      getDeveloper(game);
+      if((!cache) || (cache && cache->developer.isEmpty())) {
+        getDeveloper(game);
+      }
       break;
     case PUBLISHER:
-      getPublisher(game);
+      if((!cache) || (cache && cache->publisher.isEmpty())) {
+        getPublisher(game);
+      }
       break;
     case PLAYERS:
-      getPlayers(game);
+      if((!cache) || (cache && cache->players.isEmpty())) {
+        getPlayers(game);
+      }
       break;
     case AGES:
-      getAges(game);
+      if((!cache) || (cache && cache->ages.isEmpty())) {
+        getAges(game);
+      }
       break;
     case RATING:
-      getRating(game);
+      if((!cache) || (cache && cache->rating.isEmpty())) {
+        getRating(game);
+      }
       break;
     case TAGS:
-      getTags(game);
+      if((!cache) || (cache && cache->tags.isEmpty())) {
+        getTags(game);
+      }
       break;
     case FRANCHISES:
-      getFranchises(game);
+      if((!cache) || (cache && cache->franchises.isEmpty())) {
+        getFranchises(game);
+      }
       break;
     case RELEASEDATE:
-      getReleaseDate(game);
+      if((!cache) || (cache && cache->releaseDate.isEmpty())) {
+        getReleaseDate(game);
+      }
       break;
     case COVER:
-      getCover(game);
+      if(config->cacheCovers) {
+        if((!cache) || (cache && cache->coverData.isNull())) {
+          getCover(game);
+        }
+      }
       break;
     case SCREENSHOT:
-      getScreenshot(game);
+      if(config->cacheScreenshots) {
+        if((!cache) || (cache && cache->screenshotData.isNull())) {
+          getScreenshot(game);
+        }
+      }
       break;
     case WHEEL:
-      getWheel(game);
+      if(config->cacheWheels) {
+        if((!cache) || (cache && cache->wheelData.isNull())) {
+          getWheel(game);
+        }
+      }
       break;
     case MARQUEE:
-      getMarquee(game);
+      if(config->cacheMarquees) {
+        if((!cache) || (cache && cache->marqueeData.isNull())) {
+          getMarquee(game);
+        }
+      }
       break;
     case TEXTURE:
-      getTexture(game);
+      if(config->cacheTextures) {
+        if((!cache) || (cache && cache->textureData.isNull())) {
+          getTexture(game);
+        }
+      }
       break;
     case VIDEO:
       if((config->videos) && (!sharedBlobs.contains("video"))) {
-        getVideo(game);
+        if((!cache) || (cache && cache->videoData.isEmpty())) {
+          getVideo(game);
+        }
       }
       break;
     case MANUAL:
       if((config->manuals) && (!sharedBlobs.contains("manual"))) {
-        getManual(game);
+        if((!cache) || (cache && cache->manualData.isEmpty())) {
+          getManual(game);
+        }
       }
       break;
     case CHIPTUNE:
       if(config->chiptunes) {
-        getChiptune(game);
+        if((!cache) || (cache && (cache->chiptuneId.isEmpty() || cache->chiptunePath.isEmpty()))) {
+          getChiptune(game);
+        }
+      }
+      break;
+    case GUIDES:
+      if(config->guides) {
+        if((!cache) || (cache && cache->guides.isEmpty())) {
+          getGuides(game);
+        }
+      }
+      break;
+    case VGMAPS:
+      if(config->vgmaps) {
+        if((!cache) || (cache && cache->vgmaps.isEmpty())) {
+          getVGMaps(game);
+        }
       }
       break;
     case CUSTOMFLAGS:
@@ -174,17 +234,29 @@ void AbstractScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, Gam
   }
 }
 
+// Fill in the game skeleton with the data from the scraper service.
+void AbstractScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache)
+{
+  netComm->request(game.url);
+  q.exec();
+  data = netComm->getData();
+  //printf("URL IS: '%s'\n", game.url.toStdString().c_str());
+  //printf("DATA IS:\n'%s'\n", data.data());
+
+  fetchGameResources(game, sharedBlobs, cache);
+}
+
 void AbstractScraper::getDescription(GameEntry &game)
 {
   if(descriptionPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: descriptionPre) {
+  for(const auto &nom: std::as_const(descriptionPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: descriptionPre) {
+  for(const auto &nom: std::as_const(descriptionPre)) {
     nomNom(nom);
   }
 
@@ -197,12 +269,12 @@ void AbstractScraper::getDescription(GameEntry &game)
 
 void AbstractScraper::getDeveloper(GameEntry &game)
 {
-  for(const auto &nom: developerPre) {
+  for(const auto &nom: std::as_const(developerPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: developerPre) {
+  for(const auto &nom: std::as_const(developerPre)) {
     nomNom(nom);
   }
   game.developer = data.left(data.indexOf(developerPost.toUtf8()));
@@ -213,12 +285,12 @@ void AbstractScraper::getPublisher(GameEntry &game)
   if(publisherPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: publisherPre) {
+  for(const auto &nom: std::as_const(publisherPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: publisherPre) {
+  for(const auto &nom: std::as_const(publisherPre)) {
     nomNom(nom);
   }
   game.publisher = data.left(data.indexOf(publisherPost.toUtf8()));
@@ -229,15 +301,15 @@ void AbstractScraper::getPlayers(GameEntry &game)
   if(playersPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: playersPre) {
+  for(const auto &nom: std::as_const(playersPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: playersPre) {
+  for(const auto &nom: std::as_const(playersPre)) {
     nomNom(nom);
   }
-  game.players = data.left(data.indexOf(playersPost.toUtf8()));
+  game.players = StrTools::conformPlayers(data.left(data.indexOf(playersPost.toUtf8())));
 }
 
 void AbstractScraper::getAges(GameEntry &game)
@@ -245,15 +317,15 @@ void AbstractScraper::getAges(GameEntry &game)
   if(agesPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: agesPre) {
+  for(const auto &nom: std::as_const(agesPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: agesPre) {
+  for(const auto &nom: std::as_const(agesPre)) {
     nomNom(nom);
   }
-  game.ages = data.left(data.indexOf(agesPost.toUtf8()));
+  game.ages = StrTools::conformAges(data.left(data.indexOf(agesPost.toUtf8())));
 }
 
 void AbstractScraper::getTags(GameEntry &game)
@@ -261,15 +333,15 @@ void AbstractScraper::getTags(GameEntry &game)
   if(tagsPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: tagsPre) {
+  for(const auto &nom: std::as_const(tagsPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: tagsPre) {
+  for(const auto &nom: std::as_const(tagsPre)) {
     nomNom(nom);
   }
-  game.tags = data.left(data.indexOf(tagsPost.toUtf8()));
+  game.tags = StrTools::conformTags(data.left(data.indexOf(tagsPost.toUtf8())));
 }
 
 void AbstractScraper::getFranchises(GameEntry &game)
@@ -277,15 +349,15 @@ void AbstractScraper::getFranchises(GameEntry &game)
   if(franchisesPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: franchisesPre) {
+  for(const auto &nom: std::as_const(franchisesPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: franchisesPre) {
+  for(const auto &nom: std::as_const(franchisesPre)) {
     nomNom(nom);
   }
-  game.franchises = data.left(data.indexOf(franchisesPost.toUtf8()));
+  game.franchises = StrTools::conformTags(data.left(data.indexOf(franchisesPost.toUtf8())));
 }
 
 void AbstractScraper::getRating(GameEntry &game)
@@ -293,12 +365,12 @@ void AbstractScraper::getRating(GameEntry &game)
   if(ratingPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: ratingPre) {
+  for(const auto &nom: std::as_const(ratingPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: ratingPre) {
+  for(const auto &nom: std::as_const(ratingPre)) {
     nomNom(nom);
   }
   game.rating = data.left(data.indexOf(ratingPost.toUtf8()));
@@ -316,15 +388,15 @@ void AbstractScraper::getReleaseDate(GameEntry &game)
   if(releaseDatePre.isEmpty()) {
     return;
   }
-  for(const auto &nom: releaseDatePre) {
+  for(const auto &nom: std::as_const(releaseDatePre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: releaseDatePre) {
+  for(const auto &nom: std::as_const(releaseDatePre)) {
     nomNom(nom);
   }
-  game.releaseDate = data.left(data.indexOf(releaseDatePost.toUtf8())).simplified();
+  game.releaseDate = StrTools::conformReleaseDate(data.left(data.indexOf(releaseDatePost.toUtf8())).simplified());
 }
 
 void AbstractScraper::getCover(GameEntry &game)
@@ -332,12 +404,12 @@ void AbstractScraper::getCover(GameEntry &game)
   if(coverPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: coverPre) {
+  for(const auto &nom: std::as_const(coverPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: coverPre) {
+  for(const auto &nom: std::as_const(coverPre)) {
     nomNom(nom);
   }
   QString coverUrl = data.left(data.indexOf(coverPost.toUtf8())).replace("&amp;", "&");
@@ -362,7 +434,7 @@ void AbstractScraper::getScreenshot(GameEntry &game)
   int screens = data.count(screenshotCounter.toUtf8());
   if(screens >= 1) {
     for(int a = 0; a < screens - (screens / 2); a++) {
-      for(const auto &nom: screenshotPre) {
+      for(const auto &nom: std::as_const(screenshotPre)) {
         nomNom(nom);
       }
     }
@@ -385,12 +457,12 @@ void AbstractScraper::getWheel(GameEntry &game)
   if(wheelPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: wheelPre) {
+  for(const auto &nom: std::as_const(wheelPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: wheelPre) {
+  for(const auto &nom: std::as_const(wheelPre)) {
     nomNom(nom);
   }
   QString wheelUrl = data.left(data.indexOf(wheelPost.toUtf8())).replace("&amp;", "&");
@@ -411,12 +483,12 @@ void AbstractScraper::getMarquee(GameEntry &game)
   if(marqueePre.isEmpty()) {
     return;
   }
-  for(const auto &nom: marqueePre) {
+  for(const auto &nom: std::as_const(marqueePre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: marqueePre) {
+  for(const auto &nom: std::as_const(marqueePre)) {
     nomNom(nom);
   }
   QString marqueeUrl = data.left(data.indexOf(marqueePost.toUtf8())).replace("&amp;", "&");
@@ -433,29 +505,29 @@ void AbstractScraper::getMarquee(GameEntry &game)
 }
 
 void AbstractScraper::getTexture(GameEntry &game) {
-  if (texturePre.isEmpty()) {
+  if(texturePre.isEmpty()) {
     return;
   }
 
-  for (const auto &nom : texturePre) {
-    if (!checkNom(nom)) {
+  for(const auto &nom: std::as_const(texturePre)) {
+    if(!checkNom(nom)) {
       return;
     }
   }
 
-  for (const auto &nom : texturePre) {
+  for(const auto &nom: std::as_const(texturePre)) {
     nomNom(nom);
   }
 
   QString textureUrl =
       data.left(data.indexOf(texturePost.toUtf8())).replace("&amp;", "&");
-  if (textureUrl.left(4) != "http") {
+  if(textureUrl.left(4) != "http") {
     textureUrl.prepend(baseUrl + (textureUrl.left(1) == "/" ? "" : "/"));
   }
   netComm->request(textureUrl);
   q.exec();
   QImage image;
-  if (netComm->getError() == QNetworkReply::NoError &&
+  if(netComm->getError() == QNetworkReply::NoError &&
       image.loadFromData(netComm->getData())) {
     game.textureData = netComm->getData();
   }
@@ -466,12 +538,12 @@ void AbstractScraper::getVideo(GameEntry &game)
   if(videoPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: videoPre) {
+  for(const auto &nom: std::as_const(videoPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: videoPre) {
+  for(const auto &nom: std::as_const(videoPre)) {
     nomNom(nom);
   }
   QString videoUrl = data.left(data.indexOf(videoPost.toUtf8())).replace("&amp;", "&");
@@ -491,12 +563,12 @@ void AbstractScraper::getManual(GameEntry &game)
   if(manualPre.isEmpty()) {
     return;
   }
-  for(const auto &nom: manualPre) {
+  for(const auto &nom: std::as_const(manualPre)) {
     if(!checkNom(nom)) {
       return;
     }
   }
-  for(const auto &nom: manualPre) {
+  for(const auto &nom: std::as_const(manualPre)) {
     nomNom(nom);
   }
   QString manualUrl = data.left(data.indexOf(manualPost.toUtf8())).replace("&amp;", "&");
@@ -515,7 +587,27 @@ void AbstractScraper::getChiptune(GameEntry &)
 {
 }
 
+void AbstractScraper::getGuides(GameEntry &)
+{
+}
+
+void AbstractScraper::getVGMaps(GameEntry &)
+{
+}
+
+void AbstractScraper::getTrivia(GameEntry &)
+{
+}
+
 void AbstractScraper::getCustomFlags(GameEntry &)
+{
+}
+
+void AbstractScraper::getTitle(GameEntry &)
+{
+}
+
+void AbstractScraper::getPlatform(GameEntry &)
 {
 }
 
@@ -535,30 +627,31 @@ bool AbstractScraper::checkNom(const QString nom)
 }
 
 // Applies alias/scummvm/amiga/mame filename to name conversion.
-// Applies getUrlQuery conversion to the outcome, including space to
-// the special character needed by the scraping service.
-// Adds three variations: without subtitles, converting the first numeral
-// to arabic or roman format, and both without subtitles and converting
-// the first numeral.
-// Returns the full list of up to four possibilities, that will be checked
-// in order against the scraping service until a match is found.
-QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
+// TODO: Apply special logic for Mame " / " separators?
+QString AbstractScraper::applyNameMappings(const QString &fileName)
 {
-  QString baseName = info.completeBaseName();
-
+  QString baseName = fileName;
+  
   if(config->scraper != "import") {
     if(!config->aliasMap[baseName].isEmpty()) {
+      QString original = baseName;
       baseName = config->aliasMap[baseName];
-    } else if(Platform::get().getFamily(config->platform) == "amiga") {
+      printf("INFO: Alias found converting '%s' to '%s'.\n",
+             original.toStdString().c_str(),
+             baseName.toStdString().c_str());
+    }
+    if(Platform::get().getFamily(config->platform) == "amiga") {
       QString nameWithSpaces = config->whdLoadMap[baseName].first;
       if(nameWithSpaces.isEmpty()) {
         baseName = NameTools::getNameWithSpaces(baseName);
       } else {
         baseName = nameWithSpaces;
       }
-    } else if(config->platform == "scummvm") {
+    }
+    if(config->platform == "scummvm") {
       baseName = NameTools::getScummName(baseName, config->scummIni);
-    } else if(Platform::get().getFamily(config->platform) == "arcade" &&
+    }
+    if(Platform::get().getFamily(config->platform) == "arcade" &&
               !config->mameMap[baseName.toLower()].isEmpty()) {
       QString original = baseName;
       baseName = config->mameMap[baseName.toLower()];
@@ -566,71 +659,189 @@ QList<QString> AbstractScraper::getSearchNames(const QFileInfo &info)
              original.toStdString().c_str(),
              baseName.toStdString().c_str());
     }
-  }
-
-  QList<QString> searchNames;
-
-  if(baseName.isEmpty())
-    return searchNames;
-
-  QString separator = "+";
-  if (config->scraper == "igdb" || config->scraper == "screenscraper") {
-    separator = " ";
-  }
-
-  searchNames.append(NameTools::getUrlQueryName(baseName, -1, separator));
-
-  bool hasSubtitle;
-  if(!config->keepSubtitle) {
-    QString noSubtitle = NameTools::removeSubtitle(baseName, hasSubtitle);
-    if(hasSubtitle) {
-      searchNames.append(NameTools::getUrlQueryName(noSubtitle, -1, separator));
+    // Repeat just in case
+    if(!config->aliasMap[baseName].isEmpty()) {
+      QString original = baseName;
+      baseName = config->aliasMap[baseName];
+      printf("INFO: Alias found converting '%s' to '%s'.\n",
+             original.toStdString().c_str(),
+             baseName.toStdString().c_str());
     }
   }
+  
+  return baseName;
+}
 
-  if(NameTools::hasRomanNumeral(baseName) || NameTools::hasIntegerNumeral(baseName)) {
-    if(NameTools::hasRomanNumeral(baseName)) {
-      baseName = NameTools::convertToIntegerNumeral(baseName);
-    } else if(NameTools::hasIntegerNumeral(baseName)) {
-      baseName = NameTools::convertToRomanNumeral(baseName);
-    }
-    searchNames.append(NameTools::getUrlQueryName(baseName, -1, separator));
+// Applies alias/scummvm/amiga/mame filename to name conversion.
+// Applies getUrlQuery conversion to the outcome, including space to
+// the special character needed by the scraping service.
+// Adds three variations: without subtitles, converting the first numeral
+// to arabic or roman format, and both without subtitles and converting
+// the first numeral.
+// Returns the full list of up to four possibilities, that will be checked
+// in order against the scraping service until a match is found.
+QStringList AbstractScraper::getSearchNames(const QFileInfo &info)
+{
+  QString baseName = applyNameMappings(info.completeBaseName());
 
-    if(!config->keepSubtitle) {
-      QString noSubtitle = NameTools::removeSubtitle(baseName, hasSubtitle);
-      if(hasSubtitle) {
-        searchNames.append(NameTools::getUrlQueryName(noSubtitle, -1, separator));
-      }
-    }
+  QStringList searchNames;
+  if(offlineScraper) {
+    searchNames << baseName;
+  } else {
+    NameTools::generateSearchNames(baseName, searchNames, searchNames, false);
+  }
+  if(config->verbosity >= 2) {
+    qDebug() << "Search Names for:" << baseName << ":" << searchNames;
   }
 
   return searchNames;
 }
+
+// Executes the search in the generic multimaps that store the games database access
+// information for the offline scrapers (the ones for which the database ids are fully
+// accessible). Needs to be executed as part of the scraper overriden getSearchResults.
+template <typename T> bool AbstractScraper::getSearchResultsOffline(
+                                               QList<T> &gameIds, const QString &searchName,
+                                               QMultiMap<QString, T> &fullTitles,
+                                               QMultiMap<QString, T> &mainTitles)
+{
+  QList<T> match = {};
+  QListIterator<T> matchIterator(match);
+
+  int pos = 0;
+  QStringList safeNameVariations, unsafeNameVariations;
+  NameTools::generateSearchNames(searchName, safeNameVariations, unsafeNameVariations, true);
+  for(const auto &name: std::as_const(safeNameVariations)) {
+    if(config->verbosity >= 1) {
+      printf("%d: %s ", pos, name.toStdString().c_str());
+    }
+    if(fullTitles.contains(name)) {
+      if(config->verbosity >= 1) {
+        printf("Found!\n");
+        pos++;
+      }
+      match = fullTitles.values(name);
+      matchIterator = QListIterator<T> (match);
+      while(matchIterator.hasNext()) {
+        T gameId = matchIterator.next();
+        if(!gameIds.contains(gameId)) {
+          gameIds << gameId;
+        }
+      }
+    }
+  }
+
+  // If not matches found, try using a fuzzy matcher based on the Damerau/Levenshtein text distance:
+  if(gameIds.isEmpty()) {
+    QString sanitizedName = safeNameVariations.last();
+    if(config->fuzzySearch && sanitizedName.size() >= 6) {
+      int maxDistance = config->fuzzySearch;
+      if((sanitizedName.size() <= 10) || (config->fuzzySearch < 0)) {
+        maxDistance = 1;
+      }
+      QListIterator<QString> keysIterator(fullTitles.keys());
+      while(keysIterator.hasNext()) {
+        QString name = keysIterator.next();
+        if(StrTools::onlyNumbers(name) == StrTools::onlyNumbers(sanitizedName)) {
+          int distance = StrTools::distanceBetweenStrings(sanitizedName, name, false);
+          if(distance <= maxDistance) {
+            printf("LB FuzzySearch: Found %s = %s (distance %d)!\n", sanitizedName.toStdString().c_str(),
+                   name.toStdString().c_str(), distance);
+            match = fullTitles.values(name);
+            matchIterator = QListIterator<T> (match);
+            while(matchIterator.hasNext()) {
+              T gameId = matchIterator.next();
+              if(!gameIds.contains(gameId)) {
+                gameIds << gameId;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if(gameIds.isEmpty()) {
+    pos = 0;
+    if(unsafeNameVariations.isEmpty()) {
+      printf("\nNo match. Trying lossy name transformations (1)...\n");
+      for(const auto &name: std::as_const(safeNameVariations)) {
+        if(config->verbosity >= 1) {
+          printf("%d: %s ", pos, name.toStdString().c_str());
+        }
+        if(mainTitles.contains(name)) {
+          if(config->verbosity >= 1) {
+            printf("Found!\n");
+            pos++;
+          }
+          match = mainTitles.values(name);
+          matchIterator = QListIterator<T> (match);
+          while(matchIterator.hasNext()) {
+            T gameId = matchIterator.next();
+            if(!gameIds.contains(gameId)) {
+              gameIds << gameId;
+            }
+          }
+        }
+      }
+    } else {
+      printf("\nNo match. Trying lossy name transformations (2)...\n");
+      for(const auto &name: std::as_const(unsafeNameVariations)) {
+        if(config->verbosity >= 1) {
+          printf("%d: %s ", pos, name.toStdString().c_str());
+        }
+        if(fullTitles.contains(name)) {
+          if(config->verbosity >= 1) {
+            printf("Found!\n");
+            pos++;
+          }
+          match = fullTitles.values(name);
+          matchIterator = QListIterator<T> (match);
+          while(matchIterator.hasNext()) {
+            T gameId = matchIterator.next();
+            if(!gameIds.contains(gameId)) {
+              gameIds << gameId;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  printf("INFO: %d match(es) found.\n", gameIds.size());
+  return !gameIds.isEmpty();
+}
+
+// C++ is not smart/inefficient enough to do on-the-fly template instantiation...
+
+template bool AbstractScraper::getSearchResultsOffline(
+                 QList<int> &gameIds, const QString &searchName,
+                 QMultiMap<QString, int> &fullTitles,
+                 QMultiMap<QString, int> &mainTitles);
+
+template bool AbstractScraper::getSearchResultsOffline(
+                 QList<QPair<int, QString>> &gameIds, const QString &searchName,
+                 QMultiMap<QString, QPair<int, QString>> &fullTitles,
+                 QMultiMap<QString, QPair<int, QString>> &mainTitles);
+
+template bool AbstractScraper::getSearchResultsOffline(
+                 QList<QPair<QString, QString>> &gameIds, const QString &searchName,
+                 QMultiMap<QString, QPair<QString, QString>> &fullTitles,
+                 QMultiMap<QString, QPair<QString, QString>> &mainTitles);
+
+template bool AbstractScraper::getSearchResultsOffline(
+                 QList<QPair<QString, QPair<QString, QString>>> &gameIds, const QString &searchName,
+                 QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &fullTitles,
+                 QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &mainTitles);
+
+//
 
 // Generates the name for the game until a scraper provides an official one.
 // This is used to calculate the search names and calculate the best entry and
 // the distance to the official name.
 QString AbstractScraper::getCompareTitle(QFileInfo info)
 {
-  QString baseName = info.completeBaseName();
-
-  if(config->scraper != "import") {
-    if(!config->aliasMap[baseName].isEmpty()) {
-      baseName = config->aliasMap[baseName];
-    } else if(Platform::get().getFamily(config->platform) == "amiga") {
-      QString nameWithSpaces = config->whdLoadMap[baseName].first;
-      if(nameWithSpaces.isEmpty()) {
-        baseName = NameTools::getNameWithSpaces(baseName);
-      } else {
-        baseName = nameWithSpaces;
-      }
-    } else if(config->platform == "scummvm") {
-      baseName = NameTools::getScummName(baseName, config->scummIni);
-    } else if(Platform::get().getFamily(config->platform) == "arcade" &&
-              !config->mameMap[baseName].isEmpty()) {
-      baseName = config->mameMap[baseName];
-    }
-  }
+  QString baseName = applyNameMappings(info.completeBaseName());
 
   // Now create actual compareTitle
   baseName = baseName.replace("_", " ").left(baseName.indexOf("(")).left(baseName.indexOf("[")).simplified();
@@ -641,11 +852,12 @@ QString AbstractScraper::getCompareTitle(QFileInfo info)
 
   // Remove "vX.XXX" versioning string if one is found
   QRegularExpressionMatch match;
-  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$").match(baseName);
+  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$",
+                             QRegularExpression::CaseInsensitiveOption).match(baseName);
   if(match.hasMatch() && match.capturedStart(0) != -1) {
     baseName = baseName.left(match.capturedStart(0)).simplified();
   }
-    
+
   return baseName;
 }
 
@@ -656,7 +868,7 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
   // Reset region priorities to original list from Settings
   regionPrios = config->regionPrios;
   // Autodetect region and append to region priorities
-  if((info.fileName().indexOf("(") != -1 || info.fileName().indexOf("[") != -1 ) && config->region.isEmpty()) {
+  if((info.fileName().indexOf("(") != -1 || info.fileName().indexOf("[") != -1) && config->region.isEmpty()) {
     QString regionString = info.fileName().toLower();
     if(regionString.contains("(europe)") ||
        regionString.contains("[europe]") ||
@@ -734,7 +946,7 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
     }
   }
 
-  QList<QString> searchNames;
+  QStringList searchNames;
   if(config->searchName.isEmpty()) {
     searchNames = getSearchNames(info);
   } else {
@@ -750,7 +962,13 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
     getSearchResults(gameEntries, searchNames.at(pass - 1), config->platform);
     debug.append("Tried with: '" + searchNames.at(pass - 1) + "'\n");
     debug.append("Platform: " + config->platform + "\n");
-    if(!gameEntries.isEmpty()) {
+    // Some online scrapers' search engines are broken and always returns results,
+    // no matter the query... Adding them as exceptions here we try all the search names,
+    // even if more than one returns results.
+    // This trick of accumulating all the the passes even if a positive result was found
+    // CANNOT be used with: ScreenScraper, ESGameList, CustomFlags, ArcadeDB, ImportScraper.
+    if(!gameEntries.isEmpty() &&
+       config->scraper != "worldofspectrum") { //&& config->scraper != "rawg") {
       break;
     }
   }
@@ -758,7 +976,8 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
 
 // Detects if found is a valid name for platform platform.
 bool AbstractScraper::platformMatch(QString found, QString platform) {
-  for(const auto &p: Platform::get().getAliases(platform)) {
+  const auto platforms = Platform::get().getAliases(platform);
+  for(const auto &p: std::as_const(platforms)) {
     if(found.toLower() == p.toLower()) {
       return true;
     }
@@ -767,15 +986,20 @@ bool AbstractScraper::platformMatch(QString found, QString platform) {
 }
 
 // Returns the scraping service id for the platform.
-QString AbstractScraper::getPlatformId(const QString)
+QString AbstractScraper::getPlatformId(const QString &platform)
 {
-  return "na";
+  auto it = platformToId.find(platform);
+  if(it != platformToId.cend()) {
+    return it.value();
+  } else {
+    return "na";
+  }
 }
 
 void AbstractScraper::getOnlineVideo(QString videoUrl, GameEntry &game)
 {
   game.videoData = "";
-  if (!videoUrl.isEmpty()) {
+  if(!videoUrl.isEmpty()) {
     QString tempFile;
     {
       QTemporaryFile video;
@@ -783,12 +1007,12 @@ void AbstractScraper::getOnlineVideo(QString videoUrl, GameEntry &game)
       video.open();
       tempFile = video.fileName();
     }
-    if (!tempFile.isEmpty()) {
+    if(!tempFile.isEmpty()) {
       QProcess youtubeDL;
       QString command("yt-dlp");
       QStringList commandArgs;
       commandArgs << "--no-playlist"
-                  << "-q" 
+                  << "-q"
                   << "--verbose"
                   << "--force-overwrites"
                   << "-f" << "mp4"
@@ -801,9 +1025,9 @@ void AbstractScraper::getOnlineVideo(QString videoUrl, GameEntry &game)
       // printf("%s\n", youtubeDL.readAllStandardError().toStdString().c_str());
       youtubeDL.close();
       QFile video(tempFile);
-      if (video.open(QIODevice::ReadOnly)) {
+      if(video.open(QIODevice::ReadOnly)) {
         game.videoData = video.readAll();
-        if (game.videoData.size() > 4096) {
+        if(game.videoData.size() > 4096) {
           game.videoFormat = "mp4";
         }
         video.remove();
@@ -815,6 +1039,45 @@ void AbstractScraper::getOnlineVideo(QString videoUrl, GameEntry &game)
     }
     else {
       printf("ERROR: Error when creating a temporary file to download a video.\n");
+    }
+  }
+}
+
+void AbstractScraper::loadConfig(const QString &configPath, const QString &code, const QString &name)
+{
+  platformToId.clear();
+
+  QFile configFile(configPath);
+  if(!configFile.open(QIODevice::ReadOnly))
+    return;
+
+  QByteArray saveData = configFile.readAll();
+  QJsonDocument json(QJsonDocument::fromJson(saveData));
+
+  if(json.isNull() || json.isEmpty())
+    return;
+
+  QJsonArray platformsArray = json["platforms"].toArray();
+  for(int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
+    QJsonObject platformObject = platformsArray[platformIndex].toObject();
+
+    QString platformName = platformObject[name].toString().toLower();
+    if(platformObject[name].isDouble()) {
+      platformName = QString::number(platformObject[name].toInt(-1));
+    } else if(platformObject[name].isString()) {
+      platformName = platformObject[name].toString();
+    }
+
+    QString platformIdn;
+    if(platformObject[code].isDouble()) {
+      platformIdn = QString::number(platformObject[code].toInt(-1));
+    } else if(platformObject[code].isString()) {
+      platformIdn = platformObject[code].toString();
+    }
+
+    if(!platformIdn.isEmpty() && platformIdn != "-1" &&
+       !platformName.isEmpty() && platformName != "-1") {
+      platformToId[platformIdn] = platformName;
     }
   }
 }

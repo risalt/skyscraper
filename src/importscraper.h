@@ -37,8 +37,8 @@ public:
   void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &, QString &) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   QString getCompareTitle(QFileInfo info) override;
-  void getTitle(GameEntry &game);
-  void getRating(GameEntry &game);
+  void getTitle(GameEntry &game) override;
+  void getRating(GameEntry &game) override;
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
   void getWheel(GameEntry &game) override;
@@ -51,7 +51,7 @@ private:
   bool checkType(QString baseName, QList<QFileInfo> &infos, QString &inputFile);
   bool loadDefinitions();
   void loadData();
-  void checkForTag(QList<QString> &pre, QString &post, QString &tag, QString &line);
+  void checkForTag(QStringList &pre, QString &post, QString &tag, QString &line);
 
   QString titleTag = "###TITLE###";
   QString descriptionTag = "###DESCRIPTION###";
@@ -63,6 +63,10 @@ private:
   QString tagsTag = "###TAGS###";
   QString franchisesTag = "###FRANCHISES###";
   QString releaseDateTag = "###RELEASEDATE###";
+  QString guidesTag = "###GUIDES###";
+  QString platformTag = "###PLATFORM###";
+  QString triviaTag = "###TRIVIA###";
+  QString vgmapsTag = "###VGMAPS###";
 
   QList<QFileInfo> textual;
   QList<QFileInfo> covers;
@@ -80,6 +84,7 @@ private:
   QString textureFile = "";
   QString videoFile = "";
   QString manualFile = "";
+
 };
 
 #endif // IMPORTSCRAPER_H

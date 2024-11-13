@@ -103,6 +103,7 @@ For `###PLAYERS###`, `###RATING###`, `###AGES###`, and `###RELEASEDATE###` a cer
 * `MM/dd/yyyy`
 * `MMM, yyyy` (MMM is Jan, Feb and so on...)
 * `MMM dd, yyyy` (MMM is Jan, Feb and so on...)
+* Rating can be either a number between 0 and 5, use as fraction only 5. Examples: 3 or 4.5 but not 4.25 or 1.0. This value will be divided by five to match the scale of the rating in a Gamelist. Additionally a value between 0.0 and 1.0 can be used. This value will not be recalculated. If you want to use 0.5 in this metric, provide it as .5 (note the missing zero). Do add a fraction of zero explicitly to denote a rating of 1.0 (100%), without this trailing fraction it will be interpreted as if it would be in the range of 0 to 5.
 
 ## How to actually USE the data
 When you've imported all of your data into the resource cache, you can make use of it by enabling Skyscrapers *game list generation* mode simply by leaving out the `-s` command line option (eg. `Skyscraper -p PLATFORM`). The game list generator will then make use of your imported data. If you don't know what the resource cache is, read more about it [here](CACHE.md).

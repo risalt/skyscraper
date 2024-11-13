@@ -24,6 +24,7 @@
  */
 
 #include "mobygames.h"
+#include "skyscraper.h"
 #include "strtools.h"
 
 #include <QJsonArray>
@@ -36,7 +37,14 @@ MobyGames::MobyGames(Settings *config,
                      QSharedPointer<NetManager> manager)
   : AbstractScraper(config, manager)
 {
-  incrementalScraping = true;
+  loadConfig("mobygames.json", "platform_name", "platform_id");
+  platformId = getPlatformId(config->platform);
+  if(platformId == "na") {
+    reqRemaining = 0;
+    printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
+    return;
+  }
+
   connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
   limitTimer.setInterval(10000); // 10 second request limit
   limitTimer.setSingleShot(false);
@@ -65,18 +73,11 @@ MobyGames::MobyGames(Settings *config,
 void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
                                 QString searchName, QString)
 {
-  loadConfig("mobygames.json");
-  QString platformId = getPlatformId(config->platform);
-  if (platformId == "na") {
-    reqRemaining = 0;
-    printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
-    return;
-  }
-
   printf("Waiting as advised by MobyGames api restrictions...\n");
   limiter.exec();
-  QString searchUrl = searchUrlPre + "?api_key=" + config->apiKey + 
-                      "&title=" + searchName + (platformId == "na"?"":"&platform=" + platformId);
+  QString searchUrl = searchUrlPre + "?api_key=" + config->userCreds +
+                      "&title=" + searchName + "&platform=" +
+                      platformId.split(",").join("&platform=");
   netComm->request(searchUrl);
   q.exec();
   data = netComm->getData();
@@ -96,9 +97,8 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
 
   while(!jsonGames.isEmpty()) {
     GameEntry game;
-    
     QJsonObject jsonGame = jsonGames.first().toObject();
-    
+
     game.id = QString::number(jsonGame["game_id"].toInt());
     game.title = jsonGame["title"].toString();
     game.miscData = QJsonDocument(jsonGame).toJson(QJsonDocument::Compact);
@@ -107,11 +107,19 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
     while(!jsonPlatforms.isEmpty()) {
       QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
       QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
-      if (gamePlatformId == platformId ) {
+      if(platformId.split(",").contains(gamePlatformId)) {
         game.url = searchUrlPre + "/" + game.id + "/platforms/" +
-                   QString::number(jsonPlatform["platform_id"].toInt()) + "?api_key=" + config->apiKey;
+                   gamePlatformId + "?api_key=" + config->userCreds;
         game.platform = jsonPlatform["platform_name"].toString();
         gameEntries.append(game);
+        const QJsonArray variants = jsonGame["alternate_titles"].toArray();
+        for(const auto &variant: std::as_const(variants)) {
+          GameEntry variantGame = game;
+          variantGame.title = variant.toObject()["title"].toString();
+          if(!variantGame.title.isEmpty() && variantGame.title != game.title) {
+            gameEntries.append(variantGame);
+          }
+        }
       }
       jsonPlatforms.removeFirst();
     }
@@ -121,11 +129,6 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
 
 void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if (cache && !incrementalScraping) {
-    printf("\033[1;31m This scraper does not support incremental scraping. Internal error!\033[0m\n\n");
-    return;
-  }
-
   printf("Waiting to get game data...\n");
   limiter.exec();
   netComm->request(game.url);
@@ -154,102 +157,21 @@ void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
   data = netComm->getData();
   jsonScreens = QJsonDocument::fromJson(data);
 
-  for(int a = 0; a < fetchOrder.length(); ++a) {
-    switch(fetchOrder.at(a)) {
-    case DESCRIPTION:
-      getDescription(game);
-      break;
-    case DEVELOPER:
-      getDeveloper(game);
-      break;
-    case PUBLISHER:
-      getPublisher(game);
-      break;
-    case PLAYERS:
-      getPlayers(game);
-      break;
-    case AGES:
-      getAges(game);
-      break;
-    case RATING:
-      getRating(game);
-      break;
-    case TAGS:
-      getTags(game);
-      break;
-    case FRANCHISES:
-      getFranchises(game);
-      break;
-    case RELEASEDATE:
-      getReleaseDate(game);
-      break;
-    case COVER:
-      if(config->cacheCovers) {
-        if ((!cache) || (cache && cache->coverData.isNull())) {
-          getCover(game);
-        }
-      }
-      break;
-    case SCREENSHOT:
-      if(config->cacheScreenshots) {
-        if ((!cache) || (cache && cache->screenshotData.isNull())) {
-          getScreenshot(game);
-        }
-      }
-      break;
-    case WHEEL:
-      if(config->cacheWheels) {
-        if ((!cache) || (cache && cache->wheelData.isNull())) {
-          getWheel(game);
-        }
-      }
-      break;
-    case MARQUEE:
-      if(config->cacheMarquees) {
-        if ((!cache) || (cache && cache->marqueeData.isNull())) {
-          getMarquee(game);
-        }
-      }
-      break;
-    case TEXTURE:
-      if (config->cacheTextures) {
-        if ((!cache) || (cache && cache->textureData.isNull())) {
-          getTexture(game);
-        }
-      }
-      break;
-    case VIDEO:
-      if((config->videos) && (!sharedBlobs.contains("video"))) {
-        if ((!cache) || (cache && cache->videoData == "")) {
-          getVideo(game);
-        }
-      }
-      break;
-    case MANUAL:
-      if((config->manuals) && (!sharedBlobs.contains("manual"))) {
-        if ((!cache) || (cache && cache->manualData == "")) {
-          getManual(game);
-        }
-      }
-      break;
-    default:
-      ;
-    }
-  }
+  fetchGameResources(game, sharedBlobs, cache);
 }
 
 void MobyGames::getReleaseDate(GameEntry &game)
 {
-  game.releaseDate = jsonDoc.object()["first_release_date"].toString();
+  game.releaseDate = StrTools::conformReleaseDate(jsonDoc.object()["first_release_date"].toString());
 }
 
 void MobyGames::getPlayers(GameEntry &game)
 {
   QJsonArray jsonAttribs = jsonDoc.object()["attributes"].toArray();
   for(int a = 0; a < jsonAttribs.count(); ++a) {
-    if(jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Players Supported" || 
+    if(jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Players Supported" ||
        jsonAttribs.at(a).toObject()["attribute_category_name"].toString() == "Number of Offline Players") {
-      game.players = jsonAttribs.at(a).toObject()["attribute_name"].toString();
+      game.players = StrTools::conformPlayers(jsonAttribs.at(a).toObject()["attribute_name"].toString());
     }
   }
 }
@@ -260,7 +182,7 @@ void MobyGames::getTags(GameEntry &game)
   for(int a = 0; a < jsonGenres.count(); ++a) {
     game.tags.append(jsonGenres.at(a).toObject()["genre_name"].toString() + ", ");
   }
-  game.tags = game.tags.left(game.tags.length() - 2);
+  game.tags = StrTools::conformTags(game.tags.left(game.tags.length() - 2));
 }
 
 void MobyGames::getAges(GameEntry &game)
@@ -320,6 +242,7 @@ void MobyGames::getAges(GameEntry &game)
       break;
     }
   }
+  game.ages = StrTools::conformAges(game.ages);
 }
 
 void MobyGames::getPublisher(GameEntry &game)
@@ -378,7 +301,7 @@ void MobyGames::getCover(GameEntry &game)
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -437,7 +360,7 @@ void MobyGames::getManual(GameEntry &game)
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -488,12 +411,12 @@ void MobyGames::getManual(GameEntry &game)
          !contentType.isEmpty() && game.manualData.size() > 4096) {
         game.manualFormat = contentType.mid(contentType.indexOf("/") + 1,
                                             contentType.length() - contentType.indexOf("/") + 1);
-        if (game.manualFormat.length()>4) {
+        if(game.manualFormat.length()>4) {
           game.manualFormat = "webp";
         }
       } else {
         game.manualData = "";
-      }      
+      }
     }
   }
 }
@@ -507,7 +430,7 @@ void MobyGames::getMarquee(GameEntry &game)
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -566,7 +489,7 @@ void MobyGames::getTexture(GameEntry &game)
   QString coverUrl = "";
   bool foundFrontCover= false;
 
-  for(const auto &region: regionPrios) {
+  for(const auto &region: std::as_const(regionPrios)) {
     QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
     while(!jsonCoverGroups.isEmpty()) {
       bool foundRegion = false;
@@ -602,8 +525,8 @@ void MobyGames::getTexture(GameEntry &game)
     }
   }
 
-  if (coverUrl.isEmpty()) {
-    for(const auto &region: regionPrios) {
+  if(coverUrl.isEmpty()) {
+    for(const auto &region: std::as_const(regionPrios)) {
       QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
       while(!jsonCoverGroups.isEmpty()) {
         bool foundRegion = false;
@@ -703,41 +626,6 @@ void MobyGames::getScreenshot(GameEntry &game)
   if(netComm->getError() == QNetworkReply::NoError &&
      image.loadFromData(netComm->getData())) {
     game.screenshotData = netComm->getData();
-  }
-}
-
-QString MobyGames::getPlatformId(const QString platform)
-{
-  auto it = platformToId.find(platform);
-  if(it != platformToId.cend())
-      return QString::number(it.value());
-
-  return "na";
-}
-
-void MobyGames::loadConfig(const QString& configPath)
-{
-  platformToId.clear();
-
-  QFile configFile(configPath);
-  if (!configFile.open(QIODevice::ReadOnly))
-    return;
-
-  QByteArray saveData = configFile.readAll();
-  QJsonDocument json(QJsonDocument::fromJson(saveData));
-
-  if(json.isNull() || json.isEmpty())
-    return;
-
-  QJsonArray platformsArray = json["platforms"].toArray();
-  for (int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
-    QJsonObject platformObject = platformsArray[platformIndex].toObject();
-
-    QString platformName = platformObject["platform_name"].toString().toLower();
-    int platformId = platformObject["platform_id"].toInt(-1);
-
-    if(platformId > 0)
-      platformToId[platformName] = platformId;
   }
 }
 

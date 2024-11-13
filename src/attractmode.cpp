@@ -98,7 +98,7 @@ bool AttractMode::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Que
 
 void AttractMode::preserveFromOld(GameEntry &entry)
 {
-  for(const auto &oldEntry: oldEntries) {
+  for(const auto &oldEntry: std::as_const(oldEntries)) {
     if(oldEntry.baseName == entry.baseName) {
       if(entry.developer.isEmpty())
         entry.developer = oldEntry.developer;
@@ -157,7 +157,7 @@ void AttractMode::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
 
     finalOutput.append(entry.baseName + ";" +
                        entry.title);
-    finalOutput.append(";" +                       
+    finalOutput.append(";" +
                        emuInfo.completeBaseName() + ";" +
                        entry.aMCloneOf + ";" +
                        QDate::fromString(entry.releaseDate, "yyyyMMdd").toString("yyyy") + ";" +
@@ -346,7 +346,7 @@ QString AttractMode::getMediaTypeFolder(QString type, bool detectVideoPath)
           // and this is seemlingly how it should work for those cases where the user does not
           // use an 'artwork video' line.
           if(detectVideoPath) {
-            for(const auto &path: paths) {
+            for(const auto &path: std::as_const(paths)) {
               if(path.contains("video")) {
                 mediaTypeFolder = path;
                 break;
