@@ -1,6 +1,6 @@
 # 🏢Skyscraper
 
-I have modified the very powerful scraper developed mainly by [Muldjord](https://github.com/muldjord/skyscraper) and later on enhanced by [Detain](https://github.com/detain/skyscraper) and lately by [Gemba](https://github.com/Gemba/skyscraper/). I forked the Detain version (two years ago) after it had reached a somewhat stale state, and I started adding many features to cater to my needs. Some changes very implemented (more elegantly) by Gemba, but my fork had already diverged too much so I just cherry-picked from his fork what I felt I needed instead of rebasing to his fork and starting from there.
+I have modified the very powerful scraper developed mainly by [Muldjord](https://github.com/muldjord/skyscraper) and later on enhanced by [Detain](https://github.com/detain/skyscraper) and lately by [Gemba](https://github.com/Gemba/skyscraper/). I forked the Detain version (two years ago) after it had reached a somewhat stale state, and I started adding many features to cater to my needs. Some changes very implemented (more elegantly) by Gemba, but my fork had already diverged too much so I just cherry-picked from his fork what I felt I needed instead of rebasing to his fork and starting from there. The codebase of my version has significantly increased since then.
 
 The main changes have been:
 
@@ -12,7 +12,7 @@ The main changes have been:
 * GiantBomb: A hybrid frontend that downloads part of the information from [GiantBomb](https://www.giantbomb.com) in an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
 * Chiptune: A specialized scraper that matches my soundtrack collection stored in my [Navidrome](https://github.com/navidrome/navidrome) SQLite database to my game collection.
 * OfflineMobyGames: A hybrid frontend that uses an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
-* Customflags: A specialized scraper that detects special files in my collection to deduce the concepts: Completed, Favourite, Played, First Played, Last Played, Total Times Played, Time Played.
+* Customflags: A specialized scraper that detects special files in my collection to deduce the concepts: Game Size, Completed, Favourite, Played, First Played, Last Played, Total Times Played, Time Played.
 * Launchbox: A very effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
 * Rawg: An online frontend that uses the [Rawg.io](https://rawg.io/) service.
 * VGFacts: A hybrid specialized scraper that uses a JSON version of the [VGFacts](https://www.vgfacts.com/) website to retrieve videogames trivia.
@@ -20,26 +20,29 @@ The main changes have been:
 * GameFAQs: An offline frontend that uses a JSON+guides dump of the [GameFAQs](https://gamefaqs.gamespot.com/) website to include videogame guides and walkthroughs in the collection. GameFAQs does not approve of external scraping, so the dumps need to be obtained from somewhere else.
 
 ## Fix Broken Scrapers
-* Notably OpenRetro, WorldOfSpectrum, but also fixes and improvements to IGDB, MobyGames, ArcadeDB, TGDB and, of course the King Screenscraper.
+* Notably OpenRetro, WorldOfSpectrum and TGDB, but also fixes and improvements to IGDB, MobyGames, ArcadeDB and, of course the King Screenscraper.
 
 And of course:
+* The checksum tecnique has been re-implemented as an on-demand function that can be used in all scrapers now: ScreenScraper uses pure checksum search, all the other scrapers use an external database (canonical) to determine the proper search names for the games, instead of relying solely on the filename. The canonical database can be generated using Skyscraper itself, feeding it the TOSEC, Redump and No-Intro dat files. Checksums are stored in the cache database as cross-scraper resources, to avoid rehashing the same file multiple times.
+* Implement a negative match database functionality that caches negative searches per platform, online scraper and optionally by file, with a configurable expiration date.
 * Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files. All the scraper code/platform ids mappings are now in the configuration files.
-* Support additional resources (music, manuals, usage data, trivia, maps, guides).
+* Support additional resources (music, manuals, usage data, trivia, maps, guides, user flags, game size) and the logic to scrape them and add them to the frontends.
 * Validation of the cache now tries to fix (and cleanses if it cannot) the textual resource contents of the database.
 * --startat and --endat now are compatible recursive directories.
 * Take advantage of MAME short names for the compatible scrapers.
 * Improve data conformance checks and corrections to ensure homogeneized resources across scrapers.
-* Alternative name support for the compatible scrapers.
+* Alternative name support for the compatible scrapers (most of them).
+* Implement Latin characters simplification as a search variant in most scrapers.
 * Massive refactorings, errors, typos and style fixes.
-* File-based locking mechanism to avoid/minimize corrupted cache databases.
+* File-based locking mechanism and database temp file when writing to avoid/minimize corrupted cache databases.
 * Rescan feature to recheck the cache against the scraper databases (specially needed after changing the title matching logic).
 * Incremental scraping, for when new resources need to be added to already scraped games.
 * Improve the API keys and password management.
 * Generation of dummy thumbnails with text when no real thumbnail is available in the cache database.
-* Some changes to minimize the false positives from the scrapers, specially as I basically turned off the checksum/hash mechanisms (as my files are frequently modified and the checksum search would generally fail).
+* Some changes to minimize the false positives from the scrapers.
 * New cache tools to manage big databases such as mine (several tens of thousands of entries) and spot inconsistencies and false positive matches.
 * ...Changes that I need that probably no other one out there will need :)
-*  Breaking changes: The unpack functionality has been removed. The checksum matching logic has been removed. It may come back improved in the future. Or not.
+*  Breaking changes: The unpack functionality has been removed. The checksum matching logic has been heavily modified.
  
 
 ## Original Readme:
