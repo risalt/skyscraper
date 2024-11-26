@@ -38,8 +38,8 @@
 #include "skyscraper.h"
 
 
-VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   offlineScraper = true;
 

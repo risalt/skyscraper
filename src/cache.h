@@ -116,6 +116,7 @@ public:
 
   QList<QFileInfo> getFileInfos(const QString &inputFolder, const QString &filter, const bool subdirs = true);
   QStringList getCacheIdList(const QList<QFileInfo> &fileInfos);
+  QFileInfo getFileCacheId(const QString &cacheId);
 
   void addToResCounts(const QString source, const QString type);
   void addResource(Resource &resource, GameEntry &entry, const QString &cacheAbsolutePath,

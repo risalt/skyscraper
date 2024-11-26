@@ -29,8 +29,9 @@
 #include <QDir>
 
 ESGameList::ESGameList(Settings *config,
-                       QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                       QSharedPointer<NetManager> manager,
+                       QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   baseUrl = config->gameListFolder + (config->gameListFolder.right(1) != "/"?"/":"");
   QString gameListXml = baseUrl + "gamelist.xml";

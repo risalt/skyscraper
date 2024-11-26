@@ -34,8 +34,9 @@
 #include <QJsonDocument>
 
 OpenRetro::OpenRetro(Settings *config,
-                     QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                     QSharedPointer<NetManager> manager,
+                     QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   loadConfig("openretro.json", "platform_name", "platform_id");
   platformId = getPlatformId(config->platform);
@@ -131,10 +132,26 @@ void OpenRetro::getSearchResults(QList<GameEntry> &gameEntries,
 {
   bool hasWhdlUuid = searchName.left(6) == "/game/";
   QString lookupReq = QString(searchUrlPre);
+  QString finalSearchName = StrTools::simplifyLetters(searchName);
   if(hasWhdlUuid) {
     lookupReq = lookupReq + searchName;
   } else {
-    lookupReq = lookupReq + "/browse/" + platformId + "?q=" + searchName + searchUrlPost;
+    if(restrictSearch && finalSearchName.split(" ").size() > 3) {
+      QStringList splitSearchName = finalSearchName.split(" ");
+      finalSearchName = "";
+      int i = 0;
+      int numWords = 0;
+      while(i < splitSearchName.size() && numWords < 3) {
+        QString word = StrTools::sanitizeName(splitSearchName.at(i), true);
+        if(!word.isEmpty()) {
+          numWords++;
+          finalSearchName.append(word + " ");
+        }
+        i++;
+      }
+      finalSearchName = finalSearchName.simplified();
+    }
+    lookupReq = lookupReq + "/browse/" + platformId + "?q=" + finalSearchName + searchUrlPost;
   }
   limiter.exec();
   netComm->request(lookupReq);
@@ -149,13 +166,32 @@ void OpenRetro::getSearchResults(QList<GameEntry> &gameEntries,
     q.exec();
   }
 
-  data = netComm->getData();
-  if(data.isEmpty())
+  if(netComm->getError() == QNetworkReply::NoError) {
+    searchError = false;
+  } else {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
     return;
+  }
+  data = netComm->getData();
+  if(data.isEmpty()) {
+    searchError = true;
+    return;
+  }
 
   if(data.contains("Error: 500 Internal Server Error") ||
-     data.contains("Error: 404 Not Found"))
+     data.contains("Error: 404 Not Found")) {
+    searchError = true;
     return;
+  }
+
+  if(data.contains("Sorry, max three search terms")) {
+    if(finalSearchName.split(" ").size() > 3) {
+      restrictSearch = true;
+      getSearchResults(gameEntries, searchName, platform);
+    }
+    return;
+  }
 
   if(hasWhdlUuid) {
     QByteArray tempData = data;
@@ -205,9 +241,6 @@ void OpenRetro::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
     netComm->request(game.url);
     q.exec();
     data = netComm->getData();
-  }
-  if(config->verbosity >= 1) {
-    printf("%s\n", game.url.toStdString().c_str());
   }
   // Remove all the variants so we don't choose between their screenshots
   data = data.left(data.indexOf("</table></div><div id='"));

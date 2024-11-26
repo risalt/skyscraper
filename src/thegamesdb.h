@@ -36,7 +36,7 @@ class TheGamesDb : public AbstractScraper
   Q_OBJECT
 
 public:
-  TheGamesDb(Settings *config, QSharedPointer<NetManager> manager);
+  TheGamesDb(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
@@ -60,12 +60,16 @@ protected:
 private:
   void loadMaps();
 
+  QString platformId;
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
 
+  QMap<int, QString> regionMap;
   QMap<int, QString> genreMap;
   QMap<int, QString> developerMap;
   QMap<int, QString> publisherMap;
+  QMultiMap<QString, QString> nameIds;
+  QMultiMap<QString, QString> nameVideos;
 
 };
 

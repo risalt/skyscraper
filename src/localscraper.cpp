@@ -26,8 +26,9 @@
 #include "localscraper.h"
 
 LocalScraper::LocalScraper(Settings *config,
-                           QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                           QSharedPointer<NetManager> manager,
+                           QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
 }
 
@@ -35,6 +36,6 @@ void LocalScraper::getGameData(GameEntry &, QStringList &, GameEntry * = nullptr
 {
 }
 
-void LocalScraper::runPasses(QList<GameEntry> &, const QFileInfo &, QString &, QString &)
+void LocalScraper::runPasses(QList<GameEntry> &, const QFileInfo &, const QFileInfo &, QString &, QString &, QString)
 {
 }

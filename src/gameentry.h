@@ -54,6 +54,16 @@ constexpr int VGMAPS = 22;
 #include <QByteArray>
 #include <QDataStream>
 
+struct CanonicalData {
+  QString name = "";
+  qint64 size = 0;
+  QString crc = "";
+  QString sha1 = "";
+  QString md5 = "";
+  QString file = "";
+  QString platform = "";
+};
+
 class GameEntry {
 public:
   GameEntry();
@@ -62,6 +72,7 @@ public:
   void resetMedia();
   int getCompleteness() const;
 
+  // The following block is serialized into quickid.xml/db.xml:
   QString id = "";
   QString path = "";
   QString title = "";
@@ -95,7 +106,7 @@ public:
   qint64 lastPlayed = 0;
   qint64 firstPlayed = 0;
   qint64 timePlayed = 0;
-
+  qint64 diskSize = 0;
   QByteArray coverData = QByteArray();
   QString coverFile = "";
   QString coverSrc = "";
@@ -130,6 +141,7 @@ public:
   QString chiptuneIdSrc = "";
   QString chiptunePath = "";
   QString chiptunePathSrc = "";
+  CanonicalData canonical;
 
   int searchMatch = 0;
   QString cacheId = "";

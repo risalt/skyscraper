@@ -35,6 +35,7 @@ struct Settings {
 
   QString currentDir = "";
   bool waitIfConcurrent = false;
+  bool useChecksum = false;
   QString cacheFolder = "";
   QString gameListFileString = "";
   QString skippedFileString = "";
@@ -118,6 +119,8 @@ struct Settings {
   bool keepSubtitle = true;
   int fuzzySearch = 0;
   QString scummIni = "";
+  qint64 negCacheExpiration = 0;
+  int negCacheDaysExpiration = 180;
 
   int romLimit = -1;
 

@@ -32,8 +32,9 @@
 #include <QDateTime>
 
 
-CustomFlags::CustomFlags(Settings *config, QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+CustomFlags::CustomFlags(Settings *config, QSharedPointer<NetManager> manager,
+                         QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   fetchOrder.append(CUSTOMFLAGS);
   offlineScraper = true;
@@ -60,6 +61,43 @@ void CustomFlags::getGameData(GameEntry & game, QStringList &sharedBlobs, GameEn
 
 void CustomFlags::getCustomFlags(GameEntry & game)
 {
+  NameTools::get().cache->fillBlanks(game, "generic");
+  game.canonical = CanonicalData();
+  if(!game.diskSize) {
+    // Calculating game size
+    game.diskSize = NameTools::calculateGameSize(game.absoluteFilePath);
+    QString multiDisk;
+    for(int i=2; i<8; i++) {
+      QString pattern = QString::number(i);
+      if(Skyscraper::config.excludePattern.contains("(Disk " + pattern) &&
+         game.absoluteFilePath.contains("(Disk 1")) {
+         multiDisk = game.absoluteFilePath;
+         multiDisk.replace("(Disk 1", "(Disk " + pattern);
+         if(QFileInfo(multiDisk).exists()) {
+           game.diskSize += NameTools::calculateGameSize(multiDisk);
+         }
+      }
+    }
+    for(int i=2; i<5; i++) {
+      QString pattern = QString::number(i);
+      if(Skyscraper::config.excludePattern.contains("DVD" + pattern) &&
+         game.absoluteFilePath.contains("DVD1")) {
+         multiDisk = game.absoluteFilePath;
+         multiDisk.replace("DVD1", "DVD" + pattern);
+         if(QFileInfo(multiDisk).exists()) {
+           game.diskSize += NameTools::calculateGameSize(multiDisk);
+         }
+      }
+    }
+    if(Skyscraper::config.excludePattern.contains("(Disk B") &&
+       game.absoluteFilePath.contains("(Disk A")) {
+       multiDisk = game.absoluteFilePath;
+       multiDisk.replace("(Disk A", "(Disk B");
+       if(QFileInfo(multiDisk).exists()) {
+         game.diskSize += NameTools::calculateGameSize(multiDisk);
+       }
+    }
+  }
   game.completed = QFileInfo::exists(game.path + ".completed") ? true : false;
   game.favourite = QFileInfo::exists(game.path + ".favourite") ? true : false;
   QFile inputFile(game.path + ".played");

@@ -48,7 +48,7 @@ constexpr int APICOOLDOWN = 21;
 GiantBomb::GiantBomb(Settings *config,
            QSharedPointer<NetManager> manager,
            QString threadId)
-  : AbstractScraper(config, manager), threadId(threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   offlineScraper = true;
   loadConfig("giantbomb.json", "name", "id");
@@ -388,10 +388,6 @@ void GiantBomb::getSearchResults(QList<GameEntry> &gameEntries,
       game.platform = Platform::get().getAliases(config->platform).at(1);
       gameEntries.append(game);
     }
-  }
-
-  if(config->verbosity >= 2) {
-    qDebug() << gameEntries;
   }
 }
 

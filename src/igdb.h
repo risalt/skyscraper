@@ -36,7 +36,7 @@ class Igdb : public AbstractScraper
   Q_OBJECT
 
 public:
-  Igdb(Settings *config, QSharedPointer<NetManager> manager);
+  Igdb(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

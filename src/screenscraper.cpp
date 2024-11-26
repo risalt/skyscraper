@@ -23,30 +23,33 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
+#include <QDir>
 #include <QFileInfo>
-#include <QProcess>
+#include <QJsonArray>
 #include <QJsonDocument>
 
 #include "platform.h"
 #include "queue.h"
 #include "screenscraper.h"
 #include "strtools.h"
-#include "crc32.h"
+#include "nametools.h"
 
 constexpr int RETRIESMAX = 3;
 constexpr int MINARTSIZE = 256;
 constexpr int MINTEXTURESIZE = 16384;
 
 ScreenScraper::ScreenScraper(Settings *config,
-                             QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                             QSharedPointer<NetManager> manager,
+                             QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   loadConfig("screenscraper.json", "name", "id");
 
   platformId = getPlatformId(config->platform);
   if(platformId == "na") {
     reqRemaining = 0;
-    printf("\033[0;31mPlatform not supported by ScreenScraper or it hasn't yet been included in Skyscraper for this module...\033[0m\n");
+    printf("\033[0;31mPlatform not supported by ScreenScraper or it hasn't "
+           "yet been included in Skyscraper for this module...\033[0m\n");
     return;
   }
 
@@ -85,10 +88,8 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
                     (config->password.isEmpty()?"":"&sspassword=" + config->password) +
                     (platformId.isEmpty()?"":"&systemeid=" + platformId) + "&output=json&" +
                     searchName;
-  if(config->verbosity >= 1) {
-    qDebug() << gameUrl;
-  }
 
+  searchError = false;
   for(int retries = 0; retries < RETRIESMAX; ++retries) {
     limiter.exec();
     printf("1");
@@ -98,6 +99,9 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
 
     QByteArray headerData = data.left(1024); // Minor optimization with minimal more RAM usage
     // Do error checks on headerData. It's more stable than checking the potentially faulty JSON
+    if(config->verbosity > 4) {
+      qDebug() << headerData;
+    }
     if(headerData.isEmpty()) {
       printf("\033[1;33mRetrying request...\033[0m\n\n");
       continue;
@@ -106,34 +110,80 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     } else if(headerData.contains("API totalement fermé")) {
       printf("\033[1;31mThe ScreenScraper API is currently closed, exiting nicely...\033[0m\n\n");
       reqRemaining = 0;
+      searchError = true;
       return;
     } else if(headerData.contains("Le logiciel de scrape utilisé a été blacklisté")) {
       printf("\033[1;31mSkyscraper has apparently been blacklisted at ScreenScraper, exiting nicely...\033[0m\n\n");
       reqRemaining = 0;
+      searchError = true;
       return;
     } else if(headerData.contains("Votre quota de scrape est")) {
       printf("\033[1;31mYour daily ScreenScraper request limit has been reached, exiting nicely...\033[0m\n\n");
       reqRemaining = 0;
+      searchError = true;
       return;
     } else if(headerData.contains("Faite du tri dans vos fichiers roms et repassez demain")) {
       printf("\033[1;31mYour daily ScreenScraper failed request limit has been reached, exiting nicely...\033[0m\n\n");
       reqRemainingKO = 0;
+      searchError = true;
       return;
     } else if(headerData.contains("API fermé pour les non membres") ||
               headerData.contains("API closed for non-registered members") ||
-              headerData.contains("****T****h****e**** ****m****a****x****i****m****u****m**** ****t****h****r****e****a****d****s**** ****a****l****l****o****w****e****d**** ****t****o**** ****l****e****e****c****h****e****r**** ****u****s****e****r****s**** ****i****s**** ****a****l****r****e****a****d****y**** ****u****s****e****d****")) {
-      printf("\033[1;31mThe screenscraper service is currently closed or too busy to handle requests from unregistered and inactive users. Sign up for an account at https://www.screenscraper.fr and contribute to gain more threads. Then use the credentials with Skyscraper using the '-u user:pass' command line option or by setting 'userCreds=\"user:pass\"' in '%s/.skyscraper/config.ini'.\033[0m\n\n", QDir::homePath().toStdString().c_str());
+              headerData.contains("****T****h****e**** ****m****a****x****i****m****u****m**** "
+                                  "****t****h****r****e****a****d****s**** ****a****l****l****o"
+                                  "****w****e****d**** ****t****o**** ****l****e****e****c****h"
+                                  "****e****r**** ****u****s****e****r****s**** ****i****s**** "
+                                  "****a****l****r****e****a****d****y**** ****u****s****e****d****")) {
+      printf("\033[1;31mThe screenscraper service is currently closed or too busy to handle "
+             "requests from unregistered and inactive users. Sign up for an account at "
+             "https://www.screenscraper.fr and contribute to gain more threads. Then use the "
+             "credentials with Skyscraper using the '-u user:pass' command line option or by "
+             "setting 'userCreds=\"user:pass\"' in '%s/.skyscraper/config.ini'.\033[0m\n\n",
+             QDir::homePath().toStdString().c_str());
       if(retries == RETRIESMAX - 1) {
         reqRemaining = 0;
+        searchError = true;
         return;
       } else {
         continue;
       }
     }
 
+    if(config->verbosity > 5) {
+      qDebug() << data;
+    }
     // Fix faulty JSON that is sometimes received back from ScreenScraper
     data.replace("],\n\t\t}", "]\n\t\t}");
     //printf("\n%s\n",data.toStdString().c_str());
+    int openDelims = data.count('{');
+    int closeDelims = data.count('}');
+    if(openDelims != closeDelims && QJsonDocument::fromJson(data).isNull()) {
+      printf("\nERROR: Detected delimiter unbalance! Trying to correct... ");
+      if(openDelims < closeDelims) {
+        int delimsDetected = 0;
+        int pos = 0;
+        for(auto i = data.rbegin(); i != data.rend(); ++i) {
+          pos++;
+          if(*i == '}') {
+            delimsDetected++;
+            if(delimsDetected == (closeDelims - openDelims)) {
+              break;
+            }
+          }
+        }
+        data.chop(pos);
+      } else {
+        data.append(QString("}").repeated(openDelims - closeDelims).toUtf8());
+      }
+      if(QJsonDocument::fromJson(data).isNull()) {
+        printf("Unsuccessful...\n");
+      } else {
+        printf("Success!\n");
+      }
+      if(config->verbosity > 5) {
+        qDebug() << data;
+      }
+    }
 
     // Now parse the JSON
     jsonObj = QJsonDocument::fromJson(data).object();
@@ -144,18 +194,25 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
 
     // Check if we got a valid JSON document back
     if(jsonObj.isEmpty()) {
-      printf("\033[1;31mScreenScraper APIv2 returned invalid / empty Json. Their servers are probably down. Please try again later or use a different scraping module with '-s MODULE'. Check 'Skyscraper --help' for more information.\033[0m\n");
-      data.replace(config->apiKey.toUtf8(), "****");
-      data.replace(config->password.toUtf8(), "****");
+      printf("\033[1;31mScreenScraper APIv2 returned invalid / empty Json. Their servers are "
+             "probably down. Please try again later or use a different scraping module with "
+             "'-s MODULE'. Check 'Skyscraper --help' for more information.\033[0m\n");
+      /*data.replace(config->apiKey.toUtf8(), "****");
+      data.replace(config->password.toUtf8(), "****");*/
       QFile jsonErrorFile("./screenscraper_error.json");
       if(jsonErrorFile.open(QIODevice::WriteOnly)) {
         if(data.length() > 64) {
           jsonErrorFile.write(data);
-          printf("The erroneous answer was written to '%s/.skyscraper/screenscraper_error.json'. If this file contains game data, please consider filing a bug report at 'https://github.com/detain/skyscraper/issues' and attach that file.\n", QDir::homePath().toStdString().c_str());
+          printf("The erroneous answer was written to '%s/.skyscraper/screenscraper_error.json'. "
+                 "If this file contains game data, please consider filing a bug report at "
+                 "'https://github.com/detain/skyscraper/issues' and attach that file.\n",
+                 QDir::homePath().toStdString().c_str());
         }
         jsonErrorFile.close();
       }
-      break; // DON'T try again! If we don't get a valid JSON document, something is very wrong with the API
+      // DON'T try again! If we don't get a valid JSON document, something is very wrong with the API
+      searchError = true;
+      break;
     }
 
     // Check if the request was successful
@@ -173,7 +230,8 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     int maxKORequestsDay = jsonObj["response"].toObject()["ssuser"].toObject()["maxrequestskoperday"].toString().toInt();
     int currentKORequests = jsonObj["response"].toObject()["ssuser"].toObject()["requestskotoday"].toString().toInt();
     if((maxRequestsDay <= currentRequests) || (maxKORequestsDay <= currentKORequests)) {
-      printf("\033[1;33mThe daily user limits at ScreenScraper have been reached, exiting nicely.\nPlease wait until the next day.\033[0m\n\n");
+      printf("\033[1;33mThe daily user limits at ScreenScraper have been reached, exiting nicely."
+             "\nPlease wait until the next day.\033[0m\n\n");
       reqRemaining = 0;
     } else {
       reqRemaining = std::max(0, maxRequestsDay-currentRequests);
@@ -186,6 +244,14 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
       break;
     }
   }
+  if(netComm->getError() != QNetworkReply::NoError &&
+     netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  } else {
+    searchError = false;
+  }
 
   jsonObj = jsonObj["response"].toObject()["jeu"].toObject();
 
@@ -197,6 +263,7 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
   if((game.title.toLower().contains("hack") && game.title.toLower().contains("link")) ||
      game.title.toLower() == "zzz" ||
      game.title.toLower().contains("notgame")) {
+    searchError = true;
     return;
   }
 
@@ -207,6 +274,11 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
 
   game.url = gameUrl;
   game.platform = jsonObj["systeme"].toObject()["text"].toString();
+
+  if(!canonical.md5.isEmpty() || !canonical.sha1.isEmpty()) {
+    canonical.name = game.title;
+    game.canonical = canonical;
+  }
 
   // Only check if platform is empty, it's always correct when using ScreenScraper
   if(!game.platform.isEmpty()) {
@@ -403,7 +475,9 @@ void ScreenScraper::getWheel(GameEntry &game)
 
 void ScreenScraper::getMarquee(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QStringList({"fanart-hd", "fanart"/*, "support-2D", "support-2d", "support-texture", "marquee", "screenmarquee"*/}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
+                            QStringList({"fanart-hd", "fanart"/*, "support-2D", "support-2d",
+                                         "support-texture", "marquee", "screenmarquee"*/}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
@@ -517,7 +591,16 @@ void ScreenScraper::getManual(GameEntry &game)
 QStringList ScreenScraper::getSearchNames(const QFileInfo &info)
 {
   QStringList searchNames;
-  if(Platform::get().getFamily(config->platform) == "arcade") {
+
+  if(config->useChecksum) {
+    canonical = NameTools::getCanonicalData(info, true);
+    if(!canonical.md5.isEmpty() || !canonical.sha1.isEmpty()) {
+      searchNames.append("crc=" + canonical.crc +
+                         "&md5=" + canonical.md5 +
+                         "&sha1=" + canonical.sha1 +
+                         "&romtaille=" + QString::number(canonical.size));
+    }
+  } else if(Platform::get().getFamily(config->platform) == "arcade") {
     searchNames.append("romnom=" + QUrl::toPercentEncoding(info.baseName(), "()"));
   } else {
     QStringList searchNamesRaw = AbstractScraper::getSearchNames(info);
@@ -550,7 +633,8 @@ QString ScreenScraper::getJsonText(QJsonArray jsonArr, int attr, QStringList typ
       }
     }
   } else if(attr == REGION) {
-    // Not using the config->regionPrios since they might have changed due to region autodetection. So using temporary internal one instead.
+    // Not using the config->regionPrios since they might have changed due to region autodetection.
+    // So using temporary internal one instead.
     if(types.isEmpty()) {
       for(const auto &region: std::as_const(regionPrios)) {
         for(const auto &jsonVal: std::as_const(jsonArr)) {

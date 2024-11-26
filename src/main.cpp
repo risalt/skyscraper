@@ -53,7 +53,6 @@ Q_IMPORT_PLUGIN(QOffscreenIntegrationPlugin)*/
 
 #include "strtools.h"
 #include "skyscraper.h"
-#include "scripter.h"
 #include "platform.h"
 
 Skyscraper *x = nullptr;
@@ -117,7 +116,8 @@ BOOL WINAPI ConsoleHandler(DWORD dwType)
       if(x != nullptr) {
         if(x->state == 0) {
           // Nothing important going on, just exit
-          Skyscraper::removeLockAndExit(1);
+          delete x;
+          exit(1);
         } else if(x->state == 1) {
           // Ignore signal, something important is going on that needs to finish!
         } else if(x->state == 2) {
@@ -129,11 +129,11 @@ BOOL WINAPI ConsoleHandler(DWORD dwType)
           x->queue->clearAll();
         }
       } else {
-        Skyscraper::removeLockAndExit(1);
+        exit(1);
       }
     } else {
       printf("\033[1;31mUser REALLY wants to quit NOW, forcing unclean exit...\033[0m\n");
-      Skyscraper::removeLockAndExit(1);
+      exit(2);
     }
   }
 #if defined(Q_OS_WIN)
@@ -179,8 +179,9 @@ int main(int argc, char *argv[])
   QDir skyDir(QDir::homePath() + "/.skyscraper");
   if(!skyDir.exists()) {
     if(!skyDir.mkpath(".")) {
-      printf("Couldn't create folder '%s'. Please check permissions, now exiting...\n", skyDir.absolutePath().toStdString().c_str());
-      Skyscraper::removeLockAndExit(1);
+      printf("Couldn't create folder '%s'. Please check permissions, now exiting...\n",
+             skyDir.absolutePath().toStdString().c_str());
+      return(3);
     }
   }
 
@@ -252,6 +253,7 @@ int main(int argc, char *argv[])
   QCommandLineOption removeSubtitleOption("removesubtitle", "Remove subtitles/second names of the file name.\n(default is to keep them)");
   QCommandLineOption lOption("l", "Maximum game description length. Everything longer than this will be truncated.\n(default is 2500)", "0-100000", "");
   QCommandLineOption langOption("lang", "Set preferred result language for scraping modules that support it.\n(default is 'en')", "CODE", "en");
+  QCommandLineOption loadChecksum("loadchecksum", "Load the canonical data (game name, file name, size, CRC, SHA1, MD5) from an XML dat file into the canonical database. The filename must be indicated. Use 'LUTRISDB' as filename to retrieve TOSEC data from the Lutris database.", "FILENAME", "");
   QCommandLineOption mOption("m", "Minimum match percentage when comparing search result titles to filename titles.\n(default is 65)", "0-100", "");
   QCommandLineOption maxfailsOption("maxfails", "Sets the allowed number of initial 'Not found' results before rage-quitting.\n(default is 42)", "1-200", "");
   QCommandLineOption oOption("o", "Game media export folder.\n(default depends on frontend)", "PATH", "");
@@ -262,6 +264,7 @@ int main(int argc, char *argv[])
   QCommandLineOption startatOption("startat", "Tells Skyscraper which file to start at. Forces '--refresh' (or '--rescan').", "FILENAME", "");
   QCommandLineOption tOption("t", "Number of scraper threads to use. This might change depending on the scraping module limits.\n(default is 4)", "1-8", "");
   QCommandLineOption uOption("u", "userKey or UserID and Password for use with the selected scraping module.\n(default is none)", "KEY/USER:PASSWORD[:APIKEY]", "");
+  QCommandLineOption useChecksum("usechecksum", "Activates checksum (MD5SUM) search instead of filename based search for compatible scrapers.");
   QCommandLineOption verbosityOption("verbosity", "Print more info while scraping.\n(default is 0)\n \nSUBCOMMANDS:\n", "0-3", "0");
   QCommandLineOption cacheOption("cache", "This option is the master option for all options related to the resource cache. It must be followed by 'COMMAND[:OPTIONS]'.\nSee '--cache help' for a full description of all functions.", "COMMAND[:OPTIONS]", "");
   QCommandLineOption flagsOption("flags", "Allows setting flags that will impact the run in various ways. See '--flags help' for a list of all available flags and what they do.", "FLAG1,FLAG2,...", "");
@@ -288,6 +291,7 @@ int main(int argc, char *argv[])
   parser.addOption(includepatternOption);
   parser.addOption(lOption);
   parser.addOption(langOption);
+  parser.addOption(loadChecksum);
   parser.addOption(mOption);
   parser.addOption(maxfailsOption);
   parser.addOption(oOption);
@@ -299,6 +303,7 @@ int main(int argc, char *argv[])
   parser.addOption(startatOption);
   parser.addOption(tOption);
   parser.addOption(uOption);
+  parser.addOption(useChecksum);
   parser.addOption(verbosityOption);
   parser.addOption(cacheOption);
   parser.addOption(flagsOption);
@@ -312,5 +317,5 @@ int main(int argc, char *argv[])
     QObject::connect(x, &Skyscraper::finished, &app, &QApplication::quit);
     QTimer::singleShot(0, x, SLOT(run()));
   }
-  Skyscraper::removeLockAndExit(app.exec());
+  return app.exec();
 }

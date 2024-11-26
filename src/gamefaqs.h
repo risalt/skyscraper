@@ -40,7 +40,7 @@ class GameFaqs : public AbstractScraper
   Q_OBJECT
 
 public:
-  GameFaqs(Settings *config, QSharedPointer<NetManager> manager);
+  GameFaqs(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

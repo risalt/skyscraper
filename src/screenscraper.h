@@ -41,7 +41,7 @@ class ScreenScraper : public AbstractScraper
   Q_OBJECT
 
 public:
-  ScreenScraper(Settings *config, QSharedPointer<NetManager> manager);
+  ScreenScraper(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
@@ -75,6 +75,7 @@ private:
   QString lang;
   QJsonObject jsonObj;
   QString platformId;
+  CanonicalData canonical;
 
 };
 

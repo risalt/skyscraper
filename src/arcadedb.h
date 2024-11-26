@@ -36,7 +36,7 @@ class ArcadeDB : public AbstractScraper
   Q_OBJECT
 
 public:
-  ArcadeDB(Settings *config, QSharedPointer<NetManager> manager);
+  ArcadeDB(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 

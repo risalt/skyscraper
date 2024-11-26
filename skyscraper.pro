@@ -69,7 +69,6 @@ HEADERS += src/skyscraper.h \
            src/igdb.h \
            src/giantbomb.h \
            src/arcadedb.h \
-           src/scripter.h \
            src/platform.h \
            src/layer.h \
            src/fxshadow.h \
@@ -130,7 +129,6 @@ SOURCES += src/main.cpp \
            src/igdb.cpp \
            src/giantbomb.cpp \
            src/arcadedb.cpp \
-           src/scripter.cpp \
            src/platform.cpp \
            src/layer.cpp \
            src/fxshadow.cpp \

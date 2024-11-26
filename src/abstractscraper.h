@@ -38,6 +38,7 @@
 #include <QSettings>
 #include <QMultiMap>
 #include <QStringList>
+#include <QSqlDatabase>
 
 class AbstractScraper : public QObject
 {
@@ -45,7 +46,8 @@ class AbstractScraper : public QObject
 
 public:
   AbstractScraper(Settings *config,
-                  QSharedPointer<NetManager> manager);
+                  QSharedPointer<NetManager> manager,
+                  QString threadId);
   virtual ~AbstractScraper();
 
   // Fill in the game skeleton with the data from the scraper service.
@@ -74,7 +76,13 @@ public:
 
   // Tries to identify the region of the game from the filename. Calls getSearchNames and with
   // the outcome, executes the getSearchResults in sequence until a search name is successful.
-  virtual void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &output, QString &debug);
+  virtual void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &searchInfo,
+                         const QFileInfo &originalInfo, QString &output, QString &debug,
+                         QString pastTitle = "");
+
+  // Adds the last active term searched to the negative cache,
+  // as the results were not successful.
+  void addLastSearchToNegativeCache(const QString &file = "");
 
   int reqRemaining = -1;
   int reqRemainingKO = -1;
@@ -125,7 +133,7 @@ protected:
   virtual bool platformMatch(QString found, QString platform);
 
   // Returns the scraping service id for the platform.
-  virtual QString getPlatformId(const QString &platform);
+  QString getPlatformId(const QString &platform);
 
   // Detects if nom is present in the non-consumed part of data.
   bool checkNom(const QString nom);
@@ -134,8 +142,10 @@ protected:
 
   Settings *config;
   bool offlineScraper;
+  bool searchError = false;
   QList<int> fetchOrder;
   QMap<QString, QString> platformToId;
+  QString threadId;
 
   QByteArray data;
   QString baseUrl;
@@ -193,6 +203,12 @@ protected:
 
   NetComm *netComm;
   QEventLoop q; // Event loop for use when waiting for data from NetComm.
+
+private:
+  bool negDbReady = false;
+  QSqlDatabase negDb;
+  QString dbNegCache = "negativecache.db";
+  QString lastSearchName;
 
 };
 

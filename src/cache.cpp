@@ -349,8 +349,9 @@ void Cache::editResources(QSharedPointer<Queue> queue,
          type != "firstplayed" &&
          type != "timesplayed" &&
          type != "timeplayed" &&
+         type != "disksize" &&
          type != "description") {
-        printf("Unknown resource type '%s', please specify any of the following: 'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', 'ages', 'genres', 'franchises', 'rating', 'description', 'guides', 'vgmaps', 'trivia', 'chiptuneid', 'chiptunepath', 'completed', 'favourite', 'played', 'lastplayed', 'firstplayed', 'timesplayed' or 'timeplayed'.\n", type.toStdString().c_str());
+        printf("Unknown resource type '%s', please specify any of the following: 'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', 'ages', 'genres', 'franchises', 'rating', 'description', 'guides', 'vgmaps', 'trivia', 'chiptuneid', 'chiptunepath', 'completed', 'favourite', 'played', 'lastplayed', 'firstplayed', 'timesplayed', 'timeplayed' or 'disksize'.\n", type.toStdString().c_str());
         return;
       }
     } else {
@@ -366,6 +367,9 @@ void Cache::editResources(QSharedPointer<Queue> queue,
     QString cacheId = getQuickId(info);
     if(cacheId.isEmpty()) {
       cacheId = NameTools::getCacheId(info);
+      if(cacheId.isEmpty()) {
+        return;
+      }
       addQuickId(info, cacheId);
     }
     bool doneEdit = false;
@@ -504,6 +508,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
             typeInput = "21";
           } else if(type == "vgmaps") {
             typeInput = "22";
+          } else if(type == "disksize") {
+            typeInput = "23";
           }
         }
         if(typeInput == "") {
@@ -599,6 +605,10 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           } else if(typeInput == "19") {
             newRes.type = "timeplayed";
             printf("\033[1;34mPlease enter the total time played in the game (in seconds):\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "23") {
+            newRes.type = "disksize";
+            printf("\033[1;34mPlease enter the disk size occupied by the game (in bytes):\033[0m (Enter to cancel)\n> ");
             getline(std::cin, valueInput);
           } else if(typeInput == "20") {
             newRes.type = "guides";
@@ -781,7 +791,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
          }
       } else if(userInput == "c") {
         printf("Exiting without saving changes.\n");
-        Skyscraper::removeLockAndExit(0);
+        return;
       } else if(userInput == "q") {
         queue->clear();
         doneEdit = true;
@@ -932,6 +942,9 @@ QStringList Cache::getCacheIdList(const QList<QFileInfo> &fileInfos)
     QString cacheId = getQuickId(info);
     if(cacheId.isEmpty()) {
       cacheId = NameTools::getCacheId(info);
+      if(cacheId.isEmpty()) {
+        return {};
+      }
       addQuickId(info, cacheId);
     }
     cacheIdList.append(cacheId);
@@ -1263,7 +1276,7 @@ bool Cache::detectScrapingErrors(const Settings &config)
   for(const auto &name: std::as_const(uniqueKeys)) {
     // Normalize name:
     QSharedPointer<NetManager> manager = QSharedPointer<NetManager>(new NetManager());
-    AbstractScraper helperScraper(&Skyscraper::config, manager);
+    AbstractScraper helperScraper(&Skyscraper::config, manager, "cache");
     QString baseName = helperScraper.getCompareTitle(QFileInfo(name));
 
     // Compare against the title calculated for each scraper:
@@ -1528,7 +1541,8 @@ bool Cache::write(const bool onlyQuickId)
 {
   QMutexLocker locker(&cacheMutex);
 
-  QFile quickIdFile(cacheDir.absolutePath() + "/quickid.xml");
+  QFile quickIdFile(cacheDir.absolutePath() + "/quickid.xml.tmp");
+  QString quickIdFileOrig = cacheDir.absolutePath() + "/quickid.xml";
   if(quickIdFile.open(QIODevice::WriteOnly)) {
     printf("Writing quick id xml, please wait... ");
     fflush(stdout);
@@ -1548,13 +1562,19 @@ bool Cache::write(const bool onlyQuickId)
     xml.writeEndDocument();
     printf("\033[1;32mDone!\033[0m\n");
     quickIdFile.close();
+    if(QFile::exists(quickIdFileOrig + ".bak")) {
+      QFile::remove(quickIdFileOrig + ".bak");
+    }
+    QFile::rename(quickIdFileOrig, quickIdFileOrig + ".bak");
+    QFile::rename(quickIdFileOrig + ".tmp", quickIdFileOrig);
     if(onlyQuickId) {
       return true;
     }
   }
 
   bool result = false;
-  QFile cacheFile(cacheDir.absolutePath() + "/db.xml");
+  QFile cacheFile(cacheDir.absolutePath() + "/db.xml.tmp");
+  QString cacheFileOrig = cacheDir.absolutePath() + "/db.xml";
   if(cacheFile.open(QIODevice::WriteOnly)) {
     printf("Writing %d (%d new) resources to cache, please wait... ",
            resources.length(), resources.length() - resAtLoad);
@@ -1577,6 +1597,11 @@ bool Cache::write(const bool onlyQuickId)
     result = true;
     printf("\033[1;32mDone!\033[0m\n\n");
     cacheFile.close();
+    if(QFile::exists(cacheFileOrig + ".bak")) {
+      QFile::remove(cacheFileOrig + ".bak");
+    }
+    QFile::rename(cacheFileOrig, cacheFileOrig + ".bak");
+    QFile::rename(cacheFileOrig + ".tmp", cacheFileOrig);
   }
   return result;
 }
@@ -1679,10 +1704,11 @@ void Cache::verifyResources(int &resourcesDeleted)
         printf("Incorrect boolean value;\"%s\"\n", res.value.toStdString().c_str());
         remove = true;
       }
-    } else if(res.type == "title" || res.type == "platform" || res.type == "description" ||
-              res.type == "trivia" || res.type == "publisher" || res.type == "developer" ||
-              res.type == "guides" || res.type == "vgmaps" || res.type == "chiptuneid" ||
-              res.type == "chiptunepath") {
+    } else if(res.type == "title"  || res.type == "platform"  || res.type == "description" ||
+              res.type == "trivia" || res.type == "publisher" || res.type == "developer"   ||
+              res.type == "guides" || res.type == "vgmaps"    || res.type == "chiptuneid"  ||
+              res.type == "chiptunepath"  || res.type == "canonicalname" ||
+              res.type == "canonicalfile" || res.type == "canonicalcatalog") {
       if(res.value.isEmpty()) {
         printf("Empty resource detected;\n");
         remove = true;
@@ -1754,10 +1780,50 @@ void Cache::verifyResources(int &resourcesDeleted)
         remove = true;
       }
     } else if(res.type == "timesplayed" || res.type == "timeplayed" ||
-              res.type == "firstplayed" || res.type == "lastplayed") {
+              res.type == "firstplayed" || res.type == "lastplayed" ||
+              res.type == "disksize") {
       bool validNumber = false;
       if(res.value.toLongLong(&validNumber) <= 0 || !validNumber) {
         printf("Invalid numeric value in custom flags;\"%s\"\n", res.value.toStdString().c_str());
+        remove = true;
+      }
+    } else if(res.type == "canonicalsize") {
+      QFileInfo source = getFileCacheId(res.cacheId);
+      if(source.size() != res.value.toLongLong()) {
+        printf("Canonical file size does not match anymore;\"%s\";\"%lld\";\"%lld\"\n",
+             source.absoluteFilePath().toStdString().c_str(),
+             res.value.toLongLong(),
+             source.size());
+        remove = true;
+      }
+    } else if(res.type == "canonicalcrc") {
+      QFileInfo source = getFileCacheId(res.cacheId);
+      CanonicalData canonical = NameTools::getCanonicalData(source, true);
+      if(canonical.crc != res.value) {
+        printf("CRC does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+             source.absoluteFilePath().toStdString().c_str(),
+             res.value.toStdString().c_str(),
+             canonical.crc.toStdString().c_str());
+        remove = true;
+      }
+    } else if(res.type == "canonicalsha1") {
+      QFileInfo source = getFileCacheId(res.cacheId);
+      CanonicalData canonical = NameTools::getCanonicalData(source, true);
+      if(canonical.sha1 != res.value) {
+        printf("SHA1 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+             source.absoluteFilePath().toStdString().c_str(),
+             res.value.toStdString().c_str(),
+             canonical.sha1.toStdString().c_str());
+        remove = true;
+      }
+    } else if(res.type == "canonicalmd5") {
+      QFileInfo source = getFileCacheId(res.cacheId);
+      CanonicalData canonical = NameTools::getCanonicalData(source, true);
+      if(canonical.md5 != res.value) {
+        printf("MD5 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+             source.absoluteFilePath().toStdString().c_str(),
+             res.value.toStdString().c_str(),
+             canonical.md5.toStdString().c_str());
         remove = true;
       }
     } else {
@@ -1804,6 +1870,19 @@ void Cache::verifyFiles(QDirIterator &dirIt, int &filesDeleted, int &filesNoDele
       }
     }
   }
+}
+
+QFileInfo Cache::getFileCacheId(const QString &cacheId)
+{
+  QFileInfo file;
+  const auto keys = quickIds.keys();
+  for(const auto &fileName: std::as_const(keys)) {
+    if(quickIds[fileName].second == cacheId) {
+      file = QFileInfo(fileName);
+      break;
+    }
+  }
+  return file;
 }
 
 void Cache::merge(Cache &mergeCache, bool overwrite, const QString &mergeCacheFolder)
@@ -1875,11 +1954,11 @@ QList<Resource> Cache::getResources()
 void Cache::addResources(GameEntry &entry, const Settings &config, QString &output)
 {
   QString cacheAbsolutePath = cacheDir.absolutePath();
-
+  
   if(entry.source.isEmpty()) {
     printf("Something is wrong, resource with cache id '%s' has no source, exiting...\n",
            entry.cacheId.toStdString().c_str());
-    Skyscraper::removeLockAndExit(1);
+    return;
   }
   if(entry.cacheId != "") {
     Resource resource;
@@ -1895,6 +1974,55 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
       resource.type = "platform";
       resource.value = entry.platform;
       addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.canonical.name != "") {
+      resource.type = "canonicalname";
+      resource.source = "generic";
+      resource.value = entry.canonical.name;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.file != "") {
+      resource.type = "canonicalfile";
+      resource.source = "generic";
+      resource.value = entry.canonical.file;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.platform != "") {
+      resource.type = "canonicalcatalog";
+      resource.source = "generic";
+      resource.value = entry.canonical.platform;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.size > 0) {
+      resource.type = "canonicalsize";
+      resource.source = "generic";
+      resource.value = QString::number(entry.canonical.size);
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.crc != "") {
+      resource.type = "canonicalcrc";
+      resource.source = "generic";
+      resource.value = entry.canonical.crc;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.sha1 != "") {
+      resource.type = "canonicalsha1";
+      resource.source = "generic";
+      resource.value = entry.canonical.sha1;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
+    }
+    if(entry.canonical.md5 != "") {
+      resource.type = "canonicalmd5";
+      resource.source = "generic";
+      resource.value = entry.canonical.md5;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
     }
     if(entry.description != "") {
       resource.type = "description";
@@ -2008,6 +2136,13 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
       resource.type = "timeplayed";
       resource.value = QString::number(entry.timePlayed);
       addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.diskSize) {
+      resource.type = "disksize";
+      resource.source = "generic";
+      resource.value = QString::number(entry.diskSize);
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+      resource.source = entry.source;
     }
     if(!entry.coverData.isNull() && config.cacheCovers) {
       resource.type = "cover";
@@ -2278,7 +2413,8 @@ bool Cache::hasAlpha(const QImage &image)
   return false;
 }
 
-void Cache::addQuickId(const QFileInfo &info, const QString &cacheId) {
+void Cache::addQuickId(const QFileInfo &info, const QString &cacheId)
+{
   QMutexLocker locker(&quickIdMutex);
   QPair<qint64, QString> pair; // Quick id pair
   pair.first = info.lastModified().toMSecsSinceEpoch();
@@ -2286,7 +2422,8 @@ void Cache::addQuickId(const QFileInfo &info, const QString &cacheId) {
   quickIds[info.absoluteFilePath()] = pair;
 }
 
-QString Cache::getQuickId(const QFileInfo &info) {
+QString Cache::getQuickId(const QFileInfo &info)
+{
   QMutexLocker locker(&quickIdMutex);
   if(quickIds.contains(info.absoluteFilePath()) /* &&
      // We don't care if the file was modified since the last scraping, as only the filename is used
@@ -2343,22 +2480,73 @@ bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper, 
        (res.source == scraper && !reverseLogic) ||
        (res.source != scraper && reverseLogic)) {
       // We consider non-meaningful the barebone fields (title and platform),
-      // as well as those resources that are only provided by a single scraper.
-      if(res.cacheId == cacheId && res.type != "title" &&
-                                   res.type != "platform" &&
-                                   res.type != "completed" &&
-                                   res.type != "favourite" &&
-                                   res.type != "played" &&
-                                   res.type != "timesplayed" &&
-                                   res.type != "lastplayed" &&
-                                   res.type != "firstplayed" &&
-                                   res.type != "timeplayed" &&
-                                   res.type != "guides" &&
-                                   res.type != "vgmaps" &&
-                                   res.type != "trivia" &&
-                                   res.type != "chiptuneid" &&
-                                   res.type != "chiptunepath") {
-        return true;
+      // as well as those resources that are only provided by a single scraper,
+      // unless we are scraping using that scraper precisely.
+      if(res.cacheId == cacheId && res.type != "title"
+                                && res.type != "platform"
+                                && res.type != "canonicalname"
+                                && res.type != "canonicalfile"
+                                && res.type != "canonicalplatform"
+                                && res.type != "canonicalsize"
+                                && res.type != "canonicalcrc"
+                                && res.type != "canonicalsha1"
+                                && res.type != "canonicalmd5") {
+        if(Skyscraper::config.scraper == "vgmaps") {
+          if(res.type == "vgmaps") {
+            return true;
+          }
+        } else if(Skyscraper::config.scraper == "vgfacts") {
+          if(res.type == "trivia") {
+            return true;
+          }
+        } else if(Skyscraper::config.scraper == "gamefaqs") {
+          if(res.type == "guides") {
+            return true;
+          }
+        } else if(Skyscraper::config.scraper == "chiptune") {
+          if(res.type == "chiptuneid" ||
+             res.type == "chiptunepath") {
+            return true;
+          }
+        } else if(Skyscraper::config.scraper == "customflags") {
+          if(res.type == "completed" ||
+             res.type == "favourite" ||
+             res.type == "played" ||
+             res.type == "timesplayed" ||
+             res.type == "lastplayed" ||
+             res.type == "firstplayed" ||
+             res.type == "timeplayed" ||
+             res.type == "disksize") {
+            return true;
+          }
+        } else if(Skyscraper::config.scraper == "cache") {
+          if(res.type != "completed" &&
+             res.type != "favourite" &&
+             res.type != "played" &&
+             res.type != "timesplayed" &&
+             res.type != "lastplayed" &&
+             res.type != "firstplayed" &&
+             res.type != "timeplayed" &&
+             res.type != "disksize") {
+            return true;
+          }
+        } else {
+          if(res.type != "completed" &&
+             res.type != "favourite" &&
+             res.type != "played" &&
+             res.type != "timesplayed" &&
+             res.type != "lastplayed" &&
+             res.type != "firstplayed" &&
+             res.type != "timeplayed" &&
+             res.type != "disksize" &&
+             res.type != "guides" &&
+             res.type != "vgmaps" &&
+             res.type != "trivia" &&
+             res.type != "chiptuneid" &&
+             res.type != "chiptunepath") {
+            return true;
+          }
+        }
       }
     }
   }
@@ -2389,7 +2577,8 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
         matchingResources.append(resource);
       }
     } else {
-      if(entry.cacheId == resource.cacheId && resource.source == scraper) {
+      if(entry.cacheId == resource.cacheId &&
+         (resource.source == scraper || resource.source == "generic")) {
         matchingResources.append(resource);
       }
     }
@@ -2411,6 +2600,62 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     if(fillType(type, matchingResources, result, source)) {
       entry.platform = result;
       entry.platformSrc = source;
+    }
+  }
+  {
+    QString type = "canonicalname";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.name = result;
+    }
+  }
+  {
+    QString type = "canonicalfile";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.file = result;
+    }
+  }
+  {
+    QString type = "canonicalcatalog";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.platform = result;
+    }
+  }
+  {
+    QString type = "canonicalsize";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.size = result.toLongLong();
+    }
+  }
+  {
+    QString type = "canonicalcrc";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.crc = result;
+    }
+  }
+  {
+    QString type = "canonicalsha1";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.sha1 = result;
+    }
+  }
+  {
+    QString type = "canonicalmd5";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.canonical.md5 = result;
     }
   }
   {
@@ -2576,7 +2821,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     QString result = "";
     QString source = "";
     if(fillType(type, matchingResources, result, source)) {
-      entry.lastPlayed = result.toUInt();
+      entry.lastPlayed = result.toLongLong();
     }
   }
   {
@@ -2584,7 +2829,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     QString result = "";
     QString source = "";
     if(fillType(type, matchingResources, result, source)) {
-      entry.firstPlayed = result.toUInt();
+      entry.firstPlayed = result.toLongLong();
     }
   }
   {
@@ -2592,7 +2837,15 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     QString result = "";
     QString source = "";
     if(fillType(type, matchingResources, result, source)) {
-      entry.timePlayed = result.toUInt();
+      entry.timePlayed = result.toLongLong();
+    }
+  }
+  {
+    QString type = "disksize";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.diskSize = result.toLongLong();
     }
   }
   {

@@ -27,10 +27,14 @@
 #define NAMETOOLS_H
 
 #include "gameentry.h"
+#include "cache.h"
 
 #include <QObject>
 #include <QFileInfo>
 #include <QStringList>
+#include <QSqlDatabase>
+#include <QAtomicInteger>
+#include <QSharedPointer>
 
 class NameTools : public QObject
 {
@@ -59,6 +63,33 @@ public:
                                   QStringList &safeTransformations,
                                   QStringList &unsafeTransformations,
                                   bool offlineUsage);
+  static CanonicalData getCanonicalData(const QFileInfo &info, bool onlyChecksums = false);
+  static bool importCanonicalData(const QString &file);
+  QString searchLutrisData(const QString &filePath);
+  static qint64 dirSize(const QString &dirPath);
+  static qint64 calculateGameSize(const QString &filePath);
+  bool searchCanonicalData(CanonicalData &canonical);
+  void setCache(QSharedPointer<Cache> cachePointer);
+
+  // Singleton template
+  static NameTools & get();
+  NameTools(const NameTools&) = delete;
+  void operator=(const NameTools&) = delete;
+
+  QSharedPointer<Cache> cache;
+
+private:
+  NameTools();
+  void loadConfig(const QString &configPath,
+                  const QString &code, const QString &name);
+
+  QSqlDatabase db;
+  QAtomicInteger<int> dbInitialized = 0;
+  QString dbName = "canonicaldata.db";
+  QString dbLutris = "/share/Games/pcsteam/linux/.local/share/lutris/pga.db";
+  QString configLutris = "/share/Games/pcsteam/linux/.config/lutris/games/";
+  QStringList platformCatalogs;
+
 };
 
 #endif // NAMETOOLS_H

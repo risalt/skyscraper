@@ -38,7 +38,7 @@ class RawG : public AbstractScraper
   Q_OBJECT
 
 public:
-  RawG(Settings *config, QSharedPointer<NetManager> manager);
+  RawG(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

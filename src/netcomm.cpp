@@ -24,6 +24,7 @@
  */
 
 #include "netcomm.h"
+#include "skyscraper.h"
 
 #include <QUrl>
 #include <QNetworkRequest>
@@ -41,6 +42,9 @@ NetComm::NetComm(QSharedPointer<NetManager> manager)
 void NetComm::request(QString query, QString postData, QList<QPair<QString, QString> > headers, QByteArray operation)
 {
   QUrl url(query);
+  if(Skyscraper::config.verbosity >= 1) {
+    qDebug() << url;
+  }
   QNetworkRequest request(url);
 /*  request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
   request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);*/
@@ -50,20 +54,21 @@ void NetComm::request(QString query, QString postData, QList<QPair<QString, QStr
   if(!headers.isEmpty()) {
     for(const auto &header: std::as_const(headers)) {
       request.setRawHeader(header.first.toUtf8(), header.second.toUtf8());
+      if(Skyscraper::config.verbosity >= 3) {
+        qDebug() << header;
+      }
     }
   }
 
   if(operation.isEmpty()) {
-    if(postData.isNull()) {
+    if(postData.isEmpty()) {
       reply = manager->getRequest(request);
     } else {
       reply = manager->postRequest(request, postData.toUtf8());
     }
-  }
-  else if(operation == "DELETE") {
+  } else if(operation == "DELETE") {
     reply = manager->deleteRequest(request);
-  }
-  else {
+  } else {
     reply = manager->customRequest(request, postData.toUtf8(), operation);
   }
   connect(reply, &QNetworkReply::finished, this, &NetComm::replyReady);

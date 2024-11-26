@@ -28,8 +28,11 @@
 #include "strtools.h"
 #include "platform.h"
 
+#include <cmath>
+
 #include <QDir>
 #include <QDate>
+#include <QDebug>
 #include <QDateTime>
 #include <QFileInfo>
 
@@ -39,6 +42,7 @@ XmlExport::XmlExport()
 
 bool XmlExport::loadOldGameList(const QString &)
 {
+  // TODO: LOW Implement incremental file generation
   return false;
 }
 
@@ -249,6 +253,16 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       finalOutput.append("    <timesPlayed>" + QString::number(entry.timesPlayed)  + "</timesPlayed>\n");
     }
+    if(!entry.diskSize) {
+      finalOutput.append("    <diskSize>0</diskSize>\n");
+    } else {
+      QStringList units = { "Bytes", "KiB", "MiB", "GiB", "TiB" };
+      int pow = std::floor((entry.diskSize ? std::log(entry.diskSize) : 0) / log(1024));
+      pow = std::min(pow, units.size() - 1);
+      qint64 bytes = 100 * entry.diskSize / std::pow(1024, pow);
+      double bytesdec = double(bytes) / 100.0;
+      finalOutput.append("    <diskSize>" + QString::number(bytesdec) + ' ' + units.at(pow)  + "</diskSize>\n");
+    }
     if(!entry.timePlayed) {
       finalOutput.append("    <timePlayed>0</timePlayed>\n");
     } else {
@@ -279,7 +293,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
 
 bool XmlExport::canSkip()
 {
-  return true;
+  return false;
 }
 
 QString XmlExport::getGameListFileName()

@@ -189,6 +189,7 @@ videoConvertExtension="mp4"
 brackets="false"
 maxLength="32700"
 threads="2"
+; By default, overwrite existing game lists. To skip existing entries, use "--flags unattendskip" in the command line
 unattend="true"
 getMissingResources="false"
 ;onlyMissing="false"
@@ -208,6 +209,7 @@ fuzzySearch="2"
 minMatch="80"
 guidesPath="..."
 vgmapsPath="..."
+negCacheDaysExpiration="365"
 
 [arcadedb]
 ;getMissingResources="true"
@@ -257,7 +259,6 @@ minMatch="0"
 chiptunes="true"
 cacheRefresh="true"
 navidromeDb="..."
-launchBoxMameDb="launchboxdb/Mame.xml"
 
 [gamefaqs]
 gamefaqsDb="gamefaqsdb"

@@ -27,6 +27,7 @@
 #include "strtools.h"
 #include "nametools.h"
 #include "platform.h"
+#include "skyscraper.h"
 
 #include <QDir>
 #include <QMap>
@@ -41,43 +42,29 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 
-Koillection::Koillection(QSharedPointer<NetManager> manager)
+Koillection::Koillection(QSharedPointer<NetManager> manager, Settings *globalConfig)
 {
-  this->config = config;
-  db = QSqlDatabase::addDatabase("QMYSQL");
+  config = globalConfig;
+  baseUrl = "http://www.localnet.priv:88";
+  db = QSqlDatabase::addDatabase("QMYSQL", "koillection");
   netComm = new NetComm(manager);
   connect(netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
-}
-
-Koillection::~Koillection()
-{
-  db.close();
-  delete netComm;
-}
-
-bool Koillection::loadOldGameList(const QString &)
-{
-  return false;
-}
-
-bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue>)
-{
-  return false;
-}
-
-void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
-{
-  finalOutput = QString();
 
   db.setHostName(config->dbServer);
   db.setDatabaseName(config->koiDb);
   db.setUserName(config->dbUser);
   db.setPassword(config->dbPassword);
   if(!db.open()) {
+    qDebug() << db.lastError();
     printf("ERROR: Connection to Koillection database has failed.\n");
   }
 
-  netComm->request("http://www.localnet.priv:88/api/authentication_token",
+  headers = {QPair<QString, QString>("accept", "application/json"),
+             QPair<QString, QString>("Content-Type", "application/json")};
+  headersPatch = {QPair<QString, QString>("accept", "application/json"),
+                  QPair<QString, QString>("Content-Type", "application/merge-patch+json")};
+
+  netComm->request(baseUrl + "/api/authentication_token",
                    "{\"username\": \"" + config->user + "\",\"password\": \"" + config->password + "\"}",
                    headers);
   q.exec();
@@ -89,21 +76,105 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   }
   else {
     printf("ERROR: Connection to Koillection API has failed.\n");
+    return;
   }
 
   // Search collections for the current platform:
-  QString collectionId;
   QString queryString = "select id from koi_collection where platform='" + config->platform + "'";
-  QSqlQuery query(queryString);
+  QSqlQuery query(queryString, db);
   if(query.next()) {
     collectionId = query.value(0).toString();
   }
   else {
-    printf("ERROR: The platform %s is not yet created as a collection. Create it first.\n", config->platform.toStdString().c_str());
+    printf("ERROR: The platform %s is not yet created as a collection. Create it first.\n",
+           config->platform.toStdString().c_str());
   }
   query.finish();
+}
+
+Koillection::~Koillection()
+{
+  db.close();
+  // Update the collection statistics
+  if(!collectionId.isEmpty()) {
+    printf("INFO: Updating global statistics... "); fflush(stdout);
+    netComm->request(baseUrl + "/api/refresh-caches", "", headers);
+    q.exec();
+    printf("DONE\n");
+  }
+  delete netComm;
+}
+
+bool Koillection::loadOldGameList(const QString &)
+{
+  return true;
+}
+
+bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue> queue)
+{
+  if(collectionId.isEmpty() || koiToken.isEmpty()) {
+    return false;
+  } else {
+    printf("Identifying missing entries in the database...");
+    int dots = 0;
+    QSqlQuery query(db);
+    query.exec("select id, ext_idx from koi_item where collection_id = '" + collectionId + "'");
+    while(query.next()) {
+      dots++;
+      if (dots % 100 == 0) {
+        printf(".");
+        fflush(stdout);
+      }
+      bool presentInCache = false;
+      QString fileToCheck = query.value(1).toString();
+      QFileInfo gamePath(fileToCheck);
+      if(gamePath.exists()) {
+        for (int b = 0; b < queue->length(); ++b) {
+          if (gamePath.fileName() == queue->at(b).fileName()) {
+            queue->removeAt(b);
+            presentInCache = true;
+            // We assume filename is unique, so break after getting first hit
+            break;
+          }
+        }
+      }
+      if(!presentInCache) {
+        // Delete from database
+        printf("INFO: Item '%s' corresponding to a non-existant file will be deleted.\n",
+               query.value(0).toString().toStdString().c_str());
+        QString request = "";
+        netComm->request(baseUrl + "/api/items/" + query.value(0).toString(),
+                         request, headers, "DELETE");
+        q.exec();
+        // Not sure how to check for the result of the delete operation
+      }
+    }
+    fullMode = false;
+    return true;
+  }
+/*      for(auto &entryCheck: gameEntries) {
+        if(config->relativePaths) {
+          entryCheck.path.replace(config->inputFolder, ".");
+        }
+        if(entryCheck.path == fileToCheck) {
+          presentInCache = true;
+          break;
+        }
+      }
+*/
+}
+
+void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
+{
+  if(collectionId.isEmpty() || koiToken.isEmpty()) {
+    return;
+  }
+
+  finalOutput = QString();
+
   QMap<QString, QString> platformsList;
-  queryString = "select id, platform from koi_tag where platform is not null";
+  QSqlQuery query(db);
+  QString queryString = "select id, platform from koi_tag where platform is not null";
   if(query.exec(queryString)) {
     while(query.next()) {
       platformsList[query.value(1).toString()] = query.value(0).toString();
@@ -377,6 +448,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     if(entry.timesPlayed) {
       timesPlayed = QString::number(entry.timesPlayed);
     }
+    QString diskSize = "";
+    if(entry.diskSize) {
+      diskSize = QString::number(entry.diskSize);
+    }
     // Prepare the picture fields:
     // mainpicture/boxpic
     bool anyImage = false;
@@ -476,7 +551,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             QString request = "{\"label\": \"" + sanitizedGenre + "\", " +
                         "\"category\": \"/api/tag_categories/" + categoryGenres + "\", " +
                         "\"visibility\": \"public\" }";
-            netComm->request("http://www.localnet.priv:88/api/tags", request, headers);
+            netComm->request(baseUrl + "/api/tags", request, headers);
             q.exec();
             jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
             if(jsonObj.contains("id")) {
@@ -506,7 +581,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             QString request = "{\"label\": \"" + sanitizedFranchise + "\", " +
                         "\"category\": \"/api/tag_categories/" + categoryFranchises + "\", " +
                         "\"visibility\": \"public\" }";
-            netComm->request("http://www.localnet.priv:88/api/tags", request, headers);
+            netComm->request(baseUrl + "/api/tags", request, headers);
             q.exec();
             jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
             if(jsonObj.contains("id")) {
@@ -580,7 +655,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
                         "\"collection\": \"/api/collections/" + collectionId + "\", " +
                         "\"tags\": [ \"/api/tags/" + tagList.join("\", \"/api/tags/") + "\" ], " +
                         "\"visibility\": \"public\" }";
-      netComm->request("http://www.localnet.priv:88/api/items", request, headers);
+      netComm->request(baseUrl + "/api/items", request, headers);
       q.exec();
       jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
       if(jsonObj.contains("id")) {
@@ -611,7 +686,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       if(mustUpdate) {
         printf("\nINFO: Tags for the existing item %s are not updated, fixing...", itemId.toStdString().c_str());
         QString request = "{\"tags\": [ \"/api/tags/" + tagList.join("\", \"/api/tags/") + "\" ]}";
-        netComm->request("http://www.localnet.priv:88/api/items/" + itemId, request, headersPatch, "PATCH");
+        netComm->request(baseUrl + "/api/items/" + itemId, request, headersPatch, "PATCH");
         q.exec();
         jsonObj = QJsonDocument::fromJson(netComm->getData()).object();
         if(jsonObj.contains("id")) {
@@ -722,6 +797,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     datumsItem << QPair<QString, QString>("Last Played", lastPlayed);
     datumsItem << QPair<QString, QString>("Times Played", timesPlayed);
     datumsItem << QPair<QString, QString>("Total Time Played", timePlayed);
+    datumsItem << QPair<QString, QString>("Size", diskSize);
     datumsItem << QPair<QString, QString>("Box Back", backpic);
     datumsItem << QPair<QString, QString>("Artwork/Media", artwork);
     datumsItem << QPair<QString, QString>("Gameplay Screen", screenshot1);
@@ -861,10 +937,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         break;
       }
     }
-    if(!gamePath.isFile() || !presentInCache) {
+    if(!gamePath.isFile() || (!presentInCache && fullMode)) {
       printf("INFO: Item '%s' corresponding to a non-existant file will be deleted.\n", query.value(0).toString().toStdString().c_str());
       QString request = "";
-      netComm->request("http://www.localnet.priv:88/api/items/" + query.value(0).toString(), request, headers, "DELETE");
+      netComm->request(baseUrl + "/api/items/" + query.value(0).toString(), request, headers, "DELETE");
       q.exec();
       // Not sure how to check for the result of the delete operation
     }
@@ -878,7 +954,7 @@ bool Koillection::canSkip()
 
 QString Koillection::getGameListFileName()
 {
-  return QString("null");
+  return QString("koillection.dummy");
 }
 
 QString Koillection::getInputFolder()

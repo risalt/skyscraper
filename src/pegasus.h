@@ -26,6 +26,9 @@
 #ifndef PEGASUS_H
 #define PEGASUS_H
 
+#include <QList>
+#include <QString>
+
 #include "abstractfrontend.h"
 
 class Pegasus : public AbstractFrontend
@@ -52,6 +55,8 @@ public:
 private:
   QString makeAbsolute(const QString &filePath, const QString &inputFolder);
   QString toPegasusFormat(const QString &key, const QString &value);
+  void removePreservedHeader(const QString &key);
+  QList<QPair<QString, QString>> headerPairs;
   QString tab = "  ";
 
 };

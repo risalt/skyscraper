@@ -67,7 +67,6 @@ private:
   bool refreshGbCache(QString &endpoint, QFile *file, QDateTime *lastRequest);
   bool requestGb (const QString &url, QDateTime *lastRequest);
 
-  QString threadId;
   QDateTime lastGameRequest;
   QDateTime lastReleaseRequest;
   QDateTime lastImageRequest;

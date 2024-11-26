@@ -31,8 +31,9 @@
 #include "platform.h"
 
 ArcadeDB::ArcadeDB(Settings *config,
-                   QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                   QSharedPointer<NetManager> manager,
+                   QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   baseUrl = "http://adb.arcadeitalia.net";
   searchUrlPre = "http://adb.arcadeitalia.net/service_scraper.php?ajax=query_mame&lang=en&use_parent=1&game_name=";
@@ -66,6 +67,13 @@ void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
 {
   netComm->request(searchUrlPre + QUrl::toPercentEncoding(searchName));
   q.exec();
+  if(netComm->getError() == QNetworkReply::NoError) {
+    searchError = false;
+  } else {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  }
   data = netComm->getData();
 
   if(data.indexOf("{\"release\":1,\"result\":[]}") != -1) {

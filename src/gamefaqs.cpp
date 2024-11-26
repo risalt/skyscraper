@@ -37,8 +37,9 @@
 #endif
 
 GameFaqs::GameFaqs(Settings *config,
-                   QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                   QSharedPointer<NetManager> manager,
+                   QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   QString platformDb;
   offlineScraper = true;
@@ -182,6 +183,7 @@ void GameFaqs::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry 
     data = netComm->getData();
     printf("%s\n", game.url.toStdString().c_str());
     // TODO: LOW: Pending implementation of media url extraction + getCover + getVideo...
+    // Not worth it unless the anti-scraping protections are dropped.
   }
 
   jsonObj = QJsonDocument::fromJson(game.miscData).object();
@@ -205,6 +207,7 @@ void GameFaqs::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry 
       gfRegions.append("AS");
     }
   }
+  gfRegions.removeDuplicates();
 
   fetchGameResources(game, sharedBlobs, cache);
 }

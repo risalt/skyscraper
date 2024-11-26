@@ -38,7 +38,7 @@ class OfflineMobyGames : public AbstractScraper
   Q_OBJECT
 
 public:
-  OfflineMobyGames(Settings *config, QSharedPointer<NetManager> manager);
+  OfflineMobyGames(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

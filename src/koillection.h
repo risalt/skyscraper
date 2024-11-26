@@ -38,7 +38,7 @@ class Koillection : public AbstractFrontend
   Q_OBJECT
 
 public:
-  Koillection(QSharedPointer<NetManager> manager);
+  Koillection(QSharedPointer<NetManager> manager, Settings *config);
   ~Koillection();
   void assembleList(QString &finalOutput, QList<GameEntry> &gameEntries) override;
   bool skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue> queue) override;
@@ -56,14 +56,17 @@ public:
   QString getManualsFolder() override;
 
 private:
+  bool fullMode = true;
   QByteArray data;
   QString koiToken;
+  QString collectionId;
+  QString baseUrl;
   QSqlDatabase db;
   NetComm *netComm;
   QEventLoop q;
   QJsonObject jsonObj;
-  QList<QPair<QString, QString>> headers = {QPair<QString, QString>("accept", "application/json"), QPair<QString, QString>("Content-Type", "application/json")};
-  QList<QPair<QString, QString>> headersPatch = {QPair<QString, QString>("accept", "application/json"), QPair<QString, QString>("Content-Type", "application/merge-patch+json")};
+  QList<QPair<QString, QString>> headers;
+  QList<QPair<QString, QString>> headersPatch;
 };
 
 #endif // KOILLECTION_H

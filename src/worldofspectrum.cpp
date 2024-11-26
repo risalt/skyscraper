@@ -34,8 +34,9 @@
 #include "nametools.h"
 
 WorldOfSpectrum::WorldOfSpectrum(Settings *config,
-                                 QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                                 QSharedPointer<NetManager> manager,
+                                 QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   baseUrl = "https://worldofspectrum.net";
 
@@ -102,10 +103,14 @@ void WorldOfSpectrum::getSearchResults(QList<GameEntry> &gameEntries,
   searchName = QUrl::toPercentEncoding(NameTools::removeArticle(searchName));
   QString url = "https://worldofspectrum.net/infoseek/";
   netComm->request(url + "?regexp=" + searchName + "&contenttype=software&loadpics=3");
-  if(config->verbosity >= 1) {
-    qDebug() << url + "?regexp=" + searchName + "&contenttype=software&loadpics=3";
-  }
   q.exec();
+  if(netComm->getError() == QNetworkReply::NoError) {
+    searchError = false;
+  } else {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  }
   data = netComm->getData();
   if(config->verbosity >= 3) {
     qDebug() << data;

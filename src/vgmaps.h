@@ -39,7 +39,7 @@ class VGMaps : public AbstractScraper
   Q_OBJECT
 
 public:
-  VGMaps(Settings *config, QSharedPointer<NetManager> manager);
+  VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

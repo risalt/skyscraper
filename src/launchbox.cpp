@@ -44,8 +44,9 @@ constexpr int RETRIESMAX = 4;
 
 
 LaunchBox::LaunchBox(Settings *config,
-                     QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                     QSharedPointer<NetManager> manager,
+                     QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   offlineScraper = true;
 
@@ -53,7 +54,7 @@ LaunchBox::LaunchBox(Settings *config,
   QString databaseUrl = "https://gamesdb.launchbox-app.com/Metadata.zip";
 
   loadMaps();
-  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "launchbox");
 
   if(config->generateLbDb) {
   
@@ -564,7 +565,7 @@ LaunchBox::LaunchBox(Settings *config,
     printf("INFO: Creating SQLite database. Exporting the XML file to the database...\n");
     bool errorDb = true;
     bool useTransaction = true;
-    QSqlQuery query;
+    QSqlQuery query(db);
     // Database structure creation
     query.prepare("CREATE TABLE searchNameToId (name TEXT, platform TEXT, id INTEGER, title TEXT)");
     if(query.exec()) {
@@ -664,9 +665,10 @@ LaunchBox::LaunchBox(Settings *config,
       QFile::remove(config->launchBoxDb + ".db");
       printf("ERROR: Error while creating the database. Removing the "
              "in-progress file to avoid corruption while scraping.\n");
+    } else {
+      printf("INFO: Export completed successfully. Now exiting.\n");
     }
     db.close();
-    printf("INFO: Export completed successfully. Now exiting.\n");
     reqRemaining = 0;
     return;
 
@@ -689,7 +691,7 @@ LaunchBox::LaunchBox(Settings *config,
       reqRemaining = 0;
       return;
     }
-    QSqlQuery query;
+    QSqlQuery query(db);
     // launchBoxDb
     query.setForwardOnly(true);
     query.prepare("SELECT id, game FROM launchBoxDb WHERE platform='" + platform + "'");

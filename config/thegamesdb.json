@@ -1,489 +1,629 @@
 {
-"platforms": [
-  {
-    "id": 25,
-    "name": "3DO",
-    "code(ignore)": "3do"
-  },
-  {
-    "id": 4944,
-    "name": "Acorn Archimedes",
-    "code(ignore)": "acorn"
-  },
-  {
-    "id": 4954,
-    "name": "Acorn Electron",
-    "code(ignore)": "acornelectron"
-  },
-  {
-    "id": 4976,
-    "name": "Action Max",
-    "code(ignore)": "actionmax"
-  },
-  {
-    "id": 4911,
-    "name": "Amiga",
-    "code(ignore)": "amiga"
-  },
-  {
-    "id": 4947,
-    "name": "Amiga CD32",
-    "code(ignore)": "amigacd32"
-  },
-  {
-    "id": 4914,
-    "name": "Amstrad CPC",
-    "code(ignore)": "amstradcpc"
-  },
-  {
-    "id": 4999,
-    "name": "Amstrad GX4000",
-    "code(ignore)": "amstradgx4000"
-  },
-  {
-    "id": 4942,
-    "name": "Apple II",
-    "code(ignore)": "apple2"
-  },
-  {
-    "id": 23,
-    "name": "Arcade",
-    "code(ignore)": "arcade"
-  },
-  {
-    "id": 22,
-    "name": "Atari 2600",
-    "code(ignore)": "atari2600"
-  },
-  {
-    "id": 26,
-    "name": "Atari 5200",
-    "code(ignore)": "atari5200"
-  },
-  {
-    "id": 27,
-    "name": "Atari 7800",
-    "code(ignore)": "atari7800"
-  },
-  {
-    "id": 4943,
-    "name": "Atari 800",
-    "code(ignore)": "atari800"
-  },
-  {
-    "id": 28,
-    "name": "Atari Jaguar",
-    "code(ignore)": "atarijaguar"
-  },
-  {
-    "id": 4924,
-    "name": "Atari Lynx",
-    "code(ignore)": "atarilynx"
-  },
-  {
-    "id": 4937,
-    "name": "Atari ST",
-    "code(ignore)": "atarist"
-  },
-  {
-    "id": 30,
-    "name": "Atari XE",
-    "code(ignore)": "atarist"
-  },
-  {
-    "id": 4968,
-    "name": "Bally Astrocade",
-    "code(ignore)": "astrocade"
-  },
-  {
-    "id": 5013,
-    "name": "BBC Micro",
-    "code(ignore)": "bbcmicro"
-  },
-  {
-    "id": 4991,
-    "name": "Casio Loopy",
-    "code(ignore)": "loopy"
-  },
-  {
-    "id": 4964,
-    "name": "Casio PV-1000",
-    "code(ignore)": "pv1000"
-  },
-  {
-    "id": 31,
-    "name": "Colecovision",
-    "code(ignore)": "coleco"
-  },
-  {
-    "id": 4946,
-    "name": "Commodore 128",
-    "code(ignore)": "c64"
-  },
-  {
-    "id": 40,
-    "name": "Commodore 64",
-    "code(ignore)": "c64"
-  },
-  {
-    "id": 4952,
-    "name": "Dragon 32/64",
-    "code(ignore)": "dragon32"
-  },
-  {
-    "id": 4963,
-    "name": "Emerson Arcadia 2001",
-    "code(ignore)": "arcadia"
-  },
-  {
-    "id": 4966,
-    "name": "Epoch Super Cassette Vision",
-    "code(ignore)": "epochscv"
-  },
-  {
-    "id": 4928,
-    "name": "Fairchild Channel F",
-    "code(ignore)": "channelf"
-  },
-  {
-    "id": 4936,
-    "name": "Famicom Disk System",
-    "code(ignore)": "fds"
-  },
-  {
-    "id": 4932,
-    "name": "FM Towns Marty",
-    "code(ignore)": "fmtowns"
-  },
-  {
-    "id": 4978,
-    "name": "Fujitsu FM-7",
-    "code(ignore)": "fm7"
-  },
-  {
-    "id": 4950,
-    "name": "Game & Watch",
-    "code(ignore)": "gameandwatch"
-  },
-  {
-    "id": 5015,
-    "name": "Game Park 32",
-    "code(ignore)": "gp32"
-  },
-  {
-    "id": 4951,
-    "name": "Handheld Electronic Games (LCD)",
-    "code(ignore)": "lcdhandheld"
-  },
-  {
-    "id": 4988,
-    "name": "V.Smile",
-    "code(ignore)": "vsmile"
-  },
-  {
-    "id": 5005,
-    "name": "CreatiVision",
-    "code(ignore)": "creativision"
-  },
-  {
-    "id": 32,
-    "name": "Intellivision",
-    "code(ignore)": "intellivision"
-  },
-  {
-    "id": 37,
-    "name": "Mac OS",
-    "code(ignore)": "macintosh"
-  },
-  {
-    "id": 4927,
-    "name": "Magnavox Odyssey 2",
-    "code(ignore)": "videopac"
-  },
-  {
-    "id": 4948,
-    "name": "Mega Duck",
-    "code(ignore)": "megaduck"
-  },
-  {
-    "id": 14,
-    "name": "Microsoft Xbox",
-    "code(ignore)": "xbox"
-  },
-  {
-    "id": 15,
-    "name": "Microsoft Xbox 360",
-    "code(ignore)": "xbox360"
-  },
-  {
-    "id": 4929,
-    "name": "MSX",
-    "code(ignore)": "msx+msx2"
-  },
-  {
-    "id": 24,
-    "name": "Neo Geo",
-    "code(ignore)": "neogeo"
-  },
-  {
-    "id": 4956,
-    "name": "Neo Geo CD",
-    "code(ignore)": "neogeocd"
-  },
-  {
-    "id": 4922,
-    "name": "Neo Geo Pocket",
-    "code(ignore)": "ngp"
-  },
-  {
-    "id": 4923,
-    "name": "Neo Geo Pocket Color",
-    "code(ignore)": "ngpc"
-  },
-  {
-    "id": 4912,
-    "name": "Nintendo 3DS",
-    "code(ignore)": "3ds"
-  },
-  {
-    "id": 3,
-    "name": "Nintendo 64",
-    "code(ignore)": "n64"
-  },
-  {
-    "id": 8,
-    "name": "Nintendo DS",
-    "code(ignore)": "nds"
-  },
-  {
-    "id": 7,
-    "name": "Nintendo Entertainment System (NES)",
-    "code(ignore)": "nes"
-  },
-  {
-    "id": 4,
-    "name": "Nintendo Game Boy",
-    "code(ignore)": "gb"
-  },
-  {
-    "id": 5,
-    "name": "Nintendo Game Boy Advance",
-    "code(ignore)": "gba"
-  },
-  {
-    "id": 41,
-    "name": "Nintendo Game Boy Color",
-    "code(ignore)": "gbc"
-  },
-  {
-    "id": 2,
-    "name": "Nintendo GameCube",
-    "code(ignore)": "gc"
-  },
-  {
-    "id": 4957,
-    "name": "Nintendo Pok\\u00e9mon Mini",
-    "code(ignore)": "pokemini"
-  },
-  {
-    "id": 4971,
-    "name": "Nintendo Switch",
-    "code(ignore)": "switch"
-  },
-  {
-    "id": 4918,
-    "name": "Nintendo Virtual Boy",
-    "code(ignore)": "virtualboy"
-  },
-  {
-    "id": 9,
-    "name": "Nintendo Wii",
-    "code(ignore)": "wii"
-  },
-  {
-    "id": 38,
-    "name": "Nintendo Wii U",
-    "code(ignore)": "wiiu"
-  },
-  {
-    "id": 4986,
-    "name": "Oric 1/Atmos",
-    "code(ignore)": "oric"
-  },
-  {
-    "id": 1,
-    "name": "PC",
-    "code(ignore)": "pc"
-  },
-  {
-    "id": 4933,
-    "name": "PC-88",
-    "code(ignore)": "pc88"
-  },
-  {
-    "id": 4934,
-    "name": "PC-98",
-    "code(ignore)": "pc98"
-  },
-  {
-    "id": 4930,
-    "name": "PC-FX",
-    "code(ignore)": "pcfx"
-  },
-  {
-    "id": 4917,
-    "name": "Philips CD-i",
-    "code(ignore)": "cdi"
-  },
-  {
-    "id": 4975,
-    "name": "Pioneer LaserActive",
-    "code(ignore)": "daphne"
-  },
-  {
-    "id": 5016,
-    "name": "Playdate",
-    "code(ignore)": "playdate"
-  },
-  {
-    "id": 4979,
-    "name": "SAM Coup\\u00e9",
-    "code(ignore)": "samcoupe"
-  },
-  {
-    "id": 33,
-    "name": "Sega 32X",
-    "code(ignore)": "sega32x"
-  },
-  {
-    "id": 21,
-    "name": "Sega CD",
-    "code(ignore)": "megacd"
-  },
-  {
-    "id": 16,
-    "name": "Sega Dreamcast",
-    "code(ignore)": "dreamcast"
-  },
-  {
-    "id": 20,
-    "name": "Sega Game Gear",
-    "code(ignore)": "gamegear"
-  },
-  {
-    "id": 18,
-    "name": "Sega Genesis",
-    "code(ignore)": "genesis"
-  },
-  {
-    "id": 35,
-    "name": "Sega Master System",
-    "code(ignore)": "mastersystem"
-  },
-  {
-    "id": 36,
-    "name": "Sega Mega Drive",
-    "code(ignore)": "genesis"
-  },
-  {
-    "id": 17,
-    "name": "Sega Saturn",
-    "code(ignore)": "saturn"
-  },
-  {
-    "id": 4949,
-    "name": "SEGA SG-1000",
-    "code(ignore)": "sg-1000"
-  },
-  {
-    "id": 4977,
-    "name": "Sharp X1",
-    "code(ignore)": "x1"
-  },
-  {
-    "id": 4931,
-    "name": "Sharp X68000",
-    "code(ignore)": "x68000"
-  },
-  {
-    "id": 5010,
-    "name": "Sinclair ZX81",
-    "code(ignore)": "zx81"
-  },
-  {
-    "id": 4913,
-    "name": "Sinclair ZX Spectrum",
-    "code(ignore)": "zxspectrum"
-  },
-  {
-    "id": 10,
-    "name": "Sony Playstation",
-    "code(ignore)": "psx"
-  },
-  {
-    "id": 11,
-    "name": "Sony Playstation 2",
-    "code(ignore)": "ps2"
-  },
-  {
-    "id": 12,
-    "name": "Sony Playstation 3",
-    "code(ignore)": "ps3"
-  },
-  {
-    "id": 13,
-    "name": "Sony Playstation Portable",
-    "code(ignore)": "psp"
-  },
-  {
-    "id": 39,
-    "name": "Sony Playstation Vita",
-    "code(ignore)": "vita"
-  },
-  {
-    "id": 6,
-    "name": "Super Nintendo (SNES)",
-    "code(ignore)": "snes"
-  },
-  {
-    "id": 4953,
-    "name": "Texas Instruments TI-99/4A",
-    "code(ignore)": "ti99"
-  },
-  {
-    "id": 4941,
-    "name": "TRS-80 Color Computer",
-    "code(ignore)": "trs80"
-  },
-  {
-    "id": 34,
-    "name": "TurboGrafx 16",
-    "code(ignore)": "pcengine"
-  },
-  {
-    "id": 4955,
-    "name": "TurboGrafx CD",
-    "code(ignore)": "pcenginecd"
-  },
-  {
-    "id": 4939,
-    "name": "Vectrex",
-    "code(ignore)": "vectrex"
-  },
-  {
-    "id": 4959,
-    "name": "Watara Supervision",
-    "code(ignore)": "watara"
-  },
-  {
-    "id": 4925,
-    "name": "WonderSwan",
-    "code(ignore)": "wonderswan"
-  },
-  {
-    "id": 4926,
-    "name": "WonderSwan Color",
-    "code(ignore)": "wonderswancolor"
-  }
-]
+  "platforms": [
+    {
+      "id": 25,
+      "name": "3DO",
+      "code": "3do"
+    },
+    {
+      "id": 4944,
+      "name": "Acorn Archimedes",
+      "code": "acorn"
+    },
+    {
+      "id": 4954,
+      "name": "Acorn Electron",
+      "code": "acornelectron"
+    },
+    {
+      "id": 4976,
+      "name": "Action Max",
+      "code": "actionmax"
+    },
+    {
+      "id": 4911,
+      "name": "Amiga",
+      "code": "amiga"
+    },
+    {
+      "id": 4947,
+      "name": "Amiga CD32",
+      "code": "amigacd32"
+    },
+    {
+      "id": 4914,
+      "name": "Amstrad CPC",
+      "code": "amstradcpc"
+    },
+    {
+      "id": 4999,
+      "name": "Amstrad GX4000",
+      "code": "amstradgx4000"
+    },
+    {
+      "id": 4942,
+      "name": "Apple II",
+      "code": "apple2"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "arcade"
+    },
+    {
+      "id": 22,
+      "name": "Atari 2600",
+      "code": "atari2600"
+    },
+    {
+      "id": 26,
+      "name": "Atari 5200",
+      "code": "atari5200"
+    },
+    {
+      "id": 27,
+      "name": "Atari 7800",
+      "code": "atari7800"
+    },
+    {
+      "id": 4943,
+      "name": "Atari 800",
+      "code": "atari800"
+    },
+    {
+      "id": 28,
+      "name": "Atari Jaguar",
+      "code": "atarijaguar"
+    },
+    {
+      "id": 4924,
+      "name": "Atari Lynx",
+      "code": "atarilynx"
+    },
+    {
+      "id": "4937,30",
+      "name": "Atari ST",
+      "code": "atarist"
+    },
+    {
+      "id": 30,
+      "name": "Atari XE",
+      "code": "atarixe"
+    },
+    {
+      "id": 4968,
+      "name": "Bally Astrocade",
+      "code": "astrocade"
+    },
+    {
+      "id": 5013,
+      "name": "BBC Micro",
+      "code": "bbcmicro"
+    },
+    {
+      "id": 4991,
+      "name": "Casio Loopy",
+      "code": "loopy"
+    },
+    {
+      "id": 4964,
+      "name": "Casio PV-1000",
+      "code": "pv1000"
+    },
+    {
+      "id": 31,
+      "name": "Colecovision",
+      "code": "coleco"
+    },
+    {
+      "id": 4946,
+      "name": "Commodore 128",
+      "code": "c128"
+    },
+    {
+      "id": "40,4946",
+      "name": "Commodore 64",
+      "code": "c64"
+    },
+    {
+      "id": 4952,
+      "name": "Dragon 32/64",
+      "code": "dragon32"
+    },
+    {
+      "id": 4963,
+      "name": "Emerson Arcadia 2001",
+      "code": "arcadia"
+    },
+    {
+      "id": 4966,
+      "name": "Epoch Super Cassette Vision",
+      "code": "epochscv"
+    },
+    {
+      "id": 4928,
+      "name": "Fairchild Channel F",
+      "code": "channelf"
+    },
+    {
+      "id": 4936,
+      "name": "Famicom Disk System",
+      "code": "fds"
+    },
+    {
+      "id": 4932,
+      "name": "FM Towns Marty",
+      "code": "fmtowns"
+    },
+    {
+      "id": 4978,
+      "name": "Fujitsu FM-7",
+      "code": "fm7"
+    },
+    {
+      "id": 4950,
+      "name": "Game & Watch",
+      "code": "gameandwatch"
+    },
+    {
+      "id": 5015,
+      "name": "Game Park 32",
+      "code": "gp32"
+    },
+    {
+      "id": 4951,
+      "name": "Handheld Electronic Games (LCD)",
+      "code": "lcdhandheld"
+    },
+    {
+      "id": 4988,
+      "name": "V.Smile",
+      "code": "vsmile"
+    },
+    {
+      "id": 5005,
+      "name": "CreatiVision",
+      "code": "creativision"
+    },
+    {
+      "id": 32,
+      "name": "Intellivision",
+      "code": "intellivision"
+    },
+    {
+      "id": 37,
+      "name": "Mac OS",
+      "code": "macintosh"
+    },
+    {
+      "id": 4927,
+      "name": "Magnavox Odyssey 2",
+      "code": "videopac"
+    },
+    {
+      "id": 4948,
+      "name": "Mega Duck",
+      "code": "megaduck"
+    },
+    {
+      "id": 14,
+      "name": "Microsoft Xbox",
+      "code": "xbox"
+    },
+    {
+      "id": 15,
+      "name": "Microsoft Xbox 360",
+      "code": "xbox360"
+    },
+    {
+      "id": 4929,
+      "name": "MSX",
+      "code": "msx"
+    },
+    {
+      "id": 4929,
+      "name": "MSX",
+      "code": "msx2"
+    },
+    {
+      "id": 24,
+      "name": "Neo Geo",
+      "code": "neogeo"
+    },
+    {
+      "id": 4956,
+      "name": "Neo Geo CD",
+      "code": "neogeocd"
+    },
+    {
+      "id": 4922,
+      "name": "Neo Geo Pocket",
+      "code": "ngp"
+    },
+    {
+      "id": 4923,
+      "name": "Neo Geo Pocket Color",
+      "code": "ngpc"
+    },
+    {
+      "id": 4912,
+      "name": "Nintendo 3DS",
+      "code": "3ds"
+    },
+    {
+      "id": 3,
+      "name": "Nintendo 64",
+      "code": "n64"
+    },
+    {
+      "id": 8,
+      "name": "Nintendo DS",
+      "code": "nds"
+    },
+    {
+      "id": 7,
+      "name": "Nintendo Entertainment System (NES)",
+      "code": "nes"
+    },
+    {
+      "id": 4,
+      "name": "Nintendo Game Boy",
+      "code": "gb"
+    },
+    {
+      "id": 5,
+      "name": "Nintendo Game Boy Advance",
+      "code": "gba"
+    },
+    {
+      "id": 41,
+      "name": "Nintendo Game Boy Color",
+      "code": "gbc"
+    },
+    {
+      "id": 2,
+      "name": "Nintendo GameCube",
+      "code": "gc"
+    },
+    {
+      "id": 4957,
+      "name": "Nintendo Pok\\u00e9mon Mini",
+      "code": "pokemini"
+    },
+    {
+      "id": 4971,
+      "name": "Nintendo Switch",
+      "code": "switch"
+    },
+    {
+      "id": 4918,
+      "name": "Nintendo Virtual Boy",
+      "code": "virtualboy"
+    },
+    {
+      "id": 9,
+      "name": "Nintendo Wii",
+      "code": "wii"
+    },
+    {
+      "id": 38,
+      "name": "Nintendo Wii U",
+      "code": "wiiu"
+    },
+    {
+      "id": 4986,
+      "name": "Oric 1/Atmos",
+      "code": "oric"
+    },
+    {
+      "id": 1,
+      "name": "PC",
+      "code": "pc"
+    },
+    {
+      "id": 1,
+      "name": "PC",
+      "code": "windows"
+    },
+    {
+      "id": 1,
+      "name": "PC",
+      "code": "linux"
+    },
+    {
+      "id": 1,
+      "name": "PC",
+      "code": "scummvm"
+    },
+    {
+      "id": 4933,
+      "name": "PC-88",
+      "code": "pc88"
+    },
+    {
+      "id": 4934,
+      "name": "PC-98",
+      "code": "pc98"
+    },
+    {
+      "id": 4930,
+      "name": "PC-FX",
+      "code": "pcfx"
+    },
+    {
+      "id": 4917,
+      "name": "Philips CD-i",
+      "code": "cdi"
+    },
+    {
+      "id": 4975,
+      "name": "Pioneer LaserActive",
+      "code": "daphne"
+    },
+    {
+      "id": 5016,
+      "name": "Playdate",
+      "code": "playdate"
+    },
+    {
+      "id": 4979,
+      "name": "SAM Coup\\u00e9",
+      "code": "samcoupe"
+    },
+    {
+      "id": 33,
+      "name": "Sega 32X",
+      "code": "sega32x"
+    },
+    {
+      "id": 21,
+      "name": "Sega CD",
+      "code": "megacd"
+    },
+    {
+      "id": 16,
+      "name": "Sega Dreamcast",
+      "code": "dreamcast"
+    },
+    {
+      "id": 20,
+      "name": "Sega Game Gear",
+      "code": "gamegear"
+    },
+    {
+      "id": "18,36",
+      "name": "Sega Genesis",
+      "code": "genesis"
+    },
+    {
+      "id": 35,
+      "name": "Sega Master System",
+      "code": "mastersystem"
+    },
+    {
+      "id": 36,
+      "name": "Sega Mega Drive",
+      "code": "megadrive"
+    },
+    {
+      "id": 17,
+      "name": "Sega Saturn",
+      "code": "saturn"
+    },
+    {
+      "id": 4949,
+      "name": "SEGA SG-1000",
+      "code": "sg-1000"
+    },
+    {
+      "id": 4977,
+      "name": "Sharp X1",
+      "code": "x1"
+    },
+    {
+      "id": 4931,
+      "name": "Sharp X68000",
+      "code": "x68000"
+    },
+    {
+      "id": 5010,
+      "name": "Sinclair ZX81",
+      "code": "zx81"
+    },
+    {
+      "id": 4913,
+      "name": "Sinclair ZX Spectrum",
+      "code": "zxspectrum"
+    },
+    {
+      "id": 10,
+      "name": "Sony Playstation",
+      "code": "psx"
+    },
+    {
+      "id": 11,
+      "name": "Sony Playstation 2",
+      "code": "ps2"
+    },
+    {
+      "id": 12,
+      "name": "Sony Playstation 3",
+      "code": "ps3"
+    },
+    {
+      "id": 13,
+      "name": "Sony Playstation Portable",
+      "code": "psp"
+    },
+    {
+      "id": 39,
+      "name": "Sony Playstation Vita",
+      "code": "vita"
+    },
+    {
+      "id": 6,
+      "name": "Super Nintendo (SNES)",
+      "code": "snes"
+    },
+    {
+      "id": 6,
+      "name": "Super Nintendo (SNES)",
+      "code": "satellaview"
+    },
+    {
+      "id": 4953,
+      "name": "Texas Instruments TI-99/4A",
+      "code": "ti99"
+    },
+    {
+      "id": 4941,
+      "name": "TRS-80 Color Computer",
+      "code": "trs80"
+    },
+    {
+      "id": 34,
+      "name": "TurboGrafx 16",
+      "code": "pcengine"
+    },
+    {
+      "id": 34,
+      "name": "TurboGrafx 16",
+      "code": "supergrafx"
+    },
+    {
+      "id": 4955,
+      "name": "TurboGrafx CD",
+      "code": "pcenginecd"
+    },
+    {
+      "id": 4939,
+      "name": "Vectrex",
+      "code": "vectrex"
+    },
+    {
+      "id": 4959,
+      "name": "Watara Supervision",
+      "code": "watara"
+    },
+    {
+      "id": 4925,
+      "name": "WonderSwan",
+      "code": "wonderswan"
+    },
+    {
+      "id": 4926,
+      "name": "WonderSwan Color",
+      "code": "wonderswancolor"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "atomiswave"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "cave"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "cps1"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "cps2"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "cps3"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "dataeast"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "igs"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "irem"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "jaleco"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "kaneko"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "konami"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "midway"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "namco"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "naomi"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "naomi2"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "nichibutsu"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "nmk"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "psikyo"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "segasystemx"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "seta"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "taito"
+    },
+    {
+      "id": 23,
+      "name": "Arcade",
+      "code": "toaplan"
+    }
+  ]
 }

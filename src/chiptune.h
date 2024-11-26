@@ -39,7 +39,7 @@ class Chiptune : public AbstractScraper
   Q_OBJECT
 
 public:
-  Chiptune(Settings *config, QSharedPointer<NetManager> manager);
+  Chiptune(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

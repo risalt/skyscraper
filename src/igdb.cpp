@@ -31,9 +31,8 @@
 #include "strtools.h"
 #include "nametools.h"
 
-Igdb::Igdb(Settings *config,
-           QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+Igdb::Igdb(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   QPair<QString, QString> clientIdHeader;
   clientIdHeader.first = "Client-ID";
@@ -92,30 +91,35 @@ void Igdb::getSearchResults(QList<GameEntry> &gameEntries,
                    " search \"" + searchName + "\";",
                    headers);
   q.exec();
-  data = netComm->getData();
-  // Debug:
-  //QTextStream out(stdout);
-  if(config->verbosity >= 1) {
-    qDebug() << baseUrl + "/games" + "fields name,id,alternative_names.name,platforms.name;"
-                          " search \"" + searchName + "\";";
+  if(netComm->getError() != QNetworkReply::NoError &&
+     netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  } else {
+    searchError = false;
   }
+  data = netComm->getData();
   if(config->verbosity > 3) {
     qDebug() << data;
   }
 
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
+    searchError = true;
     return;
   }
 
   if(jsonDoc.object()["message"].toString().contains("Too Many Requests")) {
     printf("\033[1;31mThe IGDB requests per second limit has been exceeded, can't continue!\033[0m\n");
     reqRemaining = 0;
+    searchError = true;
     return;
   }
   if(jsonDoc.object()["message"].toString().contains("Authorization Failure")) {
     printf("\033[1;31mThe IGDB authentication has failed, can't continue! Try removing file 'igdbToken.dat'.\033[0m\n");
     reqRemaining = 0;
+    searchError = true;
     return;
   }
 

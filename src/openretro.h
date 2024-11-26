@@ -37,7 +37,7 @@ class OpenRetro : public AbstractScraper
   Q_OBJECT
 
 public:
-  OpenRetro(Settings *config, QSharedPointer<NetManager> manager);
+  OpenRetro(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
@@ -55,6 +55,7 @@ private:
   QEventLoop limiter;
 
   QString platformId;
+  bool restrictSearch = false;
 
 };
 

@@ -37,8 +37,9 @@
 #include "skyscraper.h"
 
 
-Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
+                   QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   bool naviOk = true;
 
@@ -46,7 +47,7 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager)
 
   // Extract table media_file from database selecting by artist=config->platform
   // and dump fields album (normalized), album_id and path: soundtrackList [album]{album_id, path}
-  QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE");
+  QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE", "navidrome");
   navidrome.setDatabaseName(config->navidromeDb);
   navidrome.setConnectOptions("QSQLITE_OPEN_READONLY");
   printf("INFO: Reading the videogame music database... ");

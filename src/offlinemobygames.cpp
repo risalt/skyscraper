@@ -36,8 +36,9 @@
 #endif
 
 OfflineMobyGames::OfflineMobyGames(Settings *config,
-                     QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                                   QSharedPointer<NetManager> manager,
+                                   QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   QString platformDb;
   offlineScraper = true;

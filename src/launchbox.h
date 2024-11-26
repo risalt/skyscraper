@@ -69,7 +69,7 @@ class LaunchBox : public AbstractScraper
   Q_OBJECT
 
 public:
-  LaunchBox(Settings *config, QSharedPointer<NetManager> manager);
+  LaunchBox(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

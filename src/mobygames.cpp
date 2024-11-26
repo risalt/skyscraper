@@ -34,8 +34,9 @@
 #endif
 
 MobyGames::MobyGames(Settings *config,
-                     QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                     QSharedPointer<NetManager> manager,
+                     QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   loadConfig("mobygames.json", "platform_name", "platform_id");
   platformId = getPlatformId(config->platform);
@@ -76,21 +77,34 @@ void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
   printf("Waiting as advised by MobyGames api restrictions...\n");
   limiter.exec();
   QString searchUrl = searchUrlPre + "?api_key=" + config->userCreds +
-                      "&title=" + searchName + "&platform=" +
-                      platformId.split(",").join("&platform=");
+                      "&title=" + StrTools::simplifyLetters(searchName) +
+                      "&platform=" + platformId.split(",").join("&platform=");
   netComm->request(searchUrl);
   q.exec();
+  if(netComm->getError() != QNetworkReply::NoError &&
+     netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  } else {
+    searchError = false;
+  }
   data = netComm->getData();
   printf("s %s\n", searchUrl.toStdString().c_str());
 
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
+    searchError = true;
     return;
   }
 
   if(jsonDoc.object()["code"].toInt() == 429) {
-    printf("\033[1;31mToo many requests! This is probably because some other Skyscraper user is currently using the 'mobygames' module. Please wait a while and try again.\n\nNow quitting...\033[0m\n");
+    printf("\033[1;31mToo many requests! This is probably because some other "
+           "Skyscraper user is currently using the 'mobygames' module. Please "
+           "wait a while and try again.\n\nNow quitting...\033[0m\n");
     reqRemaining = 0;
+    searchError = true;
+    return;
   }
 
   QJsonArray jsonGames = jsonDoc.object()["games"].toArray();
@@ -145,14 +159,18 @@ void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
 
   printf("Waiting to get media data...\n");
   limiter.exec();
-  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" +
+                   game.url.mid(game.url.indexOf("?api_key="),
+                   game.url.length() - game.url.indexOf("?api_key=")));
   q.exec();
   data = netComm->getData();
   jsonMedia = QJsonDocument::fromJson(data);
 
   printf("Waiting to get screenshot data...\n");
   limiter.exec();
-  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" + game.url.mid(game.url.indexOf("?api_key="), game.url.length() - game.url.indexOf("?api_key=")));
+  netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" +
+                   game.url.mid(game.url.indexOf("?api_key="),
+                   game.url.length() - game.url.indexOf("?api_key=")));
   q.exec();
   data = netComm->getData();
   jsonScreens = QJsonDocument::fromJson(data);
@@ -337,7 +355,8 @@ void MobyGames::getCover(GameEntry &game)
     }
   }
 
-  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+  // For some reason the links are http but they are always redirected to https
+  coverUrl.replace("http://", "https://");
 
   if(!coverUrl.isEmpty()) {
     printf("Waiting to get cover data...\n");
@@ -396,7 +415,8 @@ void MobyGames::getManual(GameEntry &game)
     }
   }
 
-  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+  // For some reason the links are http but they are always redirected to https
+  coverUrl.replace("http://", "https://");
 
   if(!coverUrl.isEmpty()) {
     printf("Waiting to get manual data...\n");
@@ -466,7 +486,8 @@ void MobyGames::getMarquee(GameEntry &game)
     }
   }
 
-  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+  // For some reason the links are http but they are always redirected to https
+  coverUrl.replace("http://", "https://");
 
   if(!coverUrl.isEmpty()) {
     printf("Waiting to get marquee data...\n");
@@ -563,7 +584,8 @@ void MobyGames::getTexture(GameEntry &game)
     }
   }
 
-  coverUrl.replace("http://", "https://"); // For some reason the links are http but they are always redirected to https
+  // For some reason the links are http but they are always redirected to https
+  coverUrl.replace("http://", "https://");
 
   if(!coverUrl.isEmpty()) {
     printf("Waiting to get back texture data...\n");

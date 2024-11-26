@@ -35,7 +35,7 @@ class WorldOfSpectrum : public AbstractScraper
   Q_OBJECT
 
 public:
-  WorldOfSpectrum(Settings *config, QSharedPointer<NetManager> manager);
+  WorldOfSpectrum(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
 
 protected:
   void getSearchResults(QList<GameEntry> &gameEntries,

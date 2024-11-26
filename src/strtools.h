@@ -32,6 +32,7 @@
 
 class StrTools : public QObject
 {
+
 public:
   static QString xmlUnescape(QString str);
   static QString xmlEscape(QString str);
@@ -51,6 +52,8 @@ public:
                                     bool simplify = true);
   static QString onlyNumbers(const QString &str);
   static bool readCSVRow(QTextStream &in, QStringList *row);
+  static QString simplifyLetters(const QString &str);
+
 };
 
 #endif // STRTOOLS_H

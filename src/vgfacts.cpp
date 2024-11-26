@@ -37,9 +37,8 @@
 #include <QRandomGenerator>
 #endif
 
-VGFacts::VGFacts(Settings *config,
-                 QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+VGFacts::VGFacts(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   QString triviaDb;
   offlineScraper = true;
@@ -210,7 +209,7 @@ void VGFacts::getCover(GameEntry &game)
   QString imageUrl = jsonObj["titleDetail"].toObject()["cover"].toString();
   if(!imageUrl.isEmpty()) {
     if(config->verbosity > 1) {
-      qDebug() << "Cover: " << baseUrl + imageUrl;
+      qDebug() << "Cover:";
     }
     limiter.exec();
     netComm->request(baseUrl + imageUrl);
@@ -228,7 +227,7 @@ void VGFacts::getMarquee(GameEntry &game)
   QString imageUrl = jsonObj["titleDetail"].toObject()["artwork"].toString();
   if(!imageUrl.isEmpty()) {
     if(config->verbosity > 1) {
-      qDebug() << "Marquee: " << baseUrl + imageUrl;
+      qDebug() << "Marquee:";
     }
     limiter.exec();
     netComm->request(baseUrl + imageUrl);

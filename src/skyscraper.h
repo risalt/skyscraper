@@ -50,7 +50,7 @@ public:
   Skyscraper(const QCommandLineParser &parser, const QString &currentDir);
   ~Skyscraper();
   void setLock();
-  static void removeLockAndExit(const int exitCode = 0);
+  void removeLockAndExit(const int exitCode = 0);
   QSharedPointer<Queue> queue;
   QSharedPointer<NetManager> manager;
   int state = 0;
@@ -83,7 +83,7 @@ private:
   void setLangPrios();
   //void migrate(QString filename);
 
-  AbstractFrontend *frontend;
+  AbstractFrontend *frontend = nullptr;
 
   QSharedPointer<Cache> cache;
 

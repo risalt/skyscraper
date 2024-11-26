@@ -40,7 +40,7 @@ class VGFacts : public AbstractScraper
   Q_OBJECT
 
 public:
-  VGFacts(Settings *config, QSharedPointer<NetManager> manager);
+  VGFacts(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

@@ -353,7 +353,7 @@ QString StrTools::conformReleaseDate(QString str)
   }
   QDate finalDate = QDate::fromString(str, "yyyyMMdd");
   if(finalDate < QDate::fromString("19711231", "yyyyMMdd") ||
-     finalDate > QDate::currentDate().addMonths(2) || !finalDate.isValid()) {
+     finalDate > QDate::currentDate().addMonths(6) || !finalDate.isValid()) {
     if(Skyscraper::config.scraper != "cache") {
       printf("\nERROR: Incorrect date '%s'. Ignoring.\n", str.toStdString().c_str());
     }
@@ -546,4 +546,11 @@ bool StrTools::readCSVRow(QTextStream &in, QStringList *row)
     printf("ERROR: End-of-file found while inside quotes.\n");
   }
   return true;
+}
+
+QString StrTools::simplifyLetters(const QString &str)
+{
+  QString simplified = str.normalized(QString::NormalizationForm_KD);
+  //simplified.remove(QRegExp("[^a-zA-Z\\s]"));
+  return simplified;
 }

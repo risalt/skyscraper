@@ -23,15 +23,31 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#include <QFileInfo>
 #include <QDir>
+#include <QFileInfo>
+#include <QProcess>
 #include <QSettings>
 #include <QRegularExpression>
 #include <QCryptographicHash>
+#include <QSql>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QXmlStreamReader>
 
 #include "nametools.h"
 #include "strtools.h"
 #include "skyscraper.h"
+#include "crc32.h"
+
+NameTools::NameTools()
+{
+}
+
+NameTools & NameTools::get()
+{
+  static NameTools instance;
+  return instance;
+}
 
 QString NameTools::getScummName(const QString &baseName, const QString &scummIni)
 {
@@ -47,7 +63,6 @@ QString NameTools::getScummName(const QString &baseName, const QString &scummIni
   if(!scummIni.isEmpty()) {
     scummIniStr = scummIni;
   }
-
 
   QFile scummIniFile(scummIniStr);
   if(scummIniFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -125,11 +140,9 @@ QString NameTools::getUrlQueryName(const QString &baseName, const int words, con
   // Remove everything in brackets
   newName = newName.left(newName.indexOf("(", 2)).simplified();
   newName = newName.left(newName.indexOf("[", 2)).simplified();
-  // DEPRECATED: The following is mostly, if not only, used when getting the name from mameMap
-  // newName = newName.left(newName.indexOf(" / ", 2)).simplified();
   if(onlyMainTitle) {
     bool dummy;
-    newName = NameTools::removeSubtitle(newName, dummy);
+    newName = removeSubtitle(newName, dummy);
   }
 
   QRegularExpressionMatch match;
@@ -140,7 +153,7 @@ QString NameTools::getUrlQueryName(const QString &baseName, const int words, con
     newName = newName.left(match.capturedStart(0)).simplified();
   }
   // Remove versioning instances
-  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4}|[IVX]{1,5})$",
+  match = QRegularExpression(" v[.]{0,1}([0-9]{1}[0-9]{0,2}[.]{0,1}[0-9]{1,4})$",
                              QRegularExpression::CaseInsensitiveOption).match(newName);
   if(match.hasMatch() && match.capturedStart(0) != -1) {
     newName = newName.left(match.capturedStart(0)).simplified();
@@ -447,7 +460,8 @@ QString NameTools::getCacheId(const QFileInfo &info)
      suffix == "gdi"  || suffix == "ml"  ||
      suffix == "bat"  || suffix == "au3" ||
      suffix == "po"   || suffix == "dsk" ||
-     suffix == "nib"  || suffix == "scummvm") {
+     suffix == "nib"  || suffix == "m3u" ||
+     suffix == "scummvm") {
     cacheIdFromData = false;
   }
   // If file is larger than 50 MBs, use filename checksum for cache id for optimization reasons
@@ -466,8 +480,9 @@ QString NameTools::getCacheId(const QFileInfo &info)
       }
       romFile.close();
     } else {
-      printf("Couldn't calculate cache id of rom file '%s', please check permissions and try again, now exiting...\n", info.fileName().toStdString().c_str());
-      Skyscraper::removeLockAndExit(1);
+      printf("Couldn't calculate cache id of rom file '%s', please check permissions and try again, now exiting...\n",
+             info.fileName().toStdString().c_str());
+      return "";
     }
   } else {
     cacheId.addData(info.fileName().toUtf8());
@@ -719,10 +734,12 @@ QString NameTools::removeEdition(const QString &newName)
 QString NameTools::removeSubtitle(const QString &baseName, bool &hasSubtitle)
 {
   QString noSubtitle;
-  if(baseName.contains(":") || baseName.contains(" - ") || baseName.contains("~")) {
+  if(baseName.contains(":") || baseName.contains(" - ") ||
+     baseName.contains("~") || baseName.contains(" / ")) {
     noSubtitle = baseName.left(baseName.indexOf(":")).simplified();
     noSubtitle = noSubtitle.left(noSubtitle.indexOf(" - ")).simplified();
     noSubtitle = noSubtitle.left(noSubtitle.indexOf("~")).simplified();
+    noSubtitle = noSubtitle.left(noSubtitle.indexOf(" / ")).simplified();
     // Only add if longer than 3. We don't want to search for "the" for instance
     if(noSubtitle.length() > 3) {
       hasSubtitle = true;
@@ -756,14 +773,14 @@ void NameTools::generateSearchNames(const QString &baseName,
   QString copy2 = getUrlQueryName(convertToRomanNumeral(copy), -2, spaceChar);
   safeTransformations.append(copy2);
   // 3b. Lowercase + No brackets + No revision/version/edition + Roman numbers +
-  //     Article to front/removed + &->and
+  //     Article removed + &->and
   copy2 = getUrlQueryName(convertToRomanNumeral(copy), -1, spaceChar);
   safeTransformations.append(copy2);
   // 4a. Lowercase + No brackets + No revision/version/edition + Arabic numbers + &->and
   copy2 = getUrlQueryName(convertToIntegerNumeral(copy), -2, spaceChar);
   safeTransformations.append(copy2);
   // 4b. Lowercase + No brackets + No revision/version/edition + Arabic numbers +
-  //     Article to front/removed + &->and
+  //     Article removed + &->and
   copy = getUrlQueryName(convertToIntegerNumeral(copy), -1, spaceChar);
   safeTransformations.append(copy);
   // 5a. Offline only: Lowercase + No brackets + No revision/version/edition + Arabic numbers +
@@ -773,6 +790,8 @@ void NameTools::generateSearchNames(const QString &baseName,
   if(offlineUsage) {
     safeTransformations.append(StrTools::sanitizeName(copy2));
     safeTransformations.append(StrTools::sanitizeName(copy));
+    safeTransformations.append(StrTools::simplifyLetters(StrTools::sanitizeName(copy2)));
+    safeTransformations.append(StrTools::simplifyLetters(StrTools::sanitizeName(copy)));
   }
   safeTransformations.removeDuplicates();
   if(Skyscraper::config.verbosity > 3) {
@@ -781,7 +800,7 @@ void NameTools::generateSearchNames(const QString &baseName,
   if(!Skyscraper::config.keepSubtitle) {
     bool hasSubtitle;
     // Unsafe transformations: Same as 1-5 removing the subtitle
-    copy = NameTools::removeSubtitle(baseName, hasSubtitle);
+    copy = removeSubtitle(baseName, hasSubtitle);
     if(hasSubtitle) {
       unsafeTransformations.append(StrTools::altUriEscape(copy.toLower(), spaceChar));
       copy = StrTools::stripBrackets(copy);
@@ -798,6 +817,8 @@ void NameTools::generateSearchNames(const QString &baseName,
       if(offlineUsage) {
         unsafeTransformations.append(StrTools::sanitizeName(copy2));
         unsafeTransformations.append(StrTools::sanitizeName(copy));
+        unsafeTransformations.append(StrTools::simplifyLetters(StrTools::sanitizeName(copy2)));
+        unsafeTransformations.append(StrTools::simplifyLetters(StrTools::sanitizeName(copy)));
       }
       unsafeTransformations.removeDuplicates();
       if(Skyscraper::config.verbosity > 3) {
@@ -805,4 +826,589 @@ void NameTools::generateSearchNames(const QString &baseName,
       }
     }
   }
+}
+
+CanonicalData NameTools::getCanonicalData(const QFileInfo &info, bool onlyChecksums)
+{
+  CanonicalData canonicalData;
+
+  bool foundInCache = false;
+  GameEntry cachedData;
+  QString quickId = get().cache->getQuickId(info);
+  if(!quickId.isEmpty()) {
+    cachedData.cacheId = quickId;
+    get().cache->fillBlanks(cachedData, "generic");
+    if(cachedData.canonical.size > 0) {
+      canonicalData = cachedData.canonical;
+      if(!onlyChecksums && canonicalData.name.isEmpty()) {
+        get().searchCanonicalData(canonicalData);
+      }
+      foundInCache = true;
+    }
+  }
+  if(!foundInCache) {
+    if(info.size() != 0) {
+      QStringList compressedFormats = {"xz", "zip", "7z", "rar", "arj", "gz", "bz2"};
+      QCryptographicHash md5(QCryptographicHash::Md5);
+      QCryptographicHash sha1(QCryptographicHash::Sha1);
+      Crc32 crc;
+      crc.initInstance(1);
+      if(compressedFormats.contains(info.suffix().toLower())) {
+        // Not much can be done with multiple file archives, so we just scan all of it
+        QProcess decProc;
+        decProc.setReadChannel(QProcess::StandardOutput);
+        decProc.start("7z", QStringList({"x", "-so", info.absoluteFilePath()}));
+        if (decProc.waitForFinished(30000)) {
+          if (decProc.exitStatus() == QProcess::NormalExit) {
+             QByteArray allData = decProc.readAllStandardOutput();
+             md5.addData(allData);
+             sha1.addData(allData);
+             crc.pushData(1, allData.data(), allData.length());
+          } else {
+            printf("ERROR: Cannot decompress file '%s': checksum is not possible. Skipping file.\n",
+                   info.absoluteFilePath().toStdString().c_str());
+          }
+        } else {
+          printf("ERROR: Timeout decompressing file '%s': checksum is not possible. Skipping file.\n",
+                 info.absoluteFilePath().toStdString().c_str());
+        }
+      } else {
+        QFile romFile(info.absoluteFilePath());
+        romFile.open(QIODevice::ReadOnly);
+        while(!romFile.atEnd()) {
+          QByteArray dataSeg = romFile.read(1024);
+          md5.addData(dataSeg);
+          sha1.addData(dataSeg);
+          crc.pushData(1, dataSeg.data(), dataSeg.length());
+        }
+        romFile.close();
+      }
+      QString crcResult = QString::number(crc.releaseInstance(1), 16);
+      while(crcResult.length() < 8) {
+        crcResult.prepend("0");
+      }
+      QString md5Result = md5.result().toHex();
+      while(md5Result.length() < 32) {
+        md5Result.prepend("0");
+      }
+      QString sha1Result = sha1.result().toHex();
+      while(sha1Result.length() < 40) {
+        sha1Result.prepend("0");
+      }
+      // Size
+      canonicalData.size = info.size();
+      // CRC
+      canonicalData.crc = crcResult.toLower();
+      // SHA1
+      canonicalData.sha1 = sha1Result.toLower();
+      // MD5
+      canonicalData.md5 = md5Result.toLower();
+      // Name (removing double quotes if necessary)
+      if(!onlyChecksums) {
+        get().searchCanonicalData(canonicalData);
+      }
+    } else {
+      printf("WARNING: File '%s' is empty: checksum is not possible. Skipping file.\n",
+             info.absoluteFilePath().toStdString().c_str());
+    }
+  }
+
+  if(!quickId.isEmpty()) {
+    cachedData.cacheId = quickId;
+    cachedData.canonical = canonicalData;
+    cachedData.source = "generic";
+    QString dummy;
+    get().cache->addResources(cachedData, Skyscraper::config, dummy);
+  }
+  return canonicalData;
+}
+
+bool NameTools::searchCanonicalData(CanonicalData &canonical)
+{
+  if(dbInitialized.testAndSetAcquire(0, 1)) {
+    db = QSqlDatabase::addDatabase("QSQLITE", "canonical");
+    db.setDatabaseName(dbName);
+    db.setConnectOptions("QSQLITE_OPEN_READONLY");
+    if(!db.open()) {
+      printf("ERROR: Could not open the database %s. Please create it using the "
+             "option '--loadchecksum FILENAME'\n", dbName.toStdString().c_str());
+      qDebug() << db.lastError();
+      return false;
+    }
+    loadConfig("checksumcatalogs.json", "name", "code");
+  }
+  QSqlQuery query(db);
+  query.setForwardOnly(true);
+  query.prepare("SELECT platform, game, file FROM canonicalData WHERE"
+                " sha1='" + canonical.sha1 + "' OR md5='" + canonical.md5 + "'");
+  if(!query.exec()) {
+    qDebug() << query.lastError();
+    printf("ERROR: Error while accessing data from table canonicalData.\n");
+    return false;
+  }
+  bool found = false;
+  QString foundOtherPlatform;
+  while(query.next()) {
+    QString platform = query.value(0).toString();
+    if(platformCatalogs.contains(platform)) {
+      // We stop at the first positive match
+      canonical.platform = platform;
+      canonical.name = query.value(1).toString();
+      canonical.file = query.value(2).toString();
+      found = true;
+      break;
+    } else {
+      foundOtherPlatform = platform;
+    }
+  }
+  query.finish();
+
+  if(!found && !foundOtherPlatform.isEmpty()) {
+    printf("WARNING: Match to another catalog: Consider adding '%s' as a catalog"
+           " for platform '%s' in 'checksumcatalogs.json'.\n",
+           foundOtherPlatform.toStdString().c_str(),
+           Skyscraper::config.platform.toStdString().c_str());
+  }
+  return found;
+}
+
+bool NameTools::importCanonicalData(const QString &file)
+{
+  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "canonical");
+  bool exists = QFileInfo(get().dbName).isFile();
+  db.setDatabaseName(get().dbName);
+  if(!db.open()) {
+    printf("ERROR: Could not open/create the database %s.\n", get().dbName.toStdString().c_str());
+    qDebug() << db.lastError();
+    return false;
+  }
+  bool errorDb = true;
+  QSqlQuery query(db);
+  if(!exists) {
+    printf("INFO: Creating SQLite database... ");
+    // Database structure creation
+    query.prepare("CREATE TABLE canonicalData (platform TEXT not NULL, game TEXT not NULL,"
+                  " file TEXT, size INTEGER, crc TEXT, sha1 TEXT, md5 TEXT)");
+    if(query.exec()) {
+      query.finish();
+      query.prepare("CREATE INDEX md5sumidx ON canonicalData(md5)");
+      if(query.exec()) {
+        query.finish();
+        query.prepare("CREATE INDEX sha1sumidx ON canonicalData(sha1)");
+        if(query.exec()) {
+          query.finish();
+          errorDb = false;
+        }
+      }
+    }
+    if(errorDb) {
+      qDebug() << query.lastError();
+      printf("\nERROR: Error while creating the database structure. Exiting.\n");
+      db.close();
+      return false;
+    } else {
+      printf("OK\n");
+    }
+  } else {
+    errorDb = false;
+  }
+
+  bool useTransaction = true;
+  if(!errorDb && !db.transaction()) {
+    printf("WARNING: Reduced performance as database does not support transactions.\n");
+    qDebug() << db.lastError();
+    useTransaction = false;
+  }
+
+  int gamesWithoutName = 0;
+  int gamesWithoutChecksums = 0;
+  int gamesWithoutSize = 0;
+  int gamesOk = 0;
+  printf("INFO: Reading data from import file... ");
+  QList<CanonicalData> canonicalImport;
+  if(file == "LUTRISDB") {
+    QSqlDatabase lutrisdb = QSqlDatabase::addDatabase("QMYSQL", "lutrisdb");
+    lutrisdb.setHostName("db");
+    lutrisdb.setDatabaseName("lutrisdb");
+    lutrisdb.setUserName("lutrisdb");
+    lutrisdb.setPassword("lutrisdb");
+    if(!lutrisdb.open()) {
+      qDebug() << lutrisdb.lastError();
+      printf("ERROR: Connection to Lutris database has failed.\n");
+    }
+    QString queryString = "SELECT tosec_toseccategory.name, tosec_tosecgame.name,"
+                          " tosec_tosecrom.name, tosec_tosecrom.size, tosec_tosecrom.crc,"
+                          " tosec_tosecrom.sha1, tosec_tosecrom.md5 "
+                          "FROM tosec_tosecrom"
+                          " INNER JOIN tosec_tosecgame ON"
+                          "  tosec_tosecrom.game_id = tosec_tosecgame.id"
+                          " INNER JOIN tosec_toseccategory ON"
+                          "  tosec_tosecgame.category_id = tosec_toseccategory.id";
+    QSqlQuery queryLutris(lutrisdb);
+    queryLutris.setForwardOnly(true);
+    queryLutris.prepare(queryString);
+    if(!queryLutris.exec()) {
+      qDebug() << queryLutris.lastError();
+      printf("ERROR: Error while accessing TOSEC data from Lutris database.\n");
+      return false;
+    }
+    printf("Reading TOSEC database...");
+    while(queryLutris.next()) {
+      CanonicalData item;
+      item.platform = queryLutris.value(0).toString();
+      item.name = queryLutris.value(1).toString();
+      item.file = queryLutris.value(2).toString();
+      item.size = queryLutris.value(3).toLongLong();
+      item.crc  = queryLutris.value(4).toString().toLower();
+      item.sha1 = queryLutris.value(5).toString().toLower();
+      item.md5  = queryLutris.value(6).toString().toLower();
+      if(item.name.isEmpty()) {
+        gamesWithoutName++;
+      } else if(item.sha1.isEmpty() && item.md5.isEmpty()) {
+        gamesWithoutChecksums++;
+      } else {
+        if(item.size == 0) {
+          gamesWithoutSize++;
+        }
+        canonicalImport.append(item);
+        gamesOk++;
+        if(gamesOk % 1000 == 0) {
+          printf("."); fflush(stdout);
+        }
+      }
+    }
+    queryLutris.finish();
+    lutrisdb.close();
+  } else {
+    QXmlStreamReader reader;
+    QFile xmlFile(file);
+    if(xmlFile.open(QIODevice::ReadOnly)) {
+      reader.setDevice(&xmlFile);
+      if(reader.readNext() && reader.isStartDocument()) {
+        CanonicalData item;
+        while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+          QString currentElement = reader.name().toString();
+          if(currentElement == "header") {
+            while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+              QString currentElement = reader.name().toString();
+              if(currentElement == "name") {
+                item.platform = reader.readElementText();
+              } else {
+                reader.skipCurrentElement();
+              }
+            }
+          } else if(currentElement == "game") {
+            if(reader.attributes().hasAttribute("name")) {
+              item.name = reader.attributes().value("name").toString();
+            } else {
+              item.name = "";
+            }
+            while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+              QString currentElement = reader.name().toString();
+              if(currentElement == "rom") {
+                if(reader.attributes().hasAttribute("name")) {
+                  item.file = reader.attributes().value("name").toString();
+                } else {
+                  item.file = "";
+                }
+                if(reader.attributes().hasAttribute("name")) {
+                  item.size = reader.attributes().value("size").toLongLong();
+                } else {
+                  item.size = 0;
+                }
+                if(reader.attributes().hasAttribute("name")) {
+                  item.crc = reader.attributes().value("crc").toString().toLower();
+                } else {
+                  item.crc = "";
+                }
+                if(reader.attributes().hasAttribute("name")) {
+                  item.sha1 = reader.attributes().value("sha1").toString().toLower();
+                } else {
+                  item.sha1 = "";
+                }
+                if(reader.attributes().hasAttribute("name")) {
+                  item.md5 = reader.attributes().value("md5").toString().toLower();
+                } else {
+                  item.md5 = "";
+                }
+                if(item.name.isEmpty()) {
+                  gamesWithoutName++;
+                } else if(item.sha1.isEmpty() && item.md5.isEmpty()) {
+                  gamesWithoutChecksums++;
+                } else {
+                  if(item.size == 0) {
+                    gamesWithoutSize++;
+                  }
+                  canonicalImport.append(item);
+                  gamesOk++;
+                }
+              }
+              reader.skipCurrentElement();
+            }
+          } else if(currentElement != "datafile") {
+            reader.skipCurrentElement();
+          }
+        }
+      }
+    } else {
+      printf("ERROR: Cannot open checksum DAT file. Exiting now.\n");
+      db.close();
+      return false;
+    }
+  }
+  printf("OK\n\n");
+  printf("INFO: Summary:\n\tGames without name: %d\n\tGames without MD5/SHA1: %d\n\t"
+         "Games without size: %d\n\tTOTAL games imported: %d\n\n",
+         gamesWithoutName, gamesWithoutChecksums, gamesWithoutSize, gamesOk);
+
+  if(gamesOk) {
+    printf("INFO: Loading data into database... ");
+    if(!errorDb) {
+      query.prepare("INSERT INTO canonicalData VALUES (?, ?, ?, ?, ?, ?, ?)");
+      QVariantList platforms, games, files, sizes, crcs, sha1s, md5s;
+      for(const auto &item: std::as_const(canonicalImport)) {
+        platforms << item.platform;
+        games << item.name;
+        files << item.file;
+        sizes << item.size;
+        crcs  << item.crc;
+        sha1s << item.sha1;
+        md5s  << item.md5;
+      }
+      query.addBindValue(platforms);
+      query.addBindValue(games);
+      query.addBindValue(files);
+      query.addBindValue(sizes);
+      query.addBindValue(crcs);
+      query.addBindValue(sha1s);
+      query.addBindValue(md5s);
+      if(!query.execBatch()) {
+        printf("\nERROR: Error while adding data into table canonicalData. Exiting.\n");
+        qDebug() << query.lastError();
+        errorDb = true;
+      } else {
+        printf("OK\n");
+      }
+    }
+
+    if(useTransaction && !db.commit()) {
+      qDebug() << db.lastError();
+      db.rollback();
+      errorDb = true;
+      printf("ERROR: Error while populating the database. Exiting.\n");
+    } else if(!errorDb) {
+      printf("INFO: Data import completed successfully. Now deleting duplicates... ");
+      query.prepare("DELETE FROM canonicalData WHERE ROWID NOT IN"
+                    " (SELECT MIN(ROWID) FROM canonicalData GROUP BY"
+                    "  platform, game, file, crc, sha1, md5)");
+      if(query.exec()) {
+        query.finish();
+      }
+      printf("OK. Now exiting.\n");
+    }
+  } else {
+    printf("WARNING: Nothing to be loaded. Exiting.\n");
+  }
+  db.close();
+
+  return !errorDb;
+}
+
+void NameTools::loadConfig(const QString &configPath,
+                           const QString &code, const QString &name)
+{
+  platformCatalogs.clear();
+
+  QFile configFile(configPath);
+  if(!configFile.open(QIODevice::ReadOnly))
+    return;
+
+  QByteArray saveData = configFile.readAll();
+  QJsonDocument json(QJsonDocument::fromJson(saveData));
+
+  if(json.isNull() || json.isEmpty())
+    return;
+
+  QJsonArray platformsArray = json["platforms"].toArray();
+  for(int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {
+    QJsonObject platformObject = platformsArray[platformIndex].toObject();
+
+    QString platformName = platformObject[name].toString();
+    QString platformIdn = platformObject[code].toString();
+
+    if(!platformIdn.isEmpty() && !platformName.isEmpty() &&
+       platformName == Skyscraper::config.platform) {
+      platformCatalogs.append(platformIdn);
+    }
+  }
+}
+
+qint64 NameTools::dirSize(const QString &dirPath)
+{
+  qint64 size = 0;
+  QDir dir(dirPath);
+
+  QDir::Filters fileFilters = QDir::Files|QDir::System|QDir::Hidden;
+  const auto &listFiles = dir.entryInfoList(fileFilters);
+  for(const QFileInfo &file: listFiles) {
+    size += file.size();
+  }
+
+  QDir::Filters dirFilters = QDir::Dirs|QDir::NoDotAndDotDot|QDir::System|QDir::Hidden;
+  const auto &listDirs = dir.entryInfoList(dirFilters);
+  for(const QFileInfo &dir: listDirs) {
+    size += dir.size();
+    if(!dir.isSymLink()) {
+      size += dirSize(dirPath + "/" + dir.fileName());
+    }
+  }
+  return size;
+}
+
+qint64 NameTools::calculateGameSize(const QString &filePath)
+{
+  // Limitations: It is not possible to include 3DS updates in the 3DS games calculation
+  //              It is not possible to accurately calculate the size of Linux games
+  qint64 diskSize = 0;
+
+  if(filePath.contains("[realhw]")) {
+    diskSize = 0;
+  } else if(filePath.endsWith(".m3u")) {
+    QFile playlist(filePath);
+    if(playlist.open(QFile::ReadOnly | QFile::Text)) {
+      QTextStream filelist(&playlist);
+      while(!filelist.atEnd()) {
+        diskSize += calculateGameSize(QFileInfo(filePath).absolutePath()
+                                           + '/' + filelist.readLine());
+      }
+      diskSize += QFileInfo(filePath).size();
+    } else {
+      printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
+             filePath.toStdString().c_str());
+    }
+  } else if(filePath.endsWith(".cue")) {
+    QFile playlist(filePath);
+    if(playlist.open(QFile::ReadOnly | QFile::Text)) {
+      QTextStream filelist(&playlist);
+      while(!filelist.atEnd()) {
+        QString line = filelist.readLine();
+        if(line.startsWith("FILE ")) {
+          int trackTypePos = line.lastIndexOf(" ");
+          QString track = line.mid(5, trackTypePos - 5).remove("\"");
+          diskSize += QFileInfo(QFileInfo(filePath).absolutePath()
+                                   + '/' + track).size();
+        }
+      }
+      diskSize += QFileInfo(filePath).size();
+    } else {
+      printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
+             filePath.toStdString().c_str());
+    }
+  } else if(filePath.endsWith(".actionmax") ||
+            filePath.endsWith(".daphne")) {
+    QFile playlist(filePath);
+    if(playlist.open(QFile::ReadOnly | QFile::Text)) {
+      QTextStream filelist(&playlist);
+      while(!filelist.atEnd()) {
+        QString line = filelist.readLine();
+        QStringList parameters;
+        if(filePath.endsWith(".actionmax")) {
+          parameters = line.split(".");
+        } else {
+          parameters = line.split(" ");
+        }
+        if(parameters.size() > 1) {
+          diskSize += dirSize(QFileInfo(filePath).absolutePath()
+                                              + '/' + parameters.at(1));
+        }
+      }
+      diskSize += QFileInfo(filePath).size();
+    } else {
+      printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
+             filePath.toStdString().c_str());
+    }
+  } else if(filePath.endsWith(".playdate") ||
+            filePath.endsWith(".scummvm")  ||
+            filePath.endsWith(".vita")) {
+    diskSize += dirSize(QFileInfo(filePath).absolutePath());
+  } else if(filePath.endsWith(".ps3") ||
+            (filePath.endsWith(".wiiu") && !QFileInfo(filePath).isSymLink())) {
+    diskSize += dirSize(QFileInfo(filePath).absolutePath() + '/'
+                        + QFileInfo(filePath).completeBaseName());
+  } else if(Skyscraper::config.platform == "switch") {
+    diskSize += dirSize(QFileInfo(QFileInfo(filePath).symLinkTarget()).absolutePath());
+  } else if(filePath.endsWith(".lutris")) {
+    QFile playlist(filePath);
+    if(playlist.open(QFile::ReadOnly | QFile::Text)) {
+      QTextStream filelist(&playlist);
+      while(!filelist.atEnd()) {
+        QString line = filelist.readLine();
+        QStringList parameters = line.split("/");
+        if(parameters.size() > 1) {
+          QString windowsDir = get().searchLutrisData(parameters.at(1));
+          if(!windowsDir.isEmpty()) {
+            diskSize += dirSize(QFileInfo(windowsDir).absolutePath());
+            diskSize += QFileInfo(filePath).size();
+          }
+        }
+      }
+    } else {
+      printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
+             filePath.toStdString().c_str());
+    }
+  } else {
+    diskSize += QFileInfo(filePath).size();
+  }
+
+  return diskSize;
+}
+
+QString NameTools::searchLutrisData(const QString &slugName)
+{
+  if(dbInitialized.testAndSetAcquire(0, 1)) {
+    db = QSqlDatabase::addDatabase("QSQLITE", "lutris");
+    db.setDatabaseName(dbLutris);
+    db.setConnectOptions("QSQLITE_OPEN_READONLY");
+    if(!db.open()) {
+      printf("ERROR: Could not open the database %s. Please create it using the "
+             "option '--loadchecksum FILENAME'\n", dbLutris.toStdString().c_str());
+      qDebug() << db.lastError();
+      return "";
+    }
+  }
+  QSqlQuery query(db);
+  query.setForwardOnly(true);
+  query.prepare("SELECT configpath FROM games WHERE slug='" + slugName + "'");
+  if(!query.exec()) {
+    qDebug() << query.lastError();
+    printf("ERROR: Error while accessing data from Lutris DB.\n");
+    return "";
+  }
+  bool found = false;
+  QString configFile;
+  while(query.next()) {
+    configFile = query.value(0).toString();
+    found = true;
+    break;
+  }
+  query.finish();
+  if(found) {
+    configFile = configLutris + configFile + ".yml";
+    QFile playlist(configFile);
+    if(playlist.open(QFile::ReadOnly | QFile::Text)) {
+      QTextStream filelist(&playlist);
+      while(!filelist.atEnd()) {
+        QString line = filelist.readLine();
+        if(line.startsWith("  exe: ")) {
+          return line.mid(7);
+        }
+      }
+    } else {
+      printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
+             configFile.toStdString().c_str());
+    }
+  }
+  printf("ERROR: Could not determine the base directory from the Lutris setup. Skipping.\n");
+
+  return "";
 }

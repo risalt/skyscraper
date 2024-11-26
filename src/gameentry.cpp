@@ -37,6 +37,11 @@ GameEntry::GameEntry(const QByteArray & buffer)
   bRead >>
         id >>
         path >>
+        canonical.name >>
+        canonical.size >>
+        canonical.crc >>
+        canonical.sha1 >>
+        canonical.md5 >>
         title >>
         titleSrc >>
         platform >>
@@ -68,6 +73,7 @@ GameEntry::GameEntry(const QByteArray & buffer)
         lastPlayed >>
         firstPlayed >>
         timePlayed >>
+        diskSize >>
         coverFile >>
         coverData >>
         coverSrc >>
@@ -125,6 +131,11 @@ QByteArray GameEntry::serialize() const
   bWrite << 
          id <<
          path <<
+         canonical.name <<
+         canonical.size <<
+         canonical.crc <<
+         canonical.sha1 <<
+         canonical.md5 <<
          title <<
          titleSrc <<
          platform <<
@@ -156,6 +167,7 @@ QByteArray GameEntry::serialize() const
          lastPlayed <<
          firstPlayed <<
          timePlayed <<
+         diskSize <<
          coverFile <<
          coverData <<
          coverSrc <<
@@ -209,6 +221,7 @@ QByteArray GameEntry::serialize() const
 
 void GameEntry::resetMedia()
 {
+  CanonicalData empty;
   coverData = QByteArray();
   screenshotData = QByteArray();
   wheelData = QByteArray();
@@ -216,6 +229,7 @@ void GameEntry::resetMedia()
   textureData = QByteArray();
   videoData = "";
   manualData = "";
+  canonical = empty;
 }
 
 int GameEntry::getCompleteness() const
@@ -362,6 +376,11 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
 {
   in >> game.id >>
         game.path >>
+        game.canonical.name >>
+        game.canonical.size >>
+        game.canonical.crc >>
+        game.canonical.sha1 >>
+        game.canonical.md5 >>
         game.title >>
         game.titleSrc >>
         game.platform >>
@@ -393,6 +412,7 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
         game.lastPlayed >>
         game.firstPlayed >>
         game.timePlayed >>
+        game.diskSize >>
         game.coverFile >>
         game.coverData >>
         game.coverSrc >>
@@ -448,6 +468,11 @@ QDataStream &operator<<(QDataStream &out, const GameEntry &game)
 {
   out << game.id <<
          game.path <<
+         game.canonical.name <<
+         game.canonical.size <<
+         game.canonical.crc <<
+         game.canonical.sha1 <<
+         game.canonical.md5 <<
          game.title <<
          game.titleSrc <<
          game.platform <<
@@ -479,6 +504,7 @@ QDataStream &operator<<(QDataStream &out, const GameEntry &game)
          game.lastPlayed <<
          game.firstPlayed <<
          game.timePlayed <<
+         game.diskSize <<
          game.coverFile <<
          game.coverData <<
          game.coverSrc <<
@@ -535,6 +561,11 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
     debug.nospace() <<
       "\nField 'id': " << game.id <<
       "\nField 'path': " << game.path <<
+      "\nField 'Canonical name': " <<  game.canonical.name <<
+      "\nField 'Canonical size': " <<  game.canonical.size <<
+      "\nField 'Canonical CRC': " <<  game.canonical.crc <<
+      "\nField 'Canonical SHA1': " <<  game.canonical.sha1 <<
+      "\nField 'Canonical MD5': " <<  game.canonical.md5 <<
       "\nField 'title': " << game.title <<
       "\nField 'titleSrc': " << game.titleSrc <<
       "\nField 'platform': " << game.platform <<
@@ -566,6 +597,7 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'lastPlayed': " << game.lastPlayed <<
       "\nField 'firstPlayed': " << game.firstPlayed <<
       "\nField 'timePlayed': " << game.timePlayed <<
+      "\nField 'diskSize': " << game.diskSize <<
       "\nField 'coverFile': " << game.coverFile <<
       "\nField 'coverData': " << "Data:" << game.coverData.size() <<
       "\nField 'coverSrc': " << game.coverSrc <<

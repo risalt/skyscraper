@@ -35,9 +35,8 @@
 #include <QRandomGenerator>
 #endif
 
-RawG::RawG(Settings *config,
-           QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+RawG::RawG(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   QString platformDb;
 
@@ -77,10 +76,25 @@ void RawG::getSearchResults(QList<GameEntry> &gameEntries,
   limiter.exec();
   netComm->request(searchUrl);
   q.exec();
+  if(netComm->getError() != QNetworkReply::NoError &&
+     netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
+    printf("Connection error. Is the API down?\n");
+    searchError = true;
+    return;
+  } else {
+    searchError = false;
+  }
   data = netComm->getData();
 
+  if(data.contains("API limit reached")) {
+    printf("\033[1;31mThe RAWG monthly API limit has been reached. Try next month.\033[0m\n");
+    searchError = true;
+    reqRemaining = 0;
+    return;
+  }
   jsonDoc = QJsonDocument::fromJson(data);
   if(jsonDoc.isEmpty()) {
+    searchError = true;
     return;
   }
 

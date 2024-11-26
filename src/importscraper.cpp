@@ -29,8 +29,9 @@
 #include "importscraper.h"
 
 ImportScraper::ImportScraper(Settings *config,
-                             QSharedPointer<NetManager> manager)
-  : AbstractScraper(config, manager)
+                             QSharedPointer<NetManager> manager,
+                             QString threadId)
+  : AbstractScraper(config, manager, threadId)
 {
   fetchOrder.append(TITLE);
   fetchOrder.append(DEVELOPER);
@@ -84,7 +85,7 @@ void ImportScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameE
   fetchGameResources(game, sharedBlobs, cache);
 }
 
-void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, QString &, QString &)
+void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &, const QFileInfo &originalInfo, QString &, QString &, QString)
 {
   data = "";
   textualFile = "";
@@ -96,17 +97,17 @@ void ImportScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &in
   videoFile = "";
   manualFile = "";
   GameEntry game;
-  bool textualFound = checkType(info.completeBaseName(), textual, textualFile);
-  bool screenshotFound = checkType(info.completeBaseName(), screenshots, screenshotFile);
-  bool coverFound = checkType(info.completeBaseName(), covers, coverFile);
-  bool wheelFound = checkType(info.completeBaseName(), wheels, wheelFile);
-  bool marqueeFound = checkType(info.completeBaseName(), marquees, marqueeFile);
-  bool textureFound = checkType(info.completeBaseName(), textures, textureFile);
-  bool videoFound = checkType(info.completeBaseName(), videos, videoFile);
-  bool manualFound = checkType(info.completeBaseName(), manuals, manualFile);
+  bool textualFound = checkType(originalInfo.completeBaseName(), textual, textualFile);
+  bool screenshotFound = checkType(originalInfo.completeBaseName(), screenshots, screenshotFile);
+  bool coverFound = checkType(originalInfo.completeBaseName(), covers, coverFile);
+  bool wheelFound = checkType(originalInfo.completeBaseName(), wheels, wheelFile);
+  bool marqueeFound = checkType(originalInfo.completeBaseName(), marquees, marqueeFile);
+  bool textureFound = checkType(originalInfo.completeBaseName(), textures, textureFile);
+  bool videoFound = checkType(originalInfo.completeBaseName(), videos, videoFile);
+  bool manualFound = checkType(originalInfo.completeBaseName(), manuals, manualFile);
   if(textualFound || screenshotFound || coverFound || wheelFound || marqueeFound ||
      textureFound || videoFound || manualFound) {
-    game.title = info.completeBaseName();
+    game.title = originalInfo.completeBaseName();
     game.platform = config->platform;
     gameEntries.append(game);
   }
