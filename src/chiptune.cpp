@@ -50,7 +50,7 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
   QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE", "navidrome");
   navidrome.setDatabaseName(config->navidromeDb);
   navidrome.setConnectOptions("QSQLITE_OPEN_READONLY");
-  printf("INFO: Reading the videogame music database... ");
+  printf("INFO: Reading the videogame music database... "); fflush(stdout);
   if(!navidrome.open()) {
     printf("ERROR: Connection to Navidrome database has failed.\n");
     qDebug() << navidrome.lastError();
@@ -93,7 +93,7 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
     naviOk = false;
   }
   else {
-    printf("OK.\n");
+    printf("DONE\n");
   }
 
   fetchOrder.append(CHIPTUNE);

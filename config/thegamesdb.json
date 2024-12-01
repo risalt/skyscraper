@@ -46,6 +46,11 @@
       "code": "apple2"
     },
     {
+      "id": 4942,
+      "name": "Apple IIGS",
+      "code": "apple2gs"
+    },
+    {
       "id": 23,
       "name": "Arcade",
       "code": "arcade"

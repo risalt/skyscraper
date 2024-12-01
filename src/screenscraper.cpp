@@ -92,7 +92,7 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
   searchError = false;
   for(int retries = 0; retries < RETRIESMAX; ++retries) {
     limiter.exec();
-    printf("1");
+    printf("1"); fflush(stdout);
     netComm->request(gameUrl);
     q.exec();
     data = netComm->getData();
@@ -158,7 +158,7 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
     int openDelims = data.count('{');
     int closeDelims = data.count('}');
     if(openDelims != closeDelims && QJsonDocument::fromJson(data).isNull()) {
-      printf("\nERROR: Detected delimiter unbalance! Trying to correct... ");
+      printf("\nERROR: Detected delimiter unbalance! Trying to correct... "); fflush(stdout);
       if(openDelims < closeDelims) {
         int delimsDetected = 0;
         int pos = 0;
@@ -408,7 +408,7 @@ void ScreenScraper::getCover(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("2");
+      printf("2"); fflush(stdout);
       netComm->request(url);
       q.exec();
       QImage image;
@@ -432,7 +432,7 @@ void ScreenScraper::getScreenshot(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("3");
+      printf("3"); fflush(stdout);
       netComm->request(url);
       q.exec();
       QImage image;
@@ -456,7 +456,7 @@ void ScreenScraper::getWheel(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("4");
+      printf("4"); fflush(stdout);
       netComm->request(url);
       q.exec();
       QImage image;
@@ -482,7 +482,7 @@ void ScreenScraper::getMarquee(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("5");
+      printf("5"); fflush(stdout);
       netComm->request(url);
       q.exec();
       QImage image;
@@ -506,7 +506,7 @@ void ScreenScraper::getTexture(GameEntry &game) {
     bool moveOn = false;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("6");
+      printf("6"); fflush(stdout);
       netComm->request(url);
       q.exec();
       QImage image;
@@ -536,7 +536,7 @@ void ScreenScraper::getVideo(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("7");
+      printf("7"); fflush(stdout);
       netComm->request(url);
       q.exec();
       game.videoData = netComm->getData();
@@ -565,7 +565,7 @@ void ScreenScraper::getManual(GameEntry &game)
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
       limiter.exec();
-      printf("8");
+      printf("8"); fflush(stdout);
       netComm->request(url);
       q.exec();
       game.manualData = netComm->getData();

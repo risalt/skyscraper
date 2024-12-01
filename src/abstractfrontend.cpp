@@ -40,13 +40,12 @@ void AbstractFrontend::setConfig(Settings *config)
 
 void AbstractFrontend::sortEntries(QList<GameEntry> &gameEntries)
 {
-  printf("Sorting entries...");
+  printf("Sorting entries..."); fflush(stdout);
   int dots = 0;
   std::sort(gameEntries.begin(), gameEntries.end(),
         [&dots](const GameEntry a, const GameEntry b) -> bool {
           if(dots % 1000 == 0) {
-            printf(".");
-            fflush(stdout);
+            printf("."); fflush(stdout);
           }
           dots++;
           QString firstTitle = a.title.toLower();

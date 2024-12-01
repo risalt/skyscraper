@@ -61,8 +61,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
   finalOutput.append("<?xml version=\"1.0\"?>\n<gameList>\n");
   for(const auto &entry: std::as_const(gameEntries)) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
 

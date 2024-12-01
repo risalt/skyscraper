@@ -44,7 +44,7 @@ VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString thr
   offlineScraper = true;
 
   // Extract mapping Game->(Platform+Link) from the csv file:
-  printf("INFO: Reading the videogame maps file... ");
+  printf("INFO: Reading the videogame maps file... "); fflush(stdout);
   QString vgmapsFileName = config->vgmapsPath + "/vgmaps.csv";
   QFile vgmapsFile(vgmapsFileName);
   if(!vgmapsFile.open(QFile::ReadOnly | QFile::Text)) {

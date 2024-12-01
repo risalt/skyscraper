@@ -51,13 +51,12 @@ bool RetroBat::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Queue>
 {
   gameEntries = oldEntries;
 
-  printf("Resolving missing entries...");
+  printf("Resolving missing entries..."); fflush(stdout);
   int dots = 0;
   for(int a = 0; a < gameEntries.length(); ++a) {
     dots++;
     if(dots % 100 == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     QFileInfo current(gameEntries.at(a).path);
     for(int b = 0; b < queue->length(); ++b) {
@@ -128,8 +127,7 @@ void RetroBat::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries)
   finalOutput.append("<?xml version=\"1.0\"?>\n<gameList>\n");
   for(auto &entry: gameEntries) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
 

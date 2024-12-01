@@ -64,7 +64,7 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
     reqRemaining = 0;
     return;
   }
-  printf("INFO: Reading MobyGames header game database...");
+  printf("INFO: Reading MobyGames header game database..."); fflush(stdout);
   fflush(stdout);
   platformDb = QString::fromUtf8(dbFile.readAll());
   dbFile.close();
@@ -201,12 +201,15 @@ void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, Ga
 
   jsonObj = QJsonDocument::fromJson(game.miscData).object();
 
-  if(!offlineOnly) {
+  if(offlineOnly) {
+    jsonDoc = QJsonDocument();
+    jsonMedia = QJsonDocument();
+    jsonScreens = QJsonDocument();
+  } else {
     printf("Waiting to get media data...\n");
     limiter.exec();
     netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" +
-                     game.url.mid(game.url.indexOf("?api_key="),
-                                  game.url.length() - game.url.indexOf("?api_key=")));
+                     "?api_key=" + config->userCreds);
     q.exec();
     data = netComm->getData();
     jsonMedia = QJsonDocument::fromJson(data);
@@ -214,8 +217,7 @@ void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, Ga
     printf("Waiting to get screenshot data...\n");
     limiter.exec();
     netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" +
-                     game.url.mid(game.url.indexOf("?api_key="),
-                                  game.url.length() - game.url.indexOf("?api_key=")));
+                     "?api_key=" + config->userCreds);
     q.exec();
     data = netComm->getData();
     jsonScreens = QJsonDocument::fromJson(data);
@@ -665,16 +667,16 @@ void OfflineMobyGames::getTexture(GameEntry &game)
 
 void OfflineMobyGames::getWheel(GameEntry &game)
 {
-  if(jsonScreens.isEmpty()) {
+  if(offlineOnly || jsonScreens.isEmpty()) {
     return;
   }
 
   QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
 
-  if(jsonScreenshots.count() < 1) {
+  if(jsonScreenshots.isEmpty()) {
     return;
   }
-  int chosen = 1;
+  int chosen = 0;
   printf("Retrieving wheel data...\n");
   netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));
   q.exec();
@@ -687,22 +689,21 @@ void OfflineMobyGames::getWheel(GameEntry &game)
 
 void OfflineMobyGames::getScreenshot(GameEntry &game)
 {
-  if(jsonScreens.isEmpty()) {
+  if(offlineOnly || jsonScreens.isEmpty()) {
     return;
   }
 
   QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
 
+  int chosen = 1;
   if(jsonScreenshots.count() < 2) {
     return;
-  }
-  int chosen = 2;
-  if(jsonScreenshots.count() >= 3) {
+  } else if(jsonScreenshots.count() > 2) {
     // First 2 are almost always not ingame, so skip those if we have 3 or more
 #if QT_VERSION >= 0x050a00
-    chosen = (QRandomGenerator::global()->generate() % jsonScreenshots.count() - 3) + 3;
+    chosen = (QRandomGenerator::global()->generate() % (jsonScreenshots.count() - 2)) + 2;
 #else
-    chosen = (qrand() % jsonScreenshots.count() - 3) + 3;
+    chosen = (qrand() % (jsonScreenshots.count() - 2)) + 2;
 #endif
   }
   printf("Retrieving screenshot data...\n");

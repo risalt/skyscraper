@@ -985,7 +985,7 @@ bool NameTools::importCanonicalData(const QString &file)
   bool errorDb = true;
   QSqlQuery query(db);
   if(!exists) {
-    printf("INFO: Creating SQLite database... ");
+    printf("INFO: Creating SQLite database... "); fflush(stdout);
     // Database structure creation
     query.prepare("CREATE TABLE canonicalData (platform TEXT not NULL, game TEXT not NULL,"
                   " file TEXT, size INTEGER, crc TEXT, sha1 TEXT, md5 TEXT)");
@@ -1003,11 +1003,11 @@ bool NameTools::importCanonicalData(const QString &file)
     }
     if(errorDb) {
       qDebug() << query.lastError();
-      printf("\nERROR: Error while creating the database structure. Exiting.\n");
+      printf("ERROR: Error while creating the database structure. Exiting.\n");
       db.close();
       return false;
     } else {
-      printf("OK\n");
+      printf("DONE\n");
     }
   } else {
     errorDb = false;
@@ -1024,7 +1024,7 @@ bool NameTools::importCanonicalData(const QString &file)
   int gamesWithoutChecksums = 0;
   int gamesWithoutSize = 0;
   int gamesOk = 0;
-  printf("INFO: Reading data from import file... ");
+  printf("INFO: Reading data from import file... "); fflush(stdout);
   QList<CanonicalData> canonicalImport;
   if(file == "LUTRISDB") {
     QSqlDatabase lutrisdb = QSqlDatabase::addDatabase("QMYSQL", "lutrisdb");
@@ -1052,7 +1052,7 @@ bool NameTools::importCanonicalData(const QString &file)
       printf("ERROR: Error while accessing TOSEC data from Lutris database.\n");
       return false;
     }
-    printf("Reading TOSEC database...");
+    printf("Reading TOSEC database..."); fflush(stdout);
     while(queryLutris.next()) {
       CanonicalData item;
       item.platform = queryLutris.value(0).toString();
@@ -1079,7 +1079,7 @@ bool NameTools::importCanonicalData(const QString &file)
     }
     queryLutris.finish();
     lutrisdb.close();
-  } else {
+  } else if(file.endsWith(".dat")) {
     QXmlStreamReader reader;
     QFile xmlFile(file);
     if(xmlFile.open(QIODevice::ReadOnly)) {
@@ -1111,22 +1111,22 @@ bool NameTools::importCanonicalData(const QString &file)
                 } else {
                   item.file = "";
                 }
-                if(reader.attributes().hasAttribute("name")) {
+                if(reader.attributes().hasAttribute("size")) {
                   item.size = reader.attributes().value("size").toLongLong();
                 } else {
                   item.size = 0;
                 }
-                if(reader.attributes().hasAttribute("name")) {
+                if(reader.attributes().hasAttribute("crc")) {
                   item.crc = reader.attributes().value("crc").toString().toLower();
                 } else {
                   item.crc = "";
                 }
-                if(reader.attributes().hasAttribute("name")) {
+                if(reader.attributes().hasAttribute("sha1")) {
                   item.sha1 = reader.attributes().value("sha1").toString().toLower();
                 } else {
                   item.sha1 = "";
                 }
-                if(reader.attributes().hasAttribute("name")) {
+                if(reader.attributes().hasAttribute("md5")) {
                   item.md5 = reader.attributes().value("md5").toString().toLower();
                 } else {
                   item.md5 = "";
@@ -1155,14 +1155,115 @@ bool NameTools::importCanonicalData(const QString &file)
       db.close();
       return false;
     }
+  } else if(file.endsWith(".xml")) {
+    QXmlStreamReader reader;
+    QFile xmlFile(file);
+    if(xmlFile.open(QIODevice::ReadOnly)) {
+      reader.setDevice(&xmlFile);
+      CanonicalData item;
+      // Dirty hack: uncomment the three printf below to generate a MAME mapping file.
+      //printf("\n");
+      if(reader.readNext() && reader.isStartDocument()) {
+        while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+          if(reader.name().toString() == "softwarelist") {
+            if(reader.attributes().hasAttribute("description")) {
+              item.platform = reader.attributes().value("description").toString();
+            }
+            break;
+          }
+        }
+        while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+          QString currentElement = reader.name().toString();
+          if(currentElement == "software") {
+            //printf("ZZZ;\"%s\";", reader.attributes().value("name").toString().toStdString().c_str());
+            while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+              QString currentElement = reader.name().toString();
+              if(currentElement == "description") {
+                item.name = reader.readElementText();
+                //QString t=item.name; printf("\"%s\"\n", t.replace(';', ':').toStdString().c_str());
+              } else if(currentElement == "part") {
+                while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+                  QString currentElement = reader.name().toString();
+                  if(currentElement == "dataarea" ||
+                     currentElement == "diskarea") {
+                    while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
+                      QString currentElement = reader.name().toString();
+                      if(currentElement == "rom" ||
+                         currentElement == "disk") {
+                        if(reader.attributes().hasAttribute("name")) {
+                          item.file = reader.attributes().value("name").toString();
+                        } else {
+                          item.file = "";
+                        }
+                        if(reader.attributes().hasAttribute("size")) {
+                          item.size = reader.attributes().value("size").toLongLong();
+                        } else {
+                          item.size = 0;
+                        }
+                        if(reader.attributes().hasAttribute("crc")) {
+                          item.crc = reader.attributes().value("crc").toString().toLower();
+                        } else {
+                          item.crc = "";
+                        }
+                        if(reader.attributes().hasAttribute("sha1")) {
+                          item.sha1 = reader.attributes().value("sha1").toString().toLower();
+                        } else {
+                          item.sha1 = "";
+                        }
+                        if(reader.attributes().hasAttribute("md5")) {
+                          item.md5 = reader.attributes().value("md5").toString().toLower();
+                        } else {
+                          item.md5 = "";
+                        }
+                        if(item.name.isEmpty()) {
+                          gamesWithoutName++;
+                        } else if(item.sha1.isEmpty() && item.md5.isEmpty()) {
+                          gamesWithoutChecksums++;
+                        } else {
+                          if(item.size == 0) {
+                            gamesWithoutSize++;
+                          }
+                          canonicalImport.append(item);
+                          gamesOk++;
+                        }
+                      }
+                      reader.skipCurrentElement();
+                    }
+                  } else {
+                    reader.skipCurrentElement();
+                  }
+                }
+              } else {
+                reader.skipCurrentElement();
+              }
+            }
+          } else if(currentElement != "softwarelist") {
+            reader.skipCurrentElement();
+          }
+        }
+      }
+    } else {
+      printf("ERROR: Cannot open checksum XML file. Exiting now.\n");
+      db.close();
+      return false;
+    }
+  } else {
+    printf("ERROR: Please indicate LUTRISDB, an .xml file or a .dat one.\n");
+    db.close();
+    return false;
   }
-  printf("OK\n\n");
+  printf("DONE\n\n");
   printf("INFO: Summary:\n\tGames without name: %d\n\tGames without MD5/SHA1: %d\n\t"
          "Games without size: %d\n\tTOTAL games imported: %d\n\n",
          gamesWithoutName, gamesWithoutChecksums, gamesWithoutSize, gamesOk);
 
+  if(Skyscraper::config.pretend) {
+    // Disable dumping data into the database. Use to test input files or generate a MAME mapping.
+    gamesOk = 0;
+  }
+
   if(gamesOk) {
-    printf("INFO: Loading data into database... ");
+    printf("INFO: Loading data into database... "); fflush(stdout);
     if(!errorDb) {
       query.prepare("INSERT INTO canonicalData VALUES (?, ?, ?, ?, ?, ?, ?)");
       QVariantList platforms, games, files, sizes, crcs, sha1s, md5s;
@@ -1187,7 +1288,7 @@ bool NameTools::importCanonicalData(const QString &file)
         qDebug() << query.lastError();
         errorDb = true;
       } else {
-        printf("OK\n");
+        printf("DONE\n");
       }
     }
 
@@ -1197,7 +1298,7 @@ bool NameTools::importCanonicalData(const QString &file)
       errorDb = true;
       printf("ERROR: Error while populating the database. Exiting.\n");
     } else if(!errorDb) {
-      printf("INFO: Data import completed successfully. Now deleting duplicates... ");
+      printf("INFO: Data import completed successfully. Now deleting duplicates... "); fflush(stdout);
       query.prepare("DELETE FROM canonicalData WHERE ROWID NOT IN"
                     " (SELECT MIN(ROWID) FROM canonicalData GROUP BY"
                     "  platform, game, file, crc, sha1, md5)");
@@ -1267,8 +1368,47 @@ qint64 NameTools::dirSize(const QString &dirPath)
 
 qint64 NameTools::calculateGameSize(const QString &filePath)
 {
+  qint64 diskSize = recursiveCalculateGameSize(filePath);
+
+  QString multiDisk;
+  for(int i=2; i<8; i++) {
+    QString pattern = QString::number(i);
+    if(Skyscraper::config.excludePattern.contains("(Disk " + pattern) &&
+       filePath.contains("(Disk 1")) {
+      multiDisk = filePath;
+      multiDisk.replace("(Disk 1", "(Disk " + pattern);
+      if(QFileInfo(multiDisk).exists()) {
+        diskSize += recursiveCalculateGameSize(multiDisk);
+      }
+    }
+  }
+  for(int i=2; i<5; i++) {
+    QString pattern = QString::number(i);
+    if(Skyscraper::config.excludePattern.contains("DVD" + pattern) &&
+       filePath.contains("DVD1")) {
+      multiDisk = filePath;
+      multiDisk.replace("DVD1", "DVD" + pattern);
+      if(QFileInfo(multiDisk).exists()) {
+        diskSize += recursiveCalculateGameSize(multiDisk);
+      }
+    }
+  }
+  if(Skyscraper::config.excludePattern.contains("(Disk B") &&
+     filePath.contains("(Disk A")) {
+    multiDisk = filePath;
+    multiDisk.replace("(Disk A", "(Disk B");
+    if(QFileInfo(multiDisk).exists()) {
+      diskSize += recursiveCalculateGameSize(multiDisk);
+    }
+  }
+  
+  return diskSize;
+}
+
+qint64 NameTools::recursiveCalculateGameSize(const QString &filePath)
+{
   // Limitations: It is not possible to include 3DS updates in the 3DS games calculation
-  //              It is not possible to accurately calculate the size of Linux games
+  //              It is not possible to accurately calculate the size of some Linux games
   qint64 diskSize = 0;
 
   if(filePath.contains("[realhw]")) {
@@ -1278,8 +1418,8 @@ qint64 NameTools::calculateGameSize(const QString &filePath)
     if(playlist.open(QFile::ReadOnly | QFile::Text)) {
       QTextStream filelist(&playlist);
       while(!filelist.atEnd()) {
-        diskSize += calculateGameSize(QFileInfo(filePath).absolutePath()
-                                           + '/' + filelist.readLine());
+        diskSize += recursiveCalculateGameSize(QFileInfo(filePath).absolutePath()
+                                               + '/' + filelist.readLine());
       }
       diskSize += QFileInfo(filePath).size();
     } else {
@@ -1355,6 +1495,12 @@ qint64 NameTools::calculateGameSize(const QString &filePath)
     } else {
       printf("ERROR: Cannot open file '%s' for reading. Cannot determine game disk size.\n",
              filePath.toStdString().c_str());
+    }
+  } else if(filePath.endsWith(".linux")) {
+    if(QFileInfo(filePath).isSymLink()) {
+      diskSize += QFileInfo(filePath).size();
+    } else {
+      diskSize += dirSize(QFileInfo(filePath).absolutePath());
     }
   } else {
     diskSize += QFileInfo(filePath).size();

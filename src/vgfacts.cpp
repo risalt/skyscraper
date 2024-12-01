@@ -58,7 +58,7 @@ VGFacts::VGFacts(Settings *config, QSharedPointer<NetManager> manager, QString t
     reqRemaining = 0;
     return;
   }
-  printf("INFO: Reading VGFacts game database...");
+  printf("INFO: Reading VGFacts game database..."); fflush(stdout);
   fflush(stdout);
   triviaDb = QString::fromUtf8(dbFile.readAll());
   dbFile.close();

@@ -58,7 +58,7 @@ GameFaqs::GameFaqs(Settings *config,
     reqRemaining = 0;
     return;
   }
-  printf("INFO: Reading GameFaqs game database...");
+  printf("INFO: Reading GameFaqs game database..."); fflush(stdout);
   fflush(stdout);
   platformDb = QString::fromUtf8(dbFile.readAll());
   dbFile.close();

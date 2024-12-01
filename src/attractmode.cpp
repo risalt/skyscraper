@@ -76,13 +76,12 @@ bool AttractMode::skipExisting(QList<GameEntry> &gameEntries, QSharedPointer<Que
 {
   gameEntries = oldEntries;
 
-  printf("Resolving missing entries...");
+  printf("Resolving missing entries..."); fflush(stdout);
   int dots = 0;
   for(int a = 0; a < gameEntries.length(); ++a) {
     dots++;
     if(dots % 100 == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     for(int b = 0; b < queue->length(); ++b) {
       if(gameEntries.at(a).baseName == queue->at(b).completeBaseName()) {
@@ -148,8 +147,7 @@ void AttractMode::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
   finalOutput.append("#Name;Title;Emulator;CloneOf;Year;Manufacturer;Category;Players;Rotation;Control;Status;DisplayCount;DisplayType;AltRomname;AltTitle;Extra;Buttons;Series;Language;Region;Rating\n");
   for(auto &entry: gameEntries) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
     // Preserve certain data from old game list entry, but only for empty data

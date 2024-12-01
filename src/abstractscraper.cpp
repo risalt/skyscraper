@@ -771,7 +771,7 @@ template <typename T> bool AbstractScraper::getSearchResultsOffline(
   NameTools::generateSearchNames(searchName, safeNameVariations, unsafeNameVariations, true);
   for(const auto &name: std::as_const(safeNameVariations)) {
     if(config->verbosity >= 1) {
-      printf("%d: %s ", pos, name.toStdString().c_str());
+      printf("%d: %s ", pos, name.toStdString().c_str()); fflush(stdout);
     }
     if(fullTitles.contains(name)) {
       if(config->verbosity >= 1) {
@@ -825,7 +825,7 @@ template <typename T> bool AbstractScraper::getSearchResultsOffline(
       printf("\nNo match. Trying lossy name transformations (1)...\n");
       for(const auto &name: std::as_const(safeNameVariations)) {
         if(config->verbosity >= 1) {
-          printf("%d: %s ", pos, name.toStdString().c_str());
+          printf("%d: %s ", pos, name.toStdString().c_str()); fflush(stdout);
         }
         if(mainTitles.contains(name)) {
           if(config->verbosity >= 1) {
@@ -846,7 +846,7 @@ template <typename T> bool AbstractScraper::getSearchResultsOffline(
       printf("\nNo match. Trying lossy name transformations (2)...\n");
       for(const auto &name: std::as_const(unsafeNameVariations)) {
         if(config->verbosity >= 1) {
-          printf("%d: %s ", pos, name.toStdString().c_str());
+          printf("%d: %s ", pos, name.toStdString().c_str()); fflush(stdout);
         }
         if(fullTitles.contains(name)) {
           if(config->verbosity >= 1) {

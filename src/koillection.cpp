@@ -115,15 +115,14 @@ bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue> queue)
   if(collectionId.isEmpty() || koiToken.isEmpty()) {
     return false;
   } else {
-    printf("Identifying missing entries in the database...");
+    printf("Identifying missing entries in the database..."); fflush(stdout);
     int dots = 0;
     QSqlQuery query(db);
     query.exec("select id, ext_idx from koi_item where collection_id = '" + collectionId + "'");
     while(query.next()) {
       dots++;
       if (dots % 100 == 0) {
-        printf(".");
-        fflush(stdout);
+        printf("."); fflush(stdout);
       }
       bool presentInCache = false;
       QString fileToCheck = query.value(1).toString();
@@ -181,7 +180,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
   }
   if(platformsList.isEmpty()) {
-    printf("ERROR: The Platforms category cannot be extracted, verify the Koillection configuration.");
+    printf("ERROR: The Platforms category cannot be extracted, verify the Koillection configuration.\n");
   }
   query.finish();
 
@@ -204,7 +203,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
     }
     if(catalogTagList.isEmpty()) {
-      printf("ERROR: The Catalog Category tags cannot be extracted, verify the Koillection configuration.");
+      printf("ERROR: The Catalog Category tags cannot be extracted, verify the Koillection configuration.\n");
     }
     query.finish();
   }
@@ -228,7 +227,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
     }
     if(yearsList.isEmpty()) {
-      printf("ERROR: The Years category cannot be extracted, verify the Koillection configuration.");
+      printf("ERROR: The Years category cannot be extracted, verify the Koillection configuration.\n");
     }
     query.finish();
   }
@@ -252,7 +251,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
     }
     if(genresList.isEmpty()) {
-      printf("ERROR: The Genres tags cannot be extracted, verify the Koillection configuration.");
+      printf("ERROR: The Genres tags cannot be extracted, verify the Koillection configuration.\n");
     }
     query.finish();
   }
@@ -276,7 +275,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
     }
     if(franchisesList.isEmpty()) {
-      printf("ERROR: The Franchises tags cannot be extracted, verify the Koillection configuration.");
+      printf("ERROR: The Franchises tags cannot be extracted, verify the Koillection configuration.\n");
     }
     query.finish();
   }
@@ -325,8 +324,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
 
   for(const auto &entry: std::as_const(gameEntries)) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
 
@@ -532,7 +530,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         tagList << yearsList[releasedOn.left(4)];
       }
       else {
-        printf("\nERROR: Year tag for date '%s' does not exist.", releasedOn.toStdString().c_str());
+        printf("\nERROR: Year tag for date '%s' does not exist.\n", releasedOn.toStdString().c_str());
       }
     }
     // Platform
@@ -546,7 +544,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
           sanitizedGenre.replace('"', "'");
           sanitizedGenre.replace("\\", "-");
           if(!genresList.contains(sanitizedGenre)) {
-            printf("\nINFO: Creating new genre tag '%s'... ", genre.toStdString().c_str());
+            printf("\nINFO: Creating new genre tag '%s'... ", genre.toStdString().c_str()); fflush(stdout);
             // JSON request contents must never contain the double quote (") or backslash (\) characters
             QString request = "{\"label\": \"" + sanitizedGenre + "\", " +
                         "\"category\": \"/api/tag_categories/" + categoryGenres + "\", " +
@@ -557,10 +555,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             if(jsonObj.contains("id")) {
               genreId = jsonObj["id"].toString();
               genresList[sanitizedGenre] = genreId;
-              printf(" Done.");
+              printf(" DONE\n");
             }
             else {
-              printf("ERROR: Creation of genre tag has failed.");
+              printf("ERROR: Creation of genre tag has failed.\n");
             }
           }
           tagList << genresList[sanitizedGenre];
@@ -576,7 +574,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
           sanitizedFranchise.replace('"', "'");
           sanitizedFranchise.replace("\\", "-");
           if(!franchisesList.contains(sanitizedFranchise)) {
-            printf("\nINFO: Creating new franchise tag '%s'... ", franchise.toStdString().c_str());
+            printf("\nINFO: Creating new franchise tag '%s'... ",
+                   franchise.toStdString().c_str()); fflush(stdout);
             // JSON request contents must never contain the double quote (") or backslash (\) characters
             QString request = "{\"label\": \"" + sanitizedFranchise + "\", " +
                         "\"category\": \"/api/tag_categories/" + categoryFranchises + "\", " +
@@ -587,10 +586,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             if(jsonObj.contains("id")) {
               franchiseId = jsonObj["id"].toString();
               franchisesList[sanitizedFranchise] = franchiseId;
-              printf(" Done.");
+              printf(" DONE\n");
             }
             else {
-              printf("ERROR: Creation of franchise tag has failed.");
+              printf("ERROR: Creation of franchise tag has failed.\n");
             }
           }
           tagList << franchisesList[sanitizedFranchise];
@@ -650,7 +649,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       QString sanitizedName = name;
       sanitizedName.replace('"', "'");
       sanitizedName.replace("\\", "-");
-      printf("\nINFO: Creating new item in database: %s / %s... ", platformCode.toStdString().c_str(), name.toStdString().c_str());
+      printf("\nINFO: Creating new item in database: %s / %s... ",
+             platformCode.toStdString().c_str(), name.toStdString().c_str()); fflush(stdout);
       QString request = "{\"name\": \"" + sanitizedName + "\", \"quantity\": 1, " +
                         "\"collection\": \"/api/collections/" + collectionId + "\", " +
                         "\"tags\": [ \"/api/tags/" + tagList.join("\", \"/api/tags/") + "\" ], " +
@@ -663,7 +663,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       }
       else {
         // Very probably a missing tag
-        printf("ERROR: Creation of item has failed!");
+        printf("ERROR: Creation of item has failed!\n");
       }
     }
     else {
@@ -684,7 +684,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         }
       }
       if(mustUpdate) {
-        printf("\nINFO: Tags for the existing item %s are not updated, fixing...", itemId.toStdString().c_str());
+        printf("\nINFO: Tags for the existing item %s are not updated, fixing...",
+               itemId.toStdString().c_str()); fflush(stdout);
         QString request = "{\"tags\": [ \"/api/tags/" + tagList.join("\", \"/api/tags/") + "\" ]}";
         netComm->request(baseUrl + "/api/items/" + itemId, request, headersPatch, "PATCH");
         q.exec();
@@ -694,10 +695,11 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         }
         else {
           // Very probably a missing tag
-          printf("ERROR: Update of the tags has failed, please review that all tags are created.");
+          printf("ERROR: Update of the tags has failed, please review that all tags are created.\n");
         }
       }
-      printf("\nINFO: Updating existing item in database: %s ", fullName.toStdString().c_str());
+      printf("\nINFO: Updating existing item in database: %s ",
+             fullName.toStdString().c_str()); fflush(stdout);
     }
     if(itemId.isEmpty()) {
       continue;
@@ -809,7 +811,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     bool postTransaction = true;
     bool postStatement = false;
     if(!db.transaction()) {
-      printf("ERROR: The database does not support transactions. Please review the configuration. Moving forward with atomic inserts.\n");
+      printf("ERROR: The database does not support transactions. Please review "
+             "the configuration. Moving forward with atomic inserts.\n");
       postTransaction = false;
     }
 

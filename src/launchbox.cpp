@@ -78,7 +78,7 @@ LaunchBox::LaunchBox(Settings *config,
           reader.readNextStartElement() &&
           schema.value(reader.name().toString()) == LBLAUNCHBOX) {
 
-        printf("INFO: Preparing database... ");
+        printf("INFO: Preparing database... "); fflush(stdout);
         QFile::remove(config->launchBoxDb + ".db");
         if(QFile::exists(config->launchBoxDb + ".db")) {
           printf("ERROR: Old database could not be removed. Exiting.\n");
@@ -298,14 +298,14 @@ LaunchBox::LaunchBox(Settings *config,
                 }
               }
               else if(currentEntity == LBGAMEALTERNATENAME) {
-                syntaxError++;printf("B");
+                syntaxError++; printf("B"); fflush(stdout);
               }
 #pragma GCC diagnostic pop
             break;
             case LBNULL:
             break;
             default:
-              syntaxError++;printf("C");
+              syntaxError++; printf("C"); fflush(stdout);
           }
           // currentGame.resetMedia();
           currentGame = GameEntry();
@@ -329,7 +329,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBRELEASEYEAR:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("D");
+                      syntaxError++; printf("D"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       if(currentText.length() == 4 && currentGame.releaseDate.isEmpty()) {
@@ -340,7 +340,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBNAME:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("E");
+                      syntaxError++; printf("E"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.title = currentText;
@@ -352,7 +352,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBRELEASEDATE:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("F");
+                      syntaxError++; printf("F"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.releaseDate = StrTools::conformReleaseDate(currentText.left(10));
@@ -361,7 +361,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBOVERVIEW:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("G");
+                      syntaxError++; printf("G"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.description = currentText;
@@ -370,7 +370,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBMAXPLAYERS:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("H");
+                      syntaxError++; printf("H"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.players = StrTools::conformPlayers(currentText);
@@ -379,7 +379,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBVIDEOURL:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("I");
+                      syntaxError++; printf("I"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.videoFile = currentText;
@@ -392,13 +392,13 @@ LaunchBox::LaunchBox(Settings *config,
                     }
                     if(!currentEntity || !currentId) {
                       skipGame = true;
-                      syntaxError++;printf("J");
+                      syntaxError++; printf("J"); fflush(stdout);
                     }
                   break;
                   case LBCOMMUNITYRATING:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("K");
+                      syntaxError++; printf("K"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       float rating = currentText.toFloat();
@@ -410,7 +410,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBPLATFORM:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("L");
+                      syntaxError++; printf("L"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.platform = currentText;
@@ -422,7 +422,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBESRB:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("M");
+                      syntaxError++; printf("M"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       if(!currentText.contains("Not Rated", Qt::CaseInsensitive) ||
@@ -434,7 +434,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBGENRES:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("N");
+                      syntaxError++; printf("N"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.tags = StrTools::conformTags(currentText.replace(';', ','));
@@ -443,7 +443,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBDEVELOPER:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("O");
+                      syntaxError++; printf("O"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.developer = currentText;
@@ -452,7 +452,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBPUBLISHER:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAME) {
-                      syntaxError++;printf("P");
+                      syntaxError++; printf("P"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.publisher = currentText;
@@ -461,7 +461,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBALTERNATENAME:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAMEALTERNATENAME) {
-                      syntaxError++;printf("Q");
+                      syntaxError++; printf("Q"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentGame.title = currentText;
@@ -470,7 +470,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBREGION:
                     currentText = reader.readElementText();
                     if(!currentEntity) {
-                      syntaxError++;printf("R");
+                      syntaxError++; printf("R"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty() && (currentEntity == LBGAMEIMAGE)) {
                       currentRegion = currentText;
@@ -479,7 +479,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBFILENAME:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAMEIMAGE) {
-                      syntaxError++;printf("S");
+                      syntaxError++; printf("S"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentFileName = currentText;
@@ -488,7 +488,7 @@ LaunchBox::LaunchBox(Settings *config,
                   case LBTYPE:
                     currentText = reader.readElementText();
                     if(currentEntity != LBGAMEIMAGE) {
-                      syntaxError++;printf("T");
+                      syntaxError++; printf("T"); fflush(stdout);
                     }
                     else if(!currentText.isEmpty()) {
                       currentType = currentText;

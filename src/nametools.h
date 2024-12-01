@@ -68,8 +68,8 @@ public:
   QString searchLutrisData(const QString &filePath);
   static qint64 dirSize(const QString &dirPath);
   static qint64 calculateGameSize(const QString &filePath);
+  static qint64 recursiveCalculateGameSize(const QString &filePath);
   bool searchCanonicalData(CanonicalData &canonical);
-  void setCache(QSharedPointer<Cache> cachePointer);
 
   // Singleton template
   static NameTools & get();

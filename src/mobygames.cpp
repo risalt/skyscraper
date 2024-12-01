@@ -160,8 +160,7 @@ void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
   printf("Waiting to get media data...\n");
   limiter.exec();
   netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/covers" +
-                   game.url.mid(game.url.indexOf("?api_key="),
-                   game.url.length() - game.url.indexOf("?api_key=")));
+                   "?api_key=" + config->userCreds);
   q.exec();
   data = netComm->getData();
   jsonMedia = QJsonDocument::fromJson(data);
@@ -169,8 +168,7 @@ void MobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
   printf("Waiting to get screenshot data...\n");
   limiter.exec();
   netComm->request(game.url.left(game.url.indexOf("?api_key=")) + "/screenshots" +
-                   game.url.mid(game.url.indexOf("?api_key="),
-                   game.url.length() - game.url.indexOf("?api_key=")));
+                   "?api_key=" + config->userCreds);
   q.exec();
   data = netComm->getData();
   jsonScreens = QJsonDocument::fromJson(data);
@@ -610,7 +608,7 @@ void MobyGames::getWheel(GameEntry &game)
   if(jsonScreenshots.count() < 1) {
     return;
   }
-  int chosen = 1;
+  int chosen = 0;
   printf("Waiting to get wheel data...\n");
   netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));
   q.exec();
@@ -629,16 +627,15 @@ void MobyGames::getScreenshot(GameEntry &game)
 
   QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
 
+  int chosen = 1;
   if(jsonScreenshots.count() < 2) {
     return;
-  }
-  int chosen = 2;
-  if(jsonScreenshots.count() >= 3) {
+  } else if(jsonScreenshots.count() > 2) {
     // First 2 are almost always not ingame, so skip those if we have 3 or more
 #if QT_VERSION >= 0x050a00
-    chosen = (QRandomGenerator::global()->generate() % jsonScreenshots.count() - 3) + 3;
+    chosen = (QRandomGenerator::global()->generate() % (jsonScreenshots.count() - 2)) + 2;
 #else
-    chosen = (qrand() % jsonScreenshots.count() - 3) + 3;
+    chosen = (qrand() % (jsonScreenshots.count() - 2)) + 2;
 #endif
   }
   printf("Waiting to get screenshot data...\n");

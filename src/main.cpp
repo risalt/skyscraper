@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
   QCommandLineOption removeSubtitleOption("removesubtitle", "Remove subtitles/second names of the file name.\n(default is to keep them)");
   QCommandLineOption lOption("l", "Maximum game description length. Everything longer than this will be truncated.\n(default is 2500)", "0-100000", "");
   QCommandLineOption langOption("lang", "Set preferred result language for scraping modules that support it.\n(default is 'en')", "CODE", "en");
-  QCommandLineOption loadChecksum("loadchecksum", "Load the canonical data (game name, file name, size, CRC, SHA1, MD5) from an XML dat file into the canonical database. The filename must be indicated. Use 'LUTRISDB' as filename to retrieve TOSEC data from the Lutris database.", "FILENAME", "");
+  QCommandLineOption loadChecksum("loadchecksum", "Load the canonical data (game name, file name, size, CRC, SHA1, MD5) from an XML '.dat' (TOSEC, No-Intro, Redump) or '.xml' (MAME) file into the canonical database. The filename must be indicated. Use 'LUTRISDB' as filename to retrieve checksum data from the Lutris database.", "FILENAME", "");
   QCommandLineOption mOption("m", "Minimum match percentage when comparing search result titles to filename titles.\n(default is 65)", "0-100", "");
   QCommandLineOption maxfailsOption("maxfails", "Sets the allowed number of initial 'Not found' results before rage-quitting.\n(default is 42)", "1-200", "");
   QCommandLineOption oOption("o", "Game media export folder.\n(default depends on frontend)", "PATH", "");

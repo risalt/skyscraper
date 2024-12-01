@@ -68,7 +68,7 @@ Skyscraper::Skyscraper(const QCommandLineParser &parser, const QString &currentD
   qsrand(QTime::currentTime().msec());
 #endif
 
-  printf("%s", StrTools::getVersionHeader().toStdString().c_str());
+  printf("%s", StrTools::getVersionHeader().toStdString().c_str()); fflush(stdout);
 
   config.currentDir = currentDir;
   loadConfig(parser);
@@ -87,7 +87,7 @@ void Skyscraper::setLock()
   Skyscraper::lockFile.setFileName("cache/." + config.platform + ".lock");
   bool lockAcquired = false;
   bool keepTrying = true;
-  printf("\nINFO: Locking the cache for the platform...");
+  printf("\nINFO: Locking the cache for the platform..."); fflush(stdout);
   while(keepTrying) {
     if(Skyscraper::lockFile.open(QIODevice::NewOnly)) {
       lockAcquired = true;
@@ -97,7 +97,7 @@ void Skyscraper::setLock()
     else {
       if(config.waitIfConcurrent) {
         sleep(5);
-        printf(".");
+        printf("."); fflush(stdout);
       }
       else {
         keepTrying = false;
@@ -169,9 +169,14 @@ void Skyscraper::run()
 
   if(!config.cacheFolder.isEmpty()) {
     cache = QSharedPointer<Cache>(new Cache(config.cacheFolder));
+    NameTools::get().cache = cache;
     if(cache->createFolders(config.scraper)) {
       if(!cache->read() && config.scraper == "cache") {
-        printf("No resources for this platform found in the resource cache. Please specify a scraping module with '-s' to gather some resources before trying to generate a game list. Check all available modules with '--help'. You can also run Skyscraper in simple mode by typing 'Skyscraper' and follow the instructions on screen.\n\n");
+        printf("No resources for this platform found in the resource cache. Please "
+               "specify a scraping module with '-s' to gather some resources before "
+               "trying to generate a game list. Check all available modules with "
+               "'--help'. You can also run Skyscraper in simple mode by typing "
+               "'Skyscraper' and follow the instructions on screen.\n\n");
         removeLockAndExit(1);
       }
     } else {
@@ -239,7 +244,9 @@ void Skyscraper::run()
 
   QDir inputDir(config.inputFolder, Platform::get().getFormats(config.platform, config.extensions, config.addExtensions), QDir::Name, QDir::Files);
   if(!inputDir.exists() && !config.generateLbDb) {
-    printf("Input folder '\033[1;32m%s\033[0m' doesn't exist or can't be seen by current user. Please check path and permissions.\n", inputDir.absolutePath().toStdString().c_str());
+    printf("Input folder '\033[1;32m%s\033[0m' doesn't exist or can't be seen by "
+           "current user. Please check path and permissions.\n",
+           inputDir.absolutePath().toStdString().c_str());
     removeLockAndExit(1);
   }
   config.inputFolder = inputDir.absolutePath();
@@ -369,7 +376,9 @@ void Skyscraper::run()
         }
       }
     } else {
-      printf("File: '\033[1;32m%s\033[0m' does not exist.\n\nPlease verify the filename and try again...\n", excludeFromInfo.absoluteFilePath().toStdString().c_str());
+      printf("File: '\033[1;32m%s\033[0m' does not exist.\n\nPlease verify the "
+             "filename and try again...\n",
+             excludeFromInfo.absoluteFilePath().toStdString().c_str());
       removeLockAndExit(1);
     }
   }
@@ -406,14 +415,15 @@ void Skyscraper::run()
      gameListFile.exists()) {
     std::string userInput = "";
     printf("\033[1;34m'\033[0m\033[1;33m%s\033[0m\033[1;34m' already exists, do you want to overwrite it\033[0m (y/N)? ",
-           frontend->getGameListFileName().toStdString().c_str());
+           frontend->getGameListFileName().toStdString().c_str()); fflush(stdout);
     getline(std::cin, userInput);
     if(userInput == "y" || userInput == "Y") {
     } else {
       printf("User chose not to overwrite, now exiting...\n");
       removeLockAndExit(0);
     }
-    printf("Checking if '\033[1;33m%s\033[0m' is writable?... ", frontend->getGameListFileName().toStdString().c_str());
+    printf("Checking if '\033[1;33m%s\033[0m' is writable?... ",
+           frontend->getGameListFileName().toStdString().c_str()); fflush(stdout);
 
     if(gameListFile.open(QIODevice::Append)) {
       printf("\033[1;32mIt is! :)\033[0m\n");
@@ -431,7 +441,7 @@ void Skyscraper::run()
   QFile::remove(skippedFileString);
 
   if(gameListFile.exists()) {
-    printf("Trying to parse and load existing game list metadata... ");
+    printf("Trying to parse and load existing game list metadata... "); fflush(stdout);
     fflush(stdout);
     if(frontend->loadOldGameList(gameListFileString)) {
       printf("\033[1;32mSuccess!\033[0m\n");
@@ -441,7 +451,7 @@ void Skyscraper::run()
           if(config.unattendSkip) {
             userInput = "y";
           } else {
-            printf("\033[1;34mDo you want to skip already existing game list entries\033[0m (y/N)? ");
+            printf("\033[1;34mDo you want to skip already existing game list entries\033[0m (y/N)? "); fflush(stdout);
             getline(std::cin, userInput);
           }
           if((userInput == "y" || userInput == "Y") && frontend->canSkip()) {
@@ -457,12 +467,21 @@ void Skyscraper::run()
   totalFiles = queue->length();
 
   if(config.romLimit != -1 && totalFiles > config.romLimit && !config.onlyMissing) {
-    printf("\n\033[1;33mRestriction overrun!\033[0m This scraping module only allows for scraping up to %d roms at a time. You can either supply a few rom filenames on command line, or make use of the '--startat' and / or '--endat' command line options to adhere to this. Alternatively, you can use the --cache onlymissing option so that only games without any relevant resource in other scrapers are attempted. Please check '--help' for more info.\n\nNow quitting...\n", config.romLimit);
+    printf("\n\033[1;33mRestriction overrun!\033[0m This scraping module only allows "
+           "for scraping up to %d roms at a time. You can either supply a few rom "
+           "filenames on command line, or make use of the '--startat' and / or '--endat' "
+           "command line options to adhere to this. Alternatively, you can use the "
+           "--cache onlymissing option so that only games without any relevant resource "
+           "in other scrapers are attempted. Please check '--help' for more info.\n\n"
+           "Now quitting...\n",
+           config.romLimit);
     removeLockAndExit(0);
   }
   printf("\n");
   if(totalFiles > 0) {
-    printf("Starting scraping run on \033[1;32m%d\033[0m files using \033[1;32m%d\033[0m threads.\nSit back, relax and let me do the work! :)\n\n", totalFiles, config.threads);
+    printf("Starting scraping run on \033[1;32m%d\033[0m files using \033[1;32m%d\033[0m "
+           "threads.\nSit back, relax and let me do the work! :)\n\n",
+           totalFiles, config.threads);
   } else if(!config.generateLbDb) {
     printf("\nNo entries to scrape...\n\n");
   }
@@ -547,7 +566,7 @@ void Skyscraper::checkForFolder(QDir &folder, bool create)
   if(!folder.exists()) {
     printf("Folder '%s' doesn't exist", folder.absolutePath().toStdString().c_str());
     if(create) {
-      printf(", trying to create it... ");
+      printf(", trying to create it... "); fflush(stdout);
       fflush(stdout);
       if(folder.mkpath(folder.absolutePath())) {
         printf("\033[1;32mSuccess!\033[0m\n");
@@ -621,7 +640,10 @@ void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const
      currentFile == config.maxFails &&
      notFound == config.maxFails &&
      config.scraper != "import" && config.scraper != "cache") {
-    printf("\033[1;31mOut of %d files we had %d misses. So either the scraping source is down or you are using a scraping source that doesn't support this platform. Please try another scraping module (check '--help').\n\nNow exiting...\033[0m\n", config.maxFails, config.maxFails);
+    printf("\033[1;31mOut of %d files we had %d misses. So either the scraping source "
+           "is down or you are using a scraping source that doesn't support this platform. "
+           "Please try another scraping module (check '--help').\n\nNow exiting...\033[0m\n",
+           config.maxFails, config.maxFails);
     removeLockAndExit(1);
   }
   currentFile++;
@@ -631,13 +653,15 @@ void Skyscraper::entryReady(const GameEntry &entry, const QString &output, const
   if(config.spaceCheck) {
     if(config.scraper == "cache" && !config.pretend &&
        QStorageInfo(QDir(config.screenshotsFolder)).bytesFree() < spaceLimit) {
-      printf("\033[1;31mYou have very little disk space left on the Skyscraper media export drive, please free up some space and try again. Now aborting...\033[0m\n\n");
+      printf("\033[1;31mYou have very little disk space left on the Skyscraper media "
+             "export drive, please free up some space and try again. Now aborting...\033[0m\n\n");
       printf("Note! You can disable this check by setting 'spaceCheck=\"false\"' in the '[main]' section of config.ini.\n\n");
       // By clearing the queue here we basically tell Skyscraper to stop and quit nicely
       config.pretend = true;
       queue->clearAll();
     } else if(QStorageInfo(QDir(config.cacheFolder)).bytesFree() < spaceLimit) {
-      printf("\033[1;31mYou have very little disk space left on the Skyscraper resource cache drive, please free up some space and try again. Now aborting...\033[0m\n\n");
+      printf("\033[1;31mYou have very little disk space left on the Skyscraper resource "
+             "cache drive, please free up some space and try again. Now aborting...\033[0m\n\n");
       printf("Note! You can disable this check by setting 'spaceCheck=\"false\"' in the '[main]' section of config.ini.\n\n");
       // By clearing the queue here we basically tell Skyscraper to stop and quit nicely
       config.pretend = true;
@@ -665,13 +689,12 @@ void Skyscraper::checkThreads(const bool &stopNow)
       }
       QString finalOutput;
       frontend->sortEntries(gameEntries);
-      printf("Assembling game list...");
+      printf("Assembling game list..."); fflush(stdout);
       frontend->assembleList(finalOutput, gameEntries);
       printf(" \033[1;32mDone!\033[0m\n");
       if(!finalOutput.isEmpty()) {
         QFile gameListFile(gameListFileString);
-        printf("Now writing '\033[1;33m%s\033[0m'... ", gameListFileString.toStdString().c_str());
-        fflush(stdout);
+        printf("Now writing '\033[1;33m%s\033[0m'... ", gameListFileString.toStdString().c_str()); fflush(stdout);
         if(gameListFile.open(QIODevice::WriteOnly)) {
           state = 1; // Ignore ctrl+c
           gameListFile.write(finalOutput.toUtf8());
@@ -784,7 +807,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
                            parser.value("f") == "koillection")) {
     config.frontend = parser.value("f");
   } else if(parser.isSet("f")) {
-    printf("Frontend: '\033[1;32m%s\033[0m' is not supported. Please select a valid one.\n", parser.value("f").toStdString().c_str());
+    printf("Frontend: '\033[1;32m%s\033[0m' is not supported. Please select a valid one.\n",
+           parser.value("f").toStdString().c_str());
     removeLockAndExit(1);
   }
 
@@ -792,7 +816,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   bool gameListFolderSet = false;
   bool mediaFolderSet = false;
 
-  config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000 - config.negCacheDaysExpiration * 24 * 60 * 60;
+  config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000
+                               - config.negCacheDaysExpiration * 24 * 60 * 60;
 
   // Main config, overrides defaults
   settings.beginGroup("main");
@@ -884,7 +909,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("negCacheDaysExpiration")) {
     config.negCacheDaysExpiration = settings.value("negCacheDaysExpiration").toInt();
-    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000 - config.negCacheDaysExpiration * 24 * 60 * 60;
+    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000
+                                 - config.negCacheDaysExpiration * 24 * 60 * 60;
   }
   if(settings.contains("symlink")) {
     config.symlink = settings.value("symlink").toBool();
@@ -1176,7 +1202,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("negCacheDaysExpiration")) {
     config.negCacheDaysExpiration = settings.value("negCacheDaysExpiration").toInt();
-    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000 - config.negCacheDaysExpiration * 24 * 60 * 60;
+    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000
+                                 - config.negCacheDaysExpiration * 24 * 60 * 60;
   }
   if(settings.contains("symlink")) {
     config.symlink = settings.value("symlink").toBool();
@@ -1270,6 +1297,12 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
                            !parser.isSet("loadchecksum")) {
     config.scraper = parser.value("s");
     setLock();
+  } else if(parser.isSet("s") && parser.isSet("loadchecksum")) {
+    printf("ERROR: Loading chechsum is scraper independent, hence no scraper can be indicated in this mode.\n\n");
+    removeLockAndExit(1);
+  } else if(parser.isSet("s")) {
+    printf("ERROR: The scraper requested does not exist. Please check the list of available scrapers in 'Skyscraper --help'.\n\n");
+    removeLockAndExit(1);
   }
 
   // Frontend specific configs, overrides main, platform, module and defaults
@@ -1536,7 +1569,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(settings.contains("negCacheDaysExpiration")) {
     config.negCacheDaysExpiration = settings.value("negCacheDaysExpiration").toInt();
-    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000 - config.negCacheDaysExpiration * 24 * 60 * 60;
+    config.negCacheExpiration = QDateTime::currentMSecsSinceEpoch() / 1000
+                                 - config.negCacheDaysExpiration * 24 * 60 * 60;
   }
   if(settings.contains("fuzzySearch")) {
     config.fuzzySearch = settings.value("fuzzySearch").toInt();
@@ -1550,17 +1584,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   settings.endGroup();
 
   // Command line configs, overrides main, platform, module and defaults
-  if(parser.isSet("loadchecksum")) {
-    // When loading checksums, nothing else is needed:
-    QString checksumFile = parser.value("loadchecksum");
-    if(QFile::exists(checksumFile) || checksumFile == "LUTRISDB") {
-      printf("Loading canonical data from DAT file '%s'...\n",
-             checksumFile.toStdString().c_str());
-      exit(NameTools::importCanonicalData(checksumFile));
-    } else {
-      printf("ERROR: Checksum DAT file does not exist. Please enter the full path. Exiting.\n");
-      exit(1);
-    }
+  if(parser.isSet("verbosity")) {
+    config.verbosity = parser.value("verbosity").toInt();
   }
   if(parser.isSet("l") && parser.value("l").toInt() >= 0 && parser.value("l").toInt() <= 100000) {
     config.maxLength = parser.value("l").toInt();
@@ -1622,7 +1647,7 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
       printf("  \033[1;33mnotextures\033[0m: Disable textures from being cached locally. Only do this if you do not plan to use the texture artwork in 'artwork.xml'\n");
       printf("  \033[1;33mnowheels\033[0m: Disable wheels from being cached locally. Only do this if you do not plan to use the wheel artwork in 'artwork.xml'\n");
       printf("  \033[1;33monlymissing\033[0m: Tells Skyscraper to skip when scraping all files which already have any data from any source in the cache.\n");
-      printf("  \033[1;33mpretend\033[0m: Only relevant when generating a game list. It disables the game list generator and artwork compositor and only outputs the results of the potential game list generation to the terminal. Use it to check what and how the data will be combined from cached resources.\n");
+      printf("  \033[1;33mpretend\033[0m: Only relevant when generating a game list, populating the canonical database or validating the cache. It disables the game list generator and artwork compositor and only outputs the results of the potential game list generation to the terminal. Use it to check what and how the data will be combined from cached resources.\n");
       printf("  \033[1;33mrelative\033[0m: Forces all gamelist paths to be relative to rom location.\n");
       printf("  \033[1;33mskipexistingcovers\033[0m: When generating gamelists, skip processing covers that already exist in the media output folder.\n");
       printf("  \033[1;33mskipexistingmanuals\033[0m: When generating gamelists, skip copying manuals that already exist in the media output folder.\n");
@@ -1715,7 +1740,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
         } else if(flag == "chiptunes") {
           config.chiptunes = true;
         } else {
-          printf("Unknown flag '%s', please check '--flags help' for a list of valid flags. Exiting...\n", flag.toStdString().c_str());
+          printf("Unknown flag '%s', please check '--flags help' for a list of valid "
+                 "flags. Exiting...\n",
+                 flag.toStdString().c_str());
           removeLockAndExit(1);
         }
       }
@@ -1729,6 +1756,18 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     if(config.scraper != "launchbox") {
       printf("Launchbox SQLite DB generation requested, but the scraper is not 'launchbox'. Exiting.\n");
       Skyscraper::removeLockAndExit(1);
+    }
+  }
+  if(parser.isSet("loadchecksum")) {
+    // When loading checksums, nothing else is needed:
+    QString checksumFile = parser.value("loadchecksum");
+    if(QFile::exists(checksumFile) || checksumFile == "LUTRISDB") {
+      printf("Loading canonical data from DAT file '%s'...\n",
+             checksumFile.toStdString().c_str());
+      exit(NameTools::importCanonicalData(checksumFile));
+    } else {
+      printf("ERROR: Checksum DAT file does not exist. Please enter the full path. Exiting.\n");
+      exit(1);
     }
   }
   if(parser.isSet("cachegb")) {
@@ -1796,6 +1835,19 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
       printf("  \033[1;33m--cache validate\033[0m: Checks the consistency of the cache for the selected platform.\n");
       printf("\n");
       removeLockAndExit(0);
+    } else if(!(config.cacheOptions == "edit" ||
+                config.cacheOptions.startsWith("edit:") ||
+                config.cacheOptions.startsWith("merge:") ||
+                config.cacheOptions.startsWith("purge:") ||
+                config.cacheOptions.startsWith("report:") ||
+                config.cacheOptions == "scrapingerrors" ||
+                config.cacheOptions == "show" ||
+                config.cacheOptions == "vacuum" ||
+                config.cacheOptions == "validate")) {
+      printf("Unknown cache option '%s', please check '--cache help' for a list of valid "
+             "flags. Exiting...\n",
+             config.cacheOptions.toStdString().c_str());
+      removeLockAndExit(1);
     }
   }
   if(parser.isSet("startat")) {
@@ -1832,9 +1884,6 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   }
   if(parser.isSet("lang")) {
     config.lang = parser.value("lang");
-  }
-  if(parser.isSet("verbosity")) {
-    config.verbosity = parser.value("verbosity").toInt();
   }
 
   // Choose default scraper for chosen platform if none has been set yet
@@ -1876,7 +1925,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
         includeFrom.close();
       }
     } else {
-      printf("File: '\033[1;32m%s\033[0m' does not exist.\n\nPlease verify the filename and try again...\n", includeFromInfo.absoluteFilePath().toStdString().c_str());
+      printf("File: '\033[1;32m%s\033[0m' does not exist.\n\nPlease verify the "
+             "filename and try again...\n",
+             includeFromInfo.absoluteFilePath().toStdString().c_str());
       removeLockAndExit(1);
     }
   }
@@ -1902,7 +1953,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
         config.unattend = true;
       }
     } else {
-      printf("Filename: '\033[1;32m%s\033[0m' requested either on command line or with '--includefrom' not found!\n\nPlease verify the filename and try again...\n", requestedFile.toStdString().c_str());
+      printf("Filename: '\033[1;32m%s\033[0m' requested either on command line or with "
+             "'--includefrom' not found!\n\nPlease verify the filename and try again...\n",
+             requestedFile.toStdString().c_str());
       removeLockAndExit(1);
     }
   }
@@ -1912,7 +1965,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     if(cliFiles.length() == 1) {
       config.searchName = parser.value("query");
     } else {
-      printf("'--query' requires a single rom filename to be added at the end of the command-line. You either forgot to set one, or more than one was provided. Now quitting...\n");
+      printf("'--query' requires a single rom filename to be added at the end of "
+             "the command-line. You either forgot to set one, or more than one was "
+             "provided. Now quitting...\n");
       removeLockAndExit(1);
     }
   }
@@ -1970,7 +2025,9 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
     config.artworkXml = artworkFile.readAll();
     artworkFile.close();
   } else {
-    printf("Couldn't read artwork xml file '\033[1;32m%s\033[0m'. Please check file and permissions. Now exiting...\n", config.artworkConfig.toStdString().c_str());
+    printf("Couldn't read artwork xml file '\033[1;32m%s\033[0m'. Please check file "
+           "and permissions. Now exiting...\n",
+           config.artworkConfig.toStdString().c_str());
     removeLockAndExit(1);
   }
 
@@ -1998,7 +2055,8 @@ void Skyscraper::loadConfig(const QCommandLineParser &parser)
   } else if(config.frontend == "koillection") {
     frontend = new Koillection(manager, &config);
   } else {
-    printf("Frontend: '\033[1;32m%s\033[0m' is not supported. Please select a valid one.\n", config.frontend.toStdString().c_str());
+    printf("Frontend: '\033[1;32m%s\033[0m' is not supported. Please select a valid one.\n",
+           config.frontend.toStdString().c_str());
     removeLockAndExit(1);
   }
 
@@ -2051,9 +2109,13 @@ void Skyscraper::showHint()
   hintsFile.close();
   QDomNodeList hintNodes = hintsXml.elementsByTagName("hint");
 #if QT_VERSION >= 0x050a00
-  printf("\033[1;33mDID YOU KNOW:\033[0m %s\n\n", hintsXml.elementsByTagName("hint").at(QRandomGenerator::global()->generate() % hintNodes.length()).toElement().text().toStdString().c_str());
+  printf("\033[1;33mDID YOU KNOW:\033[0m %s\n\n",
+         hintsXml.elementsByTagName("hint").at(QRandomGenerator::global()->generate() %
+          hintNodes.length()).toElement().text().toStdString().c_str());
 #else
-  printf("\033[1;33mDID YOU KNOW:\033[0m %s\n\n", hintsXml.elementsByTagName("hint").at(qrand() % hintNodes.length()).toElement().text().toStdString().c_str());
+  printf("\033[1;33mDID YOU KNOW:\033[0m %s\n\n",
+         hintsXml.elementsByTagName("hint").at(qrand() %
+          hintNodes.length()).toElement().text().toStdString().c_str());
 #endif
 }
 
@@ -2070,8 +2132,9 @@ void Skyscraper::doPrescrapeJobs()
   QEventLoop q; // Event loop for use when waiting for data from NetComm.
   connect(&netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
 
-  if(config.platform == "amiga" && config.scraper != "cache" && config.scraper != "import" && config.scraper != "esgamelist") {
-    printf("Fetching 'whdload_db.xml', just a sec...");
+  if(config.platform == "amiga" &&
+     config.scraper != "cache" && config.scraper != "import" && config.scraper != "esgamelist") {
+    printf("Fetching 'whdload_db.xml', just a sec..."); fflush(stdout);
     netComm.request("https://raw.githubusercontent.com/HoraceAndTheSpider/Amiberry-XML-Builder/master/whdload_db.xml");
     q.exec();
     QByteArray data = netComm.getData();
@@ -2100,7 +2163,8 @@ void Skyscraper::doPrescrapeJobs()
       config.threads = 1; // Don't change! This limit was set by request from GiantBomb
     }
     if(config.user.isEmpty() || config.password.isEmpty() || config.apiKey.isEmpty()) {
-      printf("The GiantBomb scraping module requires user credentials and an API token to work. Get one here: 'https://www.giantbomb.com/api/'\n");
+      printf("The GiantBomb scraping module requires user credentials and an API token to "
+             "work. Get one here: 'https://www.giantbomb.com/api/'\n");
       removeLockAndExit(1);
     }
   } else if(config.scraper == "igdb") {
@@ -2110,7 +2174,8 @@ void Skyscraper::doPrescrapeJobs()
       config.threads = 4; // Don't change! This limit was set by request from IGDB
     }
     if(config.user.isEmpty() || config.password.isEmpty()) {
-      printf("The IGDB scraping module requires free user credentials to work. Read more about that here: 'https://github.com/detain/skyscraper/blob/master/docs/SCRAPINGMODULES.md#igdb'\n");
+      printf("The IGDB scraping module requires free user credentials to work. Read more about that here: "
+             "'https://github.com/detain/skyscraper/blob/master/docs/SCRAPINGMODULES.md#igdb'\n");
       removeLockAndExit(1);
     }
     printf("Fetching IGDB authentication token status, just a sec...\n");
@@ -2150,7 +2215,10 @@ void Skyscraper::doPrescrapeJobs()
           tokenFile.close();
         }
       } else {
-        printf("\033[1;33mReceived invalid IGDB server response. This can be caused by server issues or maybe you entered your credentials incorrectly in the Skyscraper configuration. Read more about that here: 'https://github.com/detain/skyscraper/blob/master/docs/SCRAPINGMODULES.md#igdb'\033[0m\n");
+        printf("\033[1;33mReceived invalid IGDB server response. This can be caused "
+               "by server issues or maybe you entered your credentials incorrectly in "
+               "the Skyscraper configuration. Read more about that here: "
+               "'https://github.com/detain/skyscraper/blob/master/docs/SCRAPINGMODULES.md#igdb'\033[0m\n");
         removeLockAndExit(1);
       }
     } else {
@@ -2158,16 +2226,25 @@ void Skyscraper::doPrescrapeJobs()
     }
     printf("\n");
   } else if(config.scraper.contains("mobygames") && config.threads != 1) {
-    printf("\033[1;33mForcing 1 thread to accomodate limits in MobyGames scraping module. Also be aware that MobyGames has a request limit of 360 requests per hour for the entire Skyscraper user base. So if someone else is currently using it, it will quit.\033[0m\n\n");
+    printf("\033[1;33mForcing 1 thread to accomodate limits in MobyGames scraping module. "
+           "Also be aware that MobyGames has a request limit of 360 requests per hour for "
+           "the entire Skyscraper user base. So if someone else is currently using it, it "
+           "will quit.\033[0m\n\n");
     config.threads = 1; // Don't change! This limit was set by request from Mobygames
     config.romLimit = 35; // Don't change! This limit was set by request from Mobygames
   } else if(config.scraper == "screenscraper") {
     if(config.apiKey.isEmpty()) {
-      printf("\033[1;33mThe Screenscraper service requires an API key, which is missing in the third field of userCreds. Please complete it.\033[0m\n");
+      printf("\033[1;33mThe Screenscraper service requires an API key, which is missing in "
+             "the third field of userCreds. Please complete it.\033[0m\n");
     }
     if(config.user.isEmpty() || config.password.isEmpty()) {
       if(config.threads > 1) {
-        printf("\033[1;33mForcing 1 threads as this is the anonymous limit in the ScreenScraper scraping module. Sign up for an account at https://www.screenscraper.fr and support them to gain more threads. Then use the credentials with Skyscraper using the '-u user:password' command line option or by setting 'userCreds=\"user:password\"' in '%s/.skyscraper/config.ini'.\033[0m\n\n", QDir::homePath().toStdString().c_str());
+        printf("\033[1;33mForcing 1 threads as this is the anonymous limit in the ScreenScraper "
+               "scraping module. Sign up for an account at https://www.screenscraper.fr and support "
+               "them to gain more threads. Then use the credentials with Skyscraper using the "
+               "'-u user:password' command line option or by setting 'userCreds=\"user:password\"' "
+               "in '%s/.skyscraper/config.ini'.\033[0m\n\n",
+               QDir::homePath().toStdString().c_str());
         config.threads = 1; // Don't change! This limit was set by request from ScreenScraper
       }
     } else {
@@ -2179,9 +2256,15 @@ void Skyscraper::doPrescrapeJobs()
       QJsonObject jsonObj = QJsonDocument::fromJson(netComm.getData()).object();
       if(jsonObj.isEmpty()) {
         if(netComm.getData().contains("Erreur de login")) {
-          printf("\033[0;31mScreenScraper login error! Please verify that you've entered your credentials correctly in '%s/.skyscraper/config.ini'. It needs to look EXACTLY like this, but with your USER and PASS:\033[0m\n\033[1;33m[screenscraper]\nuserCreds=\"USER:PASS\"\033[0m\033[0;31m\nContinuing with unregistered user, forcing 1 thread...\033[0m\n\n", QDir::homePath().toStdString().c_str());
+          printf("\033[0;31mScreenScraper login error! Please verify that you've entered "
+                 "your credentials correctly in '%s/.skyscraper/config.ini'. It needs to "
+                 "look EXACTLY like this, but with your USER and PASS:\033[0m\n\033[1;33m"
+                 "[screenscraper]\nuserCreds=\"USER:PASS\"\033[0m\033[0;31m\n"
+                 "Continuing with unregistered user, forcing 1 thread...\033[0m\n\n",
+                 QDir::homePath().toStdString().c_str());
         } else {
-          printf("\033[1;33mReceived invalid / empty ScreenScraper server response, maybe their server is busy / overloaded. Forcing 1 thread...\033[0m\n\n");
+          printf("\033[1;33mReceived invalid / empty ScreenScraper server response, maybe "
+                 "their server is busy / overloaded. Forcing 1 thread...\033[0m\n\n");
         }
         config.threads = 1; // Don't change! This limit was set by request from ScreenScraper
       } else {

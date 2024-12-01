@@ -88,8 +88,7 @@ bool Cache::read()
   QFile quickIdFile(cacheDir.absolutePath() + "/quickid.xml");
   QMap<QString, bool> idHash;
   if(quickIdFile.open(QIODevice::ReadOnly)) {
-    printf("Reading and parsing quick id xml, please wait... ");
-    fflush(stdout);
+    printf("Reading and parsing quick id xml, please wait... "); fflush(stdout);
     QXmlStreamReader xml(&quickIdFile);
     while(!xml.atEnd()) {
       if(xml.readNext() != QXmlStreamReader::StartElement) {
@@ -116,8 +115,7 @@ bool Cache::read()
 
   QFile cacheFile(cacheDir.absolutePath() + "/db.xml");
   if(cacheFile.open(QIODevice::ReadOnly)) {
-    printf("Building file lookup cache, please wait... ");
-    fflush(stdout);
+    printf("Building file lookup cache, please wait... "); fflush(stdout);
 
     QSet<QString> fileEntries;
     QStringList binTypes;
@@ -135,8 +133,7 @@ bool Cache::read()
     printf("\033[1;32mDone!\033[0m\n");
     printf("Cached %d files\n\n", fileEntries.count());
 
-    printf("Reading and parsing resource cache, please wait... ");
-    fflush(stdout);
+    printf("Reading and parsing resource cache, please wait... "); fflush(stdout);
     QXmlStreamReader xml(&cacheFile);
     while(!xml.atEnd()) {
       if(xml.readNext() != QXmlStreamReader::StartElement) {
@@ -204,9 +201,6 @@ bool Cache::read()
     resAtLoad = resources.length();
     printf("\033[1;32mDone!\033[0m\n");
     printf("Successfully parsed %d resources!\n\n", resources.length());
-    if(globalScraper == "customflags") {
-      purgeResources("m=customflags");
-    }
     return true;
   }
   return false;
@@ -314,6 +308,13 @@ void Cache::printPriorities(QString cacheId)
   } else {
     printf("\033[1;32mYES\033[0m' (%s)\n", game.chiptuneIdSrc.toStdString().c_str());
   }
+  printf("Custom flags:    '");
+  if(game.timePlayed || game.timesPlayed || game.firstPlayed || game.lastPlayed ||
+     game.favourite || game.completed || game.played) {
+    printf("\033[1;32mYES\033[0m' (customflags)\n");
+  } else {
+    printf("\033[1;31mNO\033[0m' ()\n");
+  }
   printf("Description: (%s)\n'\033[1;32m%s\033[0m'",
          (game.descriptionSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.descriptionSrc).toStdString().c_str(),
          game.description.toStdString().c_str());
@@ -351,17 +352,30 @@ void Cache::editResources(QSharedPointer<Queue> queue,
          type != "timeplayed" &&
          type != "disksize" &&
          type != "description") {
-        printf("Unknown resource type '%s', please specify any of the following: 'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', 'ages', 'genres', 'franchises', 'rating', 'description', 'guides', 'vgmaps', 'trivia', 'chiptuneid', 'chiptunepath', 'completed', 'favourite', 'played', 'lastplayed', 'firstplayed', 'timesplayed', 'timeplayed' or 'disksize'.\n", type.toStdString().c_str());
+        printf("Unknown resource type '%s', please specify any of the following: "
+               "'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', "
+               "'ages', 'genres', 'franchises', 'rating', 'description', 'guides', "
+               "'vgmaps', 'trivia', 'chiptuneid', 'chiptunepath', 'completed', "
+               "'favourite', 'played', 'lastplayed', 'firstplayed', 'timesplayed', "
+               "'timeplayed' or 'disksize'.\n",
+               type.toStdString().c_str());
         return;
       }
     } else {
-      printf("Unknown command '%s', please specify one of the following: 'new'.\n", command.toStdString().c_str());
+      printf("Unknown command '%s', please specify one of the following: 'new'.\n",
+             command.toStdString().c_str());
       return;
     }
   }
 
   int queueLength = queue->length();
-  printf("\033[1;33mEntering resource cache editing mode! This mode allows you to edit textual resources for your files. To add media resources use the 'import' scraping module instead.\nNote that you can provide one or more file names on command line to edit resources for just those specific files. You can also use the '--startat' and '--endat' command line options to narrow down the span of the roms you wish to edit. Otherwise Skyscraper will edit ALL files found in the input folder one by one.\033[0m\n\n");
+  printf("\033[1;33mEntering resource cache editing mode! This mode allows you to "
+         "edit textual resources for your files. To add media resources use the "
+         "'import' scraping module instead.\nNote that you can provide one or more "
+         "file names on command line to edit resources for just those specific files. "
+         "You can also use the '--startat' and '--endat' command line options to narrow "
+         "down the span of the roms you wish to edit. Otherwise Skyscraper will edit ALL "
+         "files found in the input folder one by one.\033[0m\n\n");
   while(queue->hasEntry()) {
     QFileInfo info = queue->takeEntry();
     QString cacheId = getQuickId(info);
@@ -375,7 +389,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
     bool doneEdit = false;
     printPriorities(cacheId);
     while(!doneEdit) {
-      printf("\033[0;32m#%d/%d\033[0m \033[1;33m\nCURRENT FILE: \033[0m\033[1;32m%s\033[0m\033[1;33m\033[0m\n", queueLength - queue->length(), queueLength, info.fileName().toStdString().c_str());
+      printf("\033[0;32m#%d/%d\033[0m \033[1;33m\nCURRENT FILE: \033[0m\033[1;32m%s\033[0m\033[1;33m\033[0m\n",
+             queueLength - queue->length(), queueLength, info.fileName().toStdString().c_str());
       std::string userInput = "";
       if(command.isEmpty()) {
         printf("\033[1;34mWhat would you like to do?\033[0m (Press enter to continue to next rom in queue)\n");
@@ -388,7 +403,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
         printf("\033[1;33mt\033[0m) Remove ALL resources connected to this rom of a specific type\n");
         printf("\033[1;33mc\033[0m) Cancel all cache changes and exit\n");
         printf("\033[1;33mq\033[0m) Save all cache changes and exit\n");
-        printf("> ");
+        printf("> "); fflush(stdout);
         getline(std::cin, userInput);
         printf("\n");
       } else {
@@ -458,7 +473,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
                  QString((game.chiptuneIdSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m9\033[0m) ChiptunePath %s\n",
                  QString((game.chiptunePathSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
-          printf("> ");
+          printf("> "); fflush(stdout);
           getline(std::cin, typeInput);
           printf("\n");
         } else {
@@ -682,7 +697,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           printf("No resources found, cancelling...\n\n");
           continue;
         }
-        printf("> ");
+        printf("> "); fflush(stdout);
         std::string typeInput = "";
         getline(std::cin, typeInput);
         printf("\n");
@@ -730,7 +745,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           printf("No resources found, cancelling...\n\n");
           continue;
         }
-        printf("> ");
+        printf("> "); fflush(stdout);
         std::string typeInput = "";
         getline(std::cin, typeInput);
         printf("\n");
@@ -747,8 +762,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
               removed++;
             }
           }
-          printf("<<< Removed %d resource(s) connected to rom from module '\033[1;32m%s\033[0m'\n\n", removed,
-                 typeInput.c_str());
+          printf("<<< Removed %d resource(s) connected to rom from module '\033[1;32m%s\033[0m'\n\n",
+                 removed, typeInput.c_str());
         } else {
           printf("No resources from module '\033[1;32m%s\033[0m' found, cancelling...\n\n", typeInput.c_str());
          }
@@ -768,7 +783,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           printf("No resources found, cancelling...\n\n");
           continue;
         }
-        printf("> ");
+        printf("> "); fflush(stdout);
         std::string typeInput = "";
         getline(std::cin, typeInput);
         printf("\n");
@@ -858,7 +873,7 @@ bool Cache::purgeAll(const bool unattend)
 {
   if(!unattend) {
     printf("\033[1;31mWARNING! You are about to purge / remove ALL resources from the Skyscaper cache connected to the currently selected platform. THIS CANNOT BE UNDONE!\033[0m\n\n");
-    printf("\033[1;34mDo you wish to continue\033[0m (y/N)? ");
+    printf("\033[1;34mDo you wish to continue\033[0m (y/N)? "); fflush(stdout);
     std::string userInput = "";
     getline(std::cin, userInput);
     if(userInput != "y") {
@@ -867,7 +882,7 @@ bool Cache::purgeAll(const bool unattend)
     }
   }
 
-  printf("Purging ALL resources for the selected platform, please wait...");
+  printf("Purging ALL resources for the selected platform, please wait..."); fflush(stdout);
 
   int purged = 0;
   int dots = 0;
@@ -877,8 +892,7 @@ bool Cache::purgeAll(const bool unattend)
   QMutableListIterator<Resource> it(resources);
   while(it.hasNext()) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
     Resource res = it.next();
@@ -935,8 +949,7 @@ QStringList Cache::getCacheIdList(const QList<QFileInfo> &fileInfos)
   int dotMod = fileInfos.size() * 0.1 + 1;
   for(const auto &info: std::as_const(fileInfos)) {
     if(dots % dotMod == 0) {
-      printf(".");
-      fflush(stdout);
+      printf("."); fflush(stdout);
     }
     dots++;
     QString cacheId = getQuickId(info);
@@ -1103,7 +1116,8 @@ void Cache::assembleReport(const Settings &config, const QString filter)
   QDir reportsDir(QDir::currentPath() + "/reports");
   if(!reportsDir.exists()) {
     if(!reportsDir.mkpath(".")) {
-      printf("Couldn't create reports folder '%s'. Please check permissions then try again...\n", reportsDir.absolutePath().toStdString().c_str());
+      printf("Couldn't create reports folder '%s'. Please check permissions then try again...\n",
+             reportsDir.absolutePath().toStdString().c_str());
       return;
     }
   }
@@ -1116,20 +1130,23 @@ void Cache::assembleReport(const Settings &config, const QString filter)
   if(!config.includePattern.isEmpty()) {
     fileInfos.filterFiles(config.includePattern, true);
   }
-  printf("%d compatible files found for the '%s' platform!\n", fileInfos.length(), config.platform.toStdString().c_str());
-  printf("Creating file id list for all files, please wait...");
+  printf("%d compatible files found for the '%s' platform!\n",
+         fileInfos.length(), config.platform.toStdString().c_str());
+  printf("Creating file id list for all files, please wait..."); fflush(stdout);
   QStringList cacheIdList = getCacheIdList(fileInfos);
   printf("\n\n");
 
   if(fileInfos.length() != cacheIdList.length()) {
-    printf("Length of cache id list mismatch the number of files, something is wrong! Please report this. Can't continue...\n");
+    printf("Length of cache id list mismatch the number of files, something "
+           "is wrong! Please report this. Can't continue...\n");
     return;
   }
 
   QString dateTime = QDateTime::currentDateTime().toString("yyyyMMdd");
   for(const auto &resType: std::as_const(resTypeList)) {
     QFile reportFile(reportsDir.absolutePath() + "/report-" + config.platform + "-missing_" + resType + "-" + dateTime + ".txt");
-    printf("Report filename: '\033[1;32m%s\033[0m'\nAssembling report, please wait...", reportFile.fileName().toStdString().c_str());
+    printf("Report filename: '\033[1;32m%s\033[0m'\nAssembling report, please wait...",
+           reportFile.fileName().toStdString().c_str()); fflush(stdout);
     if(reportFile.open(QIODevice::WriteOnly)) {
       int missing = 0;
       int dots = 0;
@@ -1138,8 +1155,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
 
       for(int a = 0; a < fileInfos.length(); ++a) {
         if(dots % dotMod == 0) {
-          printf(".");
-          fflush(stdout);
+          printf("."); fflush(stdout);
         }
         dots++;
         bool found = false;
@@ -1157,13 +1173,19 @@ void Cache::assembleReport(const Settings &config, const QString filter)
         }
       }
       reportFile.close();
-      printf("\033[1;32m Done!\033[0m\n\033[1;33m%d file(s) is/are missing the '%s' resource.\033[0m\n\n", missing, resType.toStdString().c_str());
+      printf("\033[1;32m Done!\033[0m\n\033[1;33m%d file(s) is/are missing the '%s' resource.\033[0m\n\n",
+             missing, resType.toStdString().c_str());
     } else {
-      printf("Report file could not be opened for writing, please check permissions of folder '%s/.skyscraper', then try again...\n", QDir::homePath().toStdString().c_str());
+      printf("Report file could not be opened for writing, please check permissions of folder "
+             "'%s/.skyscraper', then try again...\n",
+             QDir::homePath().toStdString().c_str());
       return;
     }
   }
-  printf("\033[1;32mAll done!\033[0m\nConsider using the '\033[1;33m--cache edit --includefrom <REPORTFILE>\033[0m' or the '\033[1;33m-s import\033[0m' module to add the missing resources. Check '\033[1;33m--help\033[0m' and '\033[1;33m--cache help\033[0m' for more information.\n\n");
+  printf("\033[1;32mAll done!\033[0m\nConsider using the '\033[1;33m--cache edit "
+         "--includefrom <REPORTFILE>\033[0m' or the '\033[1;33m-s import\033[0m' "
+         "module to add the missing resources. Check '\033[1;33m--help\033[0m' and "
+         "'\033[1;33m--cache help\033[0m' for more information.\n\n");
 }
 
 bool Cache::vacuumResources(const QString inputFolder, const QString filter,
@@ -1171,8 +1193,15 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
 {
   if(!unattend) {
     std::string userInput = "";
-    printf("\033[1;33mWARNING! Vacuuming your Skyscraper cache removes all resources that don't match your current romset (files located at '%s' or any of its subdirectories matching the suffixes supported by the platform and any extension(s) you might have added manually). Please consider making a backup of your Skyscraper cache before performing this action. The cache for this platform is listed under 'Cache folder' further up and is usually located under '%s/.skyscraper/' unless you've set it manually.\033[0m\n\n", inputFolder.toStdString().c_str(), QDir::homePath().toStdString().c_str());
-    printf("\033[1;34mDo you wish to continue\033[0m (y/N)? ");
+    printf("\033[1;33mWARNING! Vacuuming your Skyscraper cache removes all resources "
+           "that don't match your current romset (files located at '%s' or any of its "
+           "subdirectories matching the suffixes supported by the platform and any "
+           "extension(s) you might have added manually). Please consider making a "
+           "backup of your Skyscraper cache before performing this action. The cache "
+           "for this platform is listed under 'Cache folder' further up and is usually "
+           "located under '%s/.skyscraper/' unless you've set it manually.\033[0m\n\n",
+           inputFolder.toStdString().c_str(), QDir::homePath().toStdString().c_str());
+    printf("\033[1;34mDo you wish to continue\033[0m (y/N)? "); fflush(stdout);
     getline(std::cin, userInput);
     if(userInput != "y") {
       printf("User chose not to continue, cancelling vacuum...\n\n");
@@ -1180,7 +1209,7 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
     }
   }
 
-  printf("Vacuuming cache, this can take several minutes, please wait...");
+  printf("Vacuuming cache, this can take several minutes, please wait..."); fflush(stdout);
   QList<QFileInfo> fileInfos = getFileInfos(inputFolder, filter);
   // Clean the quick id's aswell
   QMap<QString, QPair<qint64, QString> > quickIdsCleaned;
@@ -1206,8 +1235,7 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
     QMutableListIterator<Resource> it(resources);
     while(it.hasNext()) {
       if(dots % dotMod == 0) {
-        printf(".");
-        fflush(stdout);
+        printf("."); fflush(stdout);
       }
       dots++;
       Resource res = it.next();
@@ -1323,12 +1351,13 @@ bool Cache::detectScrapingErrors(const Settings &config)
   QString dateTime = QDateTime::currentDateTime().toString("yyyyMMdd");
   QFile reportFile(reportsDir.absolutePath() + "/report-" + config.platform + "-possible_mistakes-" + dateTime + ".txt");
   printf("Report filename: '\033[1;32m%s\033[0m'\nAssembling report, please wait...",
-         reportFile.fileName().toStdString().c_str());
+         reportFile.fileName().toStdString().c_str()); fflush(stdout);
   if(reportFile.open(QIODevice::WriteOnly)) {
     reportFile.write(possibleErrors.toUtf8());
     reportFile.close();
   } else {
-    printf("Report file could not be opened for writing, please check permissions of folder '%s/.skyscraper', then try again...\n",
+    printf("Report file could not be opened for writing, please check "
+           "permissions of folder '%s/.skyscraper', then try again...\n",
            QDir::homePath().toStdString().c_str());
     return false;
   }
@@ -1492,7 +1521,7 @@ void Cache::readPriorities()
 {
   QDomDocument prioDoc;
   QFile prioFile(cacheDir.absolutePath() + "/priorities.xml");
-  printf("Looking for optional '\033[1;33mpriorities.xml\033[0m' file in cache folder... ");
+  printf("Looking for optional '\033[1;33mpriorities.xml\033[0m' file in cache folder... "); fflush(stdout);
   if(prioFile.open(QIODevice::ReadOnly)) {
     printf("\033[1;32mFound!\033[0m\n");
     if(!prioDoc.setContent(prioFile.readAll())) {
@@ -1544,8 +1573,7 @@ bool Cache::write(const bool onlyQuickId)
   QFile quickIdFile(cacheDir.absolutePath() + "/quickid.xml.tmp");
   QString quickIdFileOrig = cacheDir.absolutePath() + "/quickid.xml";
   if(quickIdFile.open(QIODevice::WriteOnly)) {
-    printf("Writing quick id xml, please wait... ");
-    fflush(stdout);
+    printf("Writing quick id xml, please wait... "); fflush(stdout);
     QXmlStreamWriter xml(&quickIdFile);
     xml.setAutoFormatting(true);
     xml.writeStartDocument();
@@ -1577,8 +1605,7 @@ bool Cache::write(const bool onlyQuickId)
   QString cacheFileOrig = cacheDir.absolutePath() + "/db.xml";
   if(cacheFile.open(QIODevice::WriteOnly)) {
     printf("Writing %d (%d new) resources to cache, please wait... ",
-           resources.length(), resources.length() - resAtLoad);
-    fflush(stdout);
+           resources.length(), resources.length() - resAtLoad); fflush(stdout);
     QXmlStreamWriter xml(&cacheFile);
     xml.setAutoFormatting(true);
     xml.writeStartDocument();
@@ -1786,6 +1813,15 @@ void Cache::verifyResources(int &resourcesDeleted)
       if(res.value.toLongLong(&validNumber) <= 0 || !validNumber) {
         printf("Invalid numeric value in custom flags;\"%s\"\n", res.value.toStdString().c_str());
         remove = true;
+      } else if(res.type == "disksize") {
+        qint64 oldValue = res.value.toLongLong();
+        res.value = QString::number(NameTools::calculateGameSize(
+                                     getFileCacheId(res.cacheId).absoluteFilePath()));
+        if(oldValue != res.value.toLongLong() && !Skyscraper::config.pretend) {
+          printf("Game size was incorrect, corrected;\"%lld\";\"%lld\"\n",
+                 oldValue, res.value.toLongLong());
+          it.setValue(res);
+        }
       }
     } else if(res.type == "canonicalsize") {
       QFileInfo source = getFileCacheId(res.cacheId);
@@ -1860,7 +1896,7 @@ void Cache::verifyFiles(QDirIterator &dirIt, int &filesDeleted, int &filesNoDele
     QFileInfo fileInfo(dirIt.next());
     if(!resFileNames.contains(fileInfo.absoluteFilePath())) {
       printf("No resource entry for file '%s', deleting... ",
-             fileInfo.absoluteFilePath().toStdString().c_str());
+             fileInfo.absoluteFilePath().toStdString().c_str()); fflush(stdout);
       if(QFile::remove(fileInfo.absoluteFilePath())) {
         printf("OK!\n");
         filesDeleted++;
@@ -1910,7 +1946,8 @@ void Cache::merge(Cache &mergeCache, bool overwrite, const QString &mergeCacheFo
              res.type == "texture" || res.type == "video" ||
              res.type == "manual") {
             if(!QFile::remove(cacheDir.absolutePath() + "/" + res.value)) {
-              printf("Couldn't remove media file '%s' for updating, skipping...\n", res.value.toStdString().c_str());
+              printf("Couldn't remove media file '%s' for updating, skipping...\n",
+                     res.value.toStdString().c_str());
               continue;
             }
 
@@ -1930,7 +1967,8 @@ void Cache::merge(Cache &mergeCache, bool overwrite, const QString &mergeCacheFo
         cacheDir.mkpath(QFileInfo(cacheDir.absolutePath() + "/" + mergeResource.value).absolutePath());
         if(!QFile::copy(mergeCacheDir.absolutePath() + "/" + mergeResource.value,
                         cacheDir.absolutePath() + "/" + mergeResource.value)) {
-          printf("Couldn't copy media file '%s', skipping...\n",  mergeResource.value.toStdString().c_str());
+          printf("Couldn't copy media file '%s', skipping...\n",
+                 mergeResource.value.toStdString().c_str());
           continue;
         }
       }
@@ -2319,7 +2357,9 @@ void Cache::addResource(Resource &resource,
       }
       resources.append(resource);
     } else {
-      printf("\033[1;33mWarning! Couldn't add resource to cache. Resource size limit exceeded or error writing the file.\n\033[0m");
+      printf("\033[1;33mWarning! Couldn't add resource to cache. "
+             "Resource size limit exceeded or error writing the "
+             "file.\n\033[0m");
     }
 
   }

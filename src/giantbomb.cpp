@@ -84,7 +84,8 @@ GiantBomb::GiantBomb(Settings *config,
   platformId = getPlatformId(config->platform);
   if(platformId == "na") {
     reqRemaining = 0;
-    printf("\033[0;31mPlatform not supported by GiantBomb or it hasn't yet been included in Skyscraper for this module...\033[0m\n");
+    printf("\033[0;31mPlatform not supported by GiantBomb or it hasn't yet been "
+           "included in Skyscraper for this module...\033[0m\n");
     return;
   }
 
@@ -113,7 +114,7 @@ GiantBomb::GiantBomb(Settings *config,
     reqRemaining = 0;
     return;
   }
-  printf("INFO: Reading GiantBomb header game database...");
+  printf("INFO: Reading GiantBomb header game database..."); fflush(stdout);
   fflush(stdout);
   platformDb = QString::fromUtf8(fileGames.readAll());
   fileGames.close();
@@ -170,7 +171,7 @@ GiantBomb::GiantBomb(Settings *config,
 
   // Read RELEASES:
   // Read from config->giantBombDb + config->platform + "_releases.xml"
-  printf("INFO: Reading GiantBomb header release database...");
+  printf("INFO: Reading GiantBomb header release database..."); fflush(stdout);
   if(!fileReleases.open(QIODevice::ReadOnly)){
     fileReleases.close();
     printf("\nERROR: Database file %s cannot be accessed. ", fileNameReleases.toStdString().c_str());
@@ -236,8 +237,7 @@ GiantBomb::GiantBomb(Settings *config,
   }
   platformDb = QString::fromUtf8(fileVideos.readAll());
   fileVideos.close();
-  printf("INFO: Reading GiantBomb header videos database...");
-  fflush(stdout);
+  printf("INFO: Reading GiantBomb header videos database..."); fflush(stdout);
 
   jsonVid = QJsonDocument::fromJson(platformDb.toUtf8());
   if(jsonVid.isNull()) {
@@ -246,7 +246,7 @@ GiantBomb::GiantBomb(Settings *config,
     reqRemaining = 0;
     return;
   } else {
-    printf(" DONE.\n");
+    printf(" DONE\n");
   }
 
   fetchOrder.append(RELEASEDATE);
@@ -300,7 +300,8 @@ bool GiantBomb::requestGb (const QString &url, QDateTime *lastRequest)
       return true;
     } else if(queryStatus == 107) {
       // API rate exceeded
-      printf("\n\033[1;31mWARNING: GiantBomb API rate limit hit: Waiting for up to an hour before retrying...\033[0m\n");
+      printf("\n\033[1;31mWARNING: GiantBomb API rate limit hit: Waiting for up "
+             "to an hour before retrying...\033[0m\n");
       QProcess::execute("bash", { QDir::homePath() + "/.skyscraper/wait_gb.sh" });
       QThread::sleep(60);
       return requestGb(url, lastRequest);
@@ -319,7 +320,8 @@ bool GiantBomb::requestGb (const QString &url, QDateTime *lastRequest)
 
 bool GiantBomb::refreshGbCache(QString &endpoint, QFile *file, QDateTime *lastRequest)
 {
-  printf("INFO: Downloading game %s from GiantBomb for the platform...\n", endpoint.toStdString().c_str());
+  printf("INFO: Downloading game %s from GiantBomb for the platform...\n",
+         endpoint.toStdString().c_str());
   QString platformDb = "[\n";
   int totalEntries = 0;
   bool pendingResults = true;
@@ -333,7 +335,7 @@ bool GiantBomb::refreshGbCache(QString &endpoint, QFile *file, QDateTime *lastRe
     }
 
     if(requestGb(url, lastRequest)) {
-      printf(".");
+      printf("."); fflush(stdout);
       QJsonArray jsonGames = jsonDoc.object()["results"].toArray();
       if(jsonGames.size()) {
         while(!jsonGames.isEmpty()) {
@@ -356,10 +358,12 @@ bool GiantBomb::refreshGbCache(QString &endpoint, QFile *file, QDateTime *lastRe
   platformDb.append("]");
   reqRemaining = 0;
 
-  printf("INFO: Writing %d %s header entries from GiantBomb database to local database.\n", totalEntries, endpoint.toStdString().c_str());
+  printf("INFO: Writing %d %s header entries from GiantBomb database to local database.\n",
+         totalEntries, endpoint.toStdString().c_str());
   if(!file->open(QIODevice::WriteOnly)){
     file->close();
-    printf("\nERROR: Database file %s cannot be created or written to.\n", file->fileName().toStdString().c_str());
+    printf("\nERROR: Database file %s cannot be created or written to.\n",
+           file->fileName().toStdString().c_str());
     reqRemaining = 0;
     return false;
   } else {
@@ -395,13 +399,13 @@ void GiantBomb::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
 {
   existingMedia = sharedBlobs;
   
-  printf("Waiting to get game data...");
-  fflush(stdout);
+  printf("Waiting to get game data..."); fflush(stdout);
   if(requestGb(game.url, &lastGameRequest)) {
-    printf(" DONE.\n");
+    printf(" DONE\n");
     jsonObj = jsonDoc.object()["results"].toObject();
   } else {
     printf(" ERROR, skipping game.\n");
+    game.found = false;
     game.title = "";
     game.platform = "";
     game.url = "";
@@ -720,13 +724,12 @@ void GiantBomb::getMarquee(GameEntry &game)
             !jsonTags.toObject()["name"].toString().contains("Box Art", Qt::CaseInsensitive))) {
 
           QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-          printf("Waiting to get image data...");
-          fflush(stdout);
+          printf("Waiting to get image data..."); fflush(stdout);
           if(!requestGb(endPointUrl, &lastImageRequest)) {
             printf(" ERROR, skipping marquee image.\n");
             return;
           }
-          printf(" DONE.\n");
+          printf(" DONE\n");
           QJsonArray jsonMarquee = jsonDoc.object()["results"].toArray();
 
           if(!jsonMarquee.isEmpty()) {
@@ -780,10 +783,9 @@ void GiantBomb::getWheel(GameEntry &game)
 
           if(jsonImages.isEmpty()) {
             QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-            printf("Waiting to get image data...");
-            fflush(stdout);
+            printf("Waiting to get image data..."); fflush(stdout);
             if(requestGb(endPointUrl, &lastImageRequest)) {
-              printf(" DONE.\n");
+              printf(" DONE\n");
               jsonImages = jsonDoc.object()["results"].toArray();
             } else {
               printf(" ERROR, skipping screenshot image.\n");
@@ -845,10 +847,9 @@ void GiantBomb::getScreenshot(GameEntry &game)
 
           if(jsonImages.isEmpty()) {
             QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-            printf("Waiting to get image data...");
-            fflush(stdout);
+            printf("Waiting to get image data..."); fflush(stdout);
             if(requestGb(endPointUrl, &lastImageRequest)) {
-              printf(" DONE.\n");
+              printf(" DONE\n");
               jsonImages = jsonDoc.object()["results"].toArray();
             } else {
               printf(" ERROR, skipping screenshot image.\n");

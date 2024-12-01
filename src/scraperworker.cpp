@@ -62,7 +62,6 @@ ScraperWorker::ScraperWorker(QSharedPointer<Queue> queue,
                              QString threadId)
   : config(config), cache(cache), manager(manager), queue(queue), threadId(threadId)
 {
-  NameTools::get().cache = cache;
 }
 
 ScraperWorker::~ScraperWorker()
@@ -124,7 +123,7 @@ void ScraperWorker::run()
 
   QString error = "\033[1;33m(T" + threadId + ")\033[0m ";
   if(limitReached(error)) {
-    printf(error.toStdString().c_str());
+    printf(error.toStdString().c_str()); fflush(stdout);
     delete scraper;
     emit allDone(true);
     return;
@@ -856,7 +855,7 @@ GameEntry ScraperWorker::getEntryFromUser(const QList<GameEntry> &gameEntries,
     printf("\033[1;32m%d%s\033[0m: Title:    '\033[1;32m%s\033[0m'%s\n    platform: '\033[1;33m%s\033[0m'\n", a, QString((a <= 9?" ":"")).toStdString().c_str(), gameEntries.at(a - 1).title.toStdString().c_str(), suggested.toStdString().c_str(), gameEntries.at(a - 1).platform.toStdString().c_str());
   }
   printf("\033[1;32m-1\033[0m: \033[1;33mNONE OF THE ABOVE!\033[0m\n");
-  printf("\033[1;34mPlease choose the preferred entry\033[0m (Or press enter to let Skyscraper choose):\033[0m ");
+  printf("\033[1;34mPlease choose the preferred entry\033[0m (Or press enter to let Skyscraper choose):\033[0m "); fflush(stdout);
   getline(std::cin, entryStr);
   printf("\n");
   // Becomes 0 if input is not a number
