@@ -28,7 +28,7 @@ And of course:
 * Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files. All the scraper code/platform ids mappings are now in the configuration files.
 * Support additional resources (music, manuals, usage data, trivia, maps, guides, user flags, game size) and the logic to scrape them and add them to the frontends.
 * Validation of the cache now tries to fix (and cleanses if it cannot) the textual resource contents of the database.
-* --startat and --endat now are compatible recursive directories.
+* --startat and --endat now are compatible with recursive directories.
 * Take advantage of MAME short names for the compatible scrapers.
 * Improve data conformance checks and corrections to ensure homogeneized resources across scrapers.
 * Alternative name support for the compatible scrapers (most of them).
@@ -42,7 +42,7 @@ And of course:
 * Some changes to minimize the false positives from the scrapers.
 * New cache tools to manage big databases such as mine (several tens of thousands of entries) and spot inconsistencies and false positive matches.
 * ...Changes that I need that probably no other one out there will need :)
-*  Breaking changes: The unpack functionality has been removed. The checksum matching logic has been heavily modified.
+*  Breaking changes: The unpack functionality has been removed (although the checksum generation does unpack the files if needed). The checksum matching logic has been heavily modified.
  
 
 ## Original Readme:
