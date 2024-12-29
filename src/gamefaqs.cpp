@@ -50,7 +50,7 @@ GameFaqs::GameFaqs(Settings *config,
   limitTimer.setSingleShot(false);
   limitTimer.start();
 
-  QFile dbFile(config->gamefaqsDb + "/" + config->platform + ".json");
+  QFile dbFile(config->dbPath + "/" + config->platform + ".json");
   if(!dbFile.open(QIODevice::ReadOnly)){
     dbFile.close();
     printf("\nERROR: Database file %s cannot be accessed. ", dbFile.fileName().toStdString().c_str());
@@ -184,6 +184,8 @@ void GameFaqs::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry 
     printf("%s\n", game.url.toStdString().c_str());
     // TODO: LOW: Pending implementation of media url extraction + getCover + getVideo...
     // Not worth it unless the anti-scraping protections are dropped.
+    // If ever implemented, also update GameEntries::getCompleteness and GameFaqs().
+    // Also, protect all online getters with "if(!offlineOnly) {...}.
   }
 
   jsonObj = QJsonDocument::fromJson(game.miscData).object();

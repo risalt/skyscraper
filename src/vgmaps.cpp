@@ -35,8 +35,6 @@
 #include "strtools.h"
 #include "nametools.h"
 #include "platform.h"
-#include "skyscraper.h"
-
 
 VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
   : AbstractScraper(config, manager, threadId)
@@ -45,7 +43,7 @@ VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString thr
 
   // Extract mapping Game->(Platform+Link) from the csv file:
   printf("INFO: Reading the videogame maps file... "); fflush(stdout);
-  QString vgmapsFileName = config->vgmapsPath + "/vgmaps.csv";
+  QString vgmapsFileName = config->dbPath + "/vgmaps.csv";
   QFile vgmapsFile(vgmapsFileName);
   if(!vgmapsFile.open(QFile::ReadOnly | QFile::Text)) {
     printf("\nERROR: Cannot open file '%s'.\n", vgmapsFileName.toStdString().c_str());
@@ -63,7 +61,7 @@ VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString thr
         for(int pos=1; pos < vgmapsRow.size(); pos++) {
           if(vgmapsRow.at(pos).endsWith(".html")) {
             const auto mapTitleUrl = qMakePair(gameName,
-                                               config->vgmapsPath + "/" + vgmapsRow.at(pos));
+                                               config->dbPath + "/" + vgmapsRow.at(pos));
             QStringList safeVariations, unsafeVariations;
             NameTools::generateSearchNames(gameName, safeVariations, unsafeVariations, true);
             for(const auto &name: std::as_const(safeVariations)) {

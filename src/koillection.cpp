@@ -51,7 +51,7 @@ Koillection::Koillection(QSharedPointer<NetManager> manager, Settings *globalCon
   connect(netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
 
   db.setHostName(config->dbServer);
-  db.setDatabaseName(config->koiDb);
+  db.setDatabaseName(config->dbName);
   db.setUserName(config->dbUser);
   db.setPassword(config->dbPassword);
   if(!db.open()) {
@@ -94,7 +94,11 @@ Koillection::Koillection(QSharedPointer<NetManager> manager, Settings *globalCon
 
 Koillection::~Koillection()
 {
-  db.close();
+  if(db.isOpen()) {
+    db.close();
+    db = QSqlDatabase();
+    QSqlDatabase::removeDatabase(db.connectionName());
+  }
   // Update the collection statistics
   if(!collectionId.isEmpty()) {
     printf("INFO: Updating global statistics... "); fflush(stdout);
@@ -420,6 +424,21 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       guides = entry.guides.split(" ");
       guides.sort();
     }
+    QStringList cheats = {};
+    if(!entry.cheats.isEmpty()) {
+      cheats = entry.cheats.split(" ");
+      cheats.sort();
+    }
+    QStringList reviews = {};
+    if(!entry.reviews.isEmpty()) {
+      reviews = entry.reviews.split(" ");
+      reviews.sort();
+    }
+    QStringList artbooks = {};
+    if(!entry.artbooks.isEmpty()) {
+      artbooks = entry.artbooks.split(" ");
+      artbooks.sort();
+    }
     QStringList vgmaps = {};
     if(!entry.vgmaps.isEmpty()) {
       vgmaps = entry.vgmaps.split(" ");
@@ -607,10 +626,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     if(!manual.isEmpty()) {
       tagList << catalogTagList.value("With Handbook");
     }
-    if(!guides.isEmpty()) {
-      tagList << catalogTagList.value("With Guides");
-    }
-    if(!vgmaps.isEmpty()) {
+    if(!guides.isEmpty() || !cheats.isEmpty() || !reviews.isEmpty() ||
+       !vgmaps.isEmpty() || !artbooks.isEmpty()) {
       tagList << catalogTagList.value("With Guides");
     }
     if(!anyImage) {
@@ -753,10 +770,48 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         guidesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
         pos++;
       }
-      datumsItem << QPair<QString, QString>("Guides", guidesLinks.replace(config->guidesPath, "/uploads/guides"));
+      datumsItem << QPair<QString, QString>("Guides", guidesLinks
+                                                      .replace(config->guidesPath, "/uploads/guides")
+                                                      .replace(config->docsPath, "/uploads/docsdb"));
     }
     else {
       datumsItem << QPair<QString, QString>("Guides", "");
+    }
+    if(!cheats.isEmpty()) {
+      QString cheatsLinks;
+      int pos = 1;
+      for(const auto &link: std::as_const(cheats)) {
+        cheatsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+        pos++;
+      }
+      datumsItem << QPair<QString, QString>("Cheats", cheatsLinks.replace(config->docsPath, "/uploads/docsdb"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Cheats", "");
+    }
+    if(!reviews.isEmpty()) {
+      QString reviewsLinks;
+      int pos = 1;
+      for(const auto &link: std::as_const(reviews)) {
+        reviewsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+        pos++;
+      }
+      datumsItem << QPair<QString, QString>("Reviews", reviewsLinks.replace(config->docsPath, "/uploads/docsdb"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Reviews", "");
+    }
+    if(!artbooks.isEmpty()) {
+      QString artbooksLinks;
+      int pos = 1;
+      for(const auto &link: std::as_const(artbooks)) {
+        artbooksLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+        pos++;
+      }
+      datumsItem << QPair<QString, QString>("artbooks", artbooksLinks.replace(config->docsPath, "/uploads/docsdb"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Artbooks", "");
     }
     if(!vgmaps.isEmpty()) {
       QString vgmapsLinks;
@@ -767,7 +822,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         mapPlatform = map.baseName();
         vgmapsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + mapPlatform + "</a> ";
       }
-      datumsItem << QPair<QString, QString>("Maps", vgmapsLinks.replace(config->vgmapsPath, "/uploads/vgmaps"));
+      datumsItem << QPair<QString, QString>("Maps", vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps"));
     }
     else {
       datumsItem << QPair<QString, QString>("Maps", "");

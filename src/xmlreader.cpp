@@ -94,6 +94,9 @@ void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntr
     entry.rating = nodes.at(a).firstChildElement("rating").text();
     entry.players = nodes.at(a).firstChildElement("players").text();
     entry.guides = nodes.at(a).firstChildElement("guides").text();
+    entry.cheats = nodes.at(a).firstChildElement("cheats").text();
+    entry.reviews = nodes.at(a).firstChildElement("reviews").text();
+    entry.artbooks = nodes.at(a).firstChildElement("artbooks").text();
     entry.vgmaps = nodes.at(a).firstChildElement("vgmaps").text();
     entry.chiptuneId = nodes.at(a).firstChildElement("chiptuneid").text();
     entry.chiptunePath = nodes.at(a).firstChildElement("chiptunepath").text();

@@ -55,6 +55,7 @@ public:
   QSharedPointer<NetManager> manager;
   int state = 0;
   inline static Settings config;
+  inline static QString docType;
 
 public slots:
   void run();
@@ -69,6 +70,7 @@ private slots:
 
 private:
   inline static QFile lockFile;
+  inline static int docTypeCurrent = 0;
   void loadConfig(const QCommandLineParser &parser);
   void copyFile(const QString &distro, const QString &current, bool overwrite = true);
   QString secsToString(const int &seconds);

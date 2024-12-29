@@ -17,7 +17,10 @@
     <source>giantbomb</source>
     <source>chiptune</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>docsdb</source>
+    <source>mamehistory</source>
   </order>
   <order type="platform">
     <source>import</source>
@@ -35,7 +38,10 @@
     <source>giantbomb</source>
     <source>chiptune</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>docsdb</source>
+    <source>mamehistory</source>
   </order>
   <order type="releasedate">
     <source>import</source>
@@ -52,6 +58,7 @@
     <source>vgfacts</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
   <order type="developer">
@@ -66,6 +73,7 @@
     <source>rawg</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
     <source>vgfacts</source>
   </order>
@@ -83,6 +91,7 @@
     <source>rawg</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
  </order>
   <order type="players">
@@ -98,6 +107,7 @@
     <source>igdb</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
 </order>
   <order type="ages">
@@ -111,6 +121,7 @@
     <source>rawg</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
   <order type="tags">
@@ -128,6 +139,7 @@
     <source>rawg</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
   <order type="franchises">
@@ -166,7 +178,9 @@
     <source>rawg</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>mamehistory</source>
   </order>
   <order type="cover">
     <source>import</source>
@@ -181,6 +195,7 @@
     <source>offlinemobygames</source>
     <source>igdb</source>
     <source>giantbomb</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
  </order>
   <order type="screenshot">
@@ -196,6 +211,7 @@
     <source>igdb</source>
     <source>rawg</source>
     <source>giantbomb</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
  </order>
   <order type="wheel">
@@ -210,6 +226,7 @@
     <source>mobygames</source>
     <source>offlinemobygames</source>
     <source>giantbomb</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
 </order>
   <order type="marquee">
@@ -226,6 +243,7 @@
     <source>arcadedb</source>
     <source>giantbomb</source>
     <source>rawg</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
   <order type="texture">
@@ -239,6 +257,7 @@
     <source>mobygames</source>
     <source>offlinemobygames</source>
     <source>screenscraper</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
   <order type="video">
@@ -250,6 +269,7 @@
     <source>igdb</source>
     <source>rawg</source>
     <source>giantbomb</source>
+    <source>offlinetgdb</source>
     <source>thegamesdb</source>
   </order>
    <order type="manual">
@@ -268,6 +288,16 @@
   </order>
   <order type="guides">
     <source>gamefaqs</source>
+    <source>docsdb</source>
+  </order>
+  <order type="reviews">
+    <source>docsdb</source>
+  </order>
+  <order type="cheats">
+    <source>docsdb</source>
+  </order>
+  <order type="artbooks">
+    <source>docsdb</source>
   </order>
   <order type="chiptuneid">
     <source>chiptune</source>

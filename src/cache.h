@@ -67,6 +67,9 @@ struct ResCounts {
   int videos;
   int manuals;
   int guides;
+  int cheats;
+  int reviews;
+  int artbooks;
   int vgmaps;
   int chiptunes;
 };

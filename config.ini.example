@@ -208,7 +208,8 @@ scummIni="scummvm.ini"
 fuzzySearch="2"
 minMatch="80"
 guidesPath="..."
-vgmapsPath="..."
+mapsPath="..."
+docsPath="..."
 negCacheDaysExpiration="365"
 
 [arcadedb]
@@ -222,14 +223,14 @@ userCreds="xxx"
 [offlinemobygames]
 threads="1"
 userCreds="xxx"
-mobygamesDb="mobygamesdb"
+dbPath="mobygamesdb"
 minMatch="0"
 
 [launchbox]
-launchBoxDb="launchboxdb/Metadata.xml"
+dbPath="launchboxdb/Metadata.xml"
 ;getMissingResources="true"
 minMatch="0"
-threads="1"
+threads="4"
 
 [rawg]
 threads="1"
@@ -241,10 +242,10 @@ userCreds="xxx:xxx"
 
 [giantbomb]
 userCreds="xxx:xxx:xxx"
-giantBombDb="giantbombdb"
+dbPath="giantbombdb"
 getMissingResources="false"
 minMatch="0"
-threads="1"
+threads="4"
 
 [screenscraper]
 userCreds="xxx:xxx:xxx"
@@ -254,38 +255,61 @@ videoPreferNormalized="true"
 minMatch="65"
 
 [chiptune]
-threads="1"
+threads="4"
 minMatch="0"
 chiptunes="true"
 cacheRefresh="true"
-navidromeDb="..."
+dbPath=".../navidrome.db"
 
 [gamefaqs]
-gamefaqsDb="gamefaqsdb"
-threads="1"
+dbPath="gamefaqsdb"
+threads="4"
 minMatch="0"
 guides="true"
-cacheRefresh="true"
+;cacheRefresh="true"
 
 [vgfacts]
-vgfactsDb="vgfactsdb"
-threads="1"
+dbPath="vgfactsdb"
+threads="4"
 minMatch="0"
 
 [vgmaps]
 minMatch="0"
-cacheRefresh="true"
-vgmaps="true"
-threads="1"
-vgmapsPath="..."
+;cacheRefresh="true"
+maps="true"
+threads="4"
+dbPath="..."
 
 [customflags]
 cacheRefresh="true"
 
+[offlinetgdb]
+minMatch="0"
+dbServer="localhost"
+dbName="tgdb"
+dbUser="xxx"
+dbPassword="xxx"
+threads="4"
+
+[docsdb]
+minMatch="0"
+cheats="true"
+reviews="true"
+artbooks="true"
+guides="true"
+cacheRefresh="true"
+docTypes="..."
+dbPath="..."
+threads="4"
+
+[mamehistory]
+minMatch="0"
+;cacheRefresh="true"
+threads="2"
+
 [thegamesdb]
 ; The key allows 3000 requests per month and IP address
 userCreds="xxx"
-
 threads="1"
 
 ; Internal scrappers:
@@ -298,7 +322,10 @@ cacheRefresh="true"
 ; Frontends
 [xmlexport]
 guides="true"
-vgmaps="true"
+maps="true"
+cheats="true"
+reviews="true"
+artbooks="true"
 chiptunes="true"
 
 [koillection]
@@ -308,7 +335,10 @@ koiDb="koillection"
 dbUser="xxx"
 dbPassword="xxx"
 guides="true"
-vgmaps="true"
+maps="true"
+cheats="true"
+reviews="true"
+artbooks="true"
 chiptunes="true"
 
 [pegasus]
@@ -322,3 +352,5 @@ skipExistingWheels="false"
 skipExistingTextures="false"
 
 ; Platform specific settings:
+;[snes]
+; ...

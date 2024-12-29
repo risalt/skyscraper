@@ -355,7 +355,7 @@ QString StrTools::conformReleaseDate(QString str)
   if(finalDate < QDate::fromString("19711231", "yyyyMMdd") ||
      finalDate > QDate::currentDate().addMonths(6) || !finalDate.isValid()) {
     if(Skyscraper::config.scraper != "cache") {
-      printf("\nERROR: Incorrect date '%s'. Ignoring.\n", str.toStdString().c_str());
+      printf("\nWARNING: Incorrect date '%s'. Ignoring.\n", str.toStdString().c_str());
     }
     return "";
   } else {

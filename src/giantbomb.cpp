@@ -69,9 +69,9 @@ GiantBomb::GiantBomb(Settings *config,
   lastReleaseRequest = QDateTime::currentDateTimeUtc().addDays(-1);
 
   int totalEntries = 0;
-  QString fileNameGames = config->giantBombDb + "/" + config->platform + "_games.json";
-  QString fileNameReleases = config->giantBombDb + "/" + config->platform + "_releases.json";
-  QString fileNameVideos = config->giantBombDb + "/" + "videos.json";
+  QString fileNameGames = config->dbPath + "/" + config->platform + "_games.json";
+  QString fileNameReleases = config->dbPath + "/" + config->platform + "_releases.json";
+  QString fileNameVideos = config->dbPath + "/" + "videos.json";
   QFile fileGames(fileNameGames);
   QFile fileReleases(fileNameReleases);
   QFile fileVideos(fileNameVideos);
@@ -106,7 +106,7 @@ GiantBomb::GiantBomb(Settings *config,
   }
 
   // Read GAMES:
-  // Read from config->giantBombDb + config->platform + "_games.xml"
+  // Read from config->dbPath + config->platform + "_games.xml"
   if(!fileGames.open(QIODevice::ReadOnly)){
     fileGames.close();
     printf("\nERROR: Database file %s cannot be accessed. ", fileNameGames.toStdString().c_str());
@@ -170,7 +170,7 @@ GiantBomb::GiantBomb(Settings *config,
   }
 
   // Read RELEASES:
-  // Read from config->giantBombDb + config->platform + "_releases.xml"
+  // Read from config->dbPath + config->platform + "_releases.xml"
   printf("INFO: Reading GiantBomb header release database..."); fflush(stdout);
   if(!fileReleases.open(QIODevice::ReadOnly)){
     fileReleases.close();
@@ -227,7 +227,7 @@ GiantBomb::GiantBomb(Settings *config,
   }
 
   // Read VIDEOS:
-  // Read from config->giantBombDb + "_videos.xml"
+  // Read from config->dbPath + "_videos.xml"
   if(!fileVideos.open(QIODevice::ReadOnly)){
     fileVideos.close();
     printf("\nERROR: Video database file %s cannot be accessed. ", fileNameVideos.toStdString().c_str());
@@ -235,9 +235,9 @@ GiantBomb::GiantBomb(Settings *config,
     reqRemaining = 0;
     return;
   }
+  printf("INFO: Reading GiantBomb header videos database..."); fflush(stdout);
   platformDb = QString::fromUtf8(fileVideos.readAll());
   fileVideos.close();
-  printf("INFO: Reading GiantBomb header videos database..."); fflush(stdout);
 
   jsonVid = QJsonDocument::fromJson(platformDb.toUtf8());
   if(jsonVid.isNull()) {

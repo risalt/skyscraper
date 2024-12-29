@@ -157,9 +157,67 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           guidesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
           pos++;
         }
-        guidesLinks.replace(config->guidesPath, "/uploads/guides");
+        guidesLinks.replace(config->guidesPath, "/uploads/guides")
+                   .replace(config->docsPath, "/uploads/docsdb");
       }
       finalOutput.append("    <guides>" + StrTools::xmlEscape(guidesLinks) + "</guides>\n");
+    }
+    if(entry.cheats.isEmpty()) {
+      finalOutput.append("    <cheats />\n");
+    } else {
+      QStringList cheats = {};
+      if(!entry.cheats.isEmpty()) {
+        cheats = entry.cheats.split(" ");
+        cheats.sort();
+      }
+      QString cheatsLinks;
+      if(!cheats.isEmpty()) {
+        int pos = 1;
+        for(const auto &link: std::as_const(cheats)) {
+          cheatsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+          pos++;
+        }
+        cheatsLinks.replace(config->docsPath, "/uploads/docsdb");
+      }
+      finalOutput.append("    <cheats>" + StrTools::xmlEscape(cheatsLinks) + "</cheats>\n");
+    }
+    if(entry.reviews.isEmpty()) {
+      finalOutput.append("    <reviews />\n");
+    } else {
+      QStringList reviews = {};
+      if(!entry.reviews.isEmpty()) {
+        reviews = entry.reviews.split(" ");
+        reviews.sort();
+      }
+      QString reviewsLinks;
+      if(!reviews.isEmpty()) {
+        int pos = 1;
+        for(const auto &link: std::as_const(reviews)) {
+          reviewsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+          pos++;
+        }
+        reviewsLinks.replace(config->docsPath, "/uploads/docsdb");
+      }
+      finalOutput.append("    <reviews>" + StrTools::xmlEscape(reviewsLinks) + "</reviews>\n");
+    }
+    if(entry.artbooks.isEmpty()) {
+      finalOutput.append("    <artbooks />\n");
+    } else {
+      QStringList artbooks = {};
+      if(!entry.artbooks.isEmpty()) {
+        artbooks = entry.artbooks.split(" ");
+        artbooks.sort();
+      }
+      QString artbooksLinks;
+      if(!artbooks.isEmpty()) {
+        int pos = 1;
+        for(const auto &link: std::as_const(artbooks)) {
+          artbooksLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
+          pos++;
+        }
+        artbooksLinks.replace(config->docsPath, "/uploads/docsdb");
+      }
+      finalOutput.append("    <artbooks>" + StrTools::xmlEscape(artbooksLinks) + "</artbooks>\n");
     }
     if(entry.vgmaps.isEmpty()) {
       finalOutput.append("    <vgmaps />\n");
@@ -177,7 +235,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           mapPlatform = map.baseName();
           vgmapsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + mapPlatform + "</a> ";
         }
-        vgmapsLinks.replace(config->vgmapsPath, "/uploads/vgmaps");
+        vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps");
       }
       finalOutput.append("    <vgmaps>" + StrTools::xmlEscape(vgmapsLinks) + "</vgmaps>\n");
     }

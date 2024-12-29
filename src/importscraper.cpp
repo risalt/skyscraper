@@ -51,6 +51,9 @@ ImportScraper::ImportScraper(Settings *config,
   fetchOrder.append(FRANCHISES);
   fetchOrder.append(MANUAL);
   fetchOrder.append(GUIDES);
+  fetchOrder.append(CHEATS);
+  fetchOrder.append(REVIEWS);
+  fetchOrder.append(ARTBOOKS);
   fetchOrder.append(PLATFORM);
   fetchOrder.append(TRIVIA);
   fetchOrder.append(VGMAPS);
@@ -288,6 +291,9 @@ bool ImportScraper::loadDefinitions()
       checkForTag(releaseDatePre, releaseDatePost, releaseDateTag, line);
       checkForTag(descriptionPre, descriptionPost, descriptionTag, line);
       checkForTag(guidesPre, guidesPost, guidesTag, line);
+      checkForTag(cheatsPre, cheatsPost, cheatsTag, line);
+      checkForTag(reviewsPre, reviewsPost, reviewsTag, line);
+      checkForTag(artbooksPre, artbooksPost, artbooksTag, line);
       checkForTag(platformPre, platformPost, platformTag, line);
       checkForTag(triviaPre, triviaPost, triviaTag, line);
       checkForTag(vgmapsPre, vgmapsPost, vgmapsTag, line);

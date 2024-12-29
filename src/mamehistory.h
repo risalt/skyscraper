@@ -1,5 +1,5 @@
 /***************************************************************************
- *            chiptune.h
+ *            mamehistory.h
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
@@ -23,36 +23,30 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#ifndef CHIPTUNE_H
-#define CHIPTUNE_H
+#ifndef MAMEHISTORY_H
+#define MAMEHISTORY_H
 
 #include <QMap>
-#include <QPair>
-#include <QString>
-#include <QStringList>
 
 #include "abstractscraper.h"
-#include "gameentry.h"
 
-class Chiptune : public AbstractScraper
+class MAMEHistory : public AbstractScraper
 {
   Q_OBJECT
 
 public:
-  Chiptune(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
-  ~Chiptune();
-
+  MAMEHistory(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
   void getSearchResults(QList<GameEntry> &gameEntries,
                         QString searchName, QString platform) override;
+  void getDescription(GameEntry &game) override;
 
 private:
-  QMap<QString, int> schema;
-  QMultiMap<QString, QPair<QString, QPair<QString, QString>>> soundtrackList;
-  QMultiMap<QString, QPair<QString, QPair<QString, QString>>> soundtrackListTitle;
+  QMap<QString, GameEntry> historyMap;
 
 };
 
-#endif // CHIPTUNE_H
+#endif // MAMEHISTORY_H

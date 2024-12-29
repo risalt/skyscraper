@@ -54,10 +54,13 @@ HEADERS += src/skyscraper.h \
            src/koillection.h \
            src/openretro.h \
            src/thegamesdb.h \
+           src/offlinetgdb.h \
            src/launchbox.h \
            src/chiptune.h \
            src/vgmaps.h \
            src/vgfacts.h \
+           src/docsdb.h \
+           src/mamehistory.h \
            src/customflags.h \
            src/worldofspectrum.h \
            src/screenscraper.h \
@@ -114,10 +117,13 @@ SOURCES += src/main.cpp \
            src/koillection.cpp \
            src/openretro.cpp \
            src/thegamesdb.cpp \
+           src/offlinetgdb.cpp \
            src/launchbox.cpp \
            src/chiptune.cpp \
            src/vgmaps.cpp \
            src/vgfacts.cpp \
+           src/docsdb.cpp \
+           src/mamehistory.cpp \
            src/customflags.cpp \
            src/worldofspectrum.cpp \
            src/screenscraper.cpp \

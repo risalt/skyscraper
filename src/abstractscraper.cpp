@@ -79,7 +79,6 @@ AbstractScraper::AbstractScraper(Settings *config,
             qDebug() << query.lastError();
             printf("ERROR: Error creating the negative database index.\n");
           } else {
-            query.finish();
             negDbReady = true;
           }
         }
@@ -89,6 +88,7 @@ AbstractScraper::AbstractScraper(Settings *config,
                query.value(0).toInt());
         negDbReady = true;
       }
+      query.finish();
     }
   }
 }
@@ -98,6 +98,8 @@ AbstractScraper::~AbstractScraper()
   if(threadId != "cache") {
     delete netComm;
     negDb.close();
+    negDb = QSqlDatabase();
+    QSqlDatabase::removeDatabase("negcache" + threadId);
   }
 }
 
@@ -274,8 +276,29 @@ void AbstractScraper::fetchGameResources(GameEntry &game, QStringList &sharedBlo
         }
       }
       break;
+    case CHEATS:
+      if(config->cheats) {
+        if((!cache) || (cache && cache->cheats.isEmpty())) {
+          getCheats(game);
+        }
+      }
+      break;
+    case REVIEWS:
+      if(config->reviews) {
+        if((!cache) || (cache && cache->reviews.isEmpty())) {
+          getReviews(game);
+        }
+      }
+      break;
+    case ARTBOOKS:
+      if(config->artbooks) {
+        if((!cache) || (cache && cache->artbooks.isEmpty())) {
+          getArtbooks(game);
+        }
+      }
+      break;
     case VGMAPS:
-      if(config->vgmaps) {
+      if(config->maps) {
         if((!cache) || (cache && cache->vgmaps.isEmpty())) {
           getVGMaps(game);
         }
@@ -647,6 +670,18 @@ void AbstractScraper::getGuides(GameEntry &)
 {
 }
 
+void AbstractScraper::getCheats(GameEntry &)
+{
+}
+
+void AbstractScraper::getReviews(GameEntry &)
+{
+}
+
+void AbstractScraper::getArtbooks(GameEntry &)
+{
+}
+
 void AbstractScraper::getVGMaps(GameEntry &)
 {
 }
@@ -760,8 +795,8 @@ QStringList AbstractScraper::getSearchNames(const QFileInfo &info)
 // accessible). Needs to be executed as part of the scraper overriden getSearchResults.
 template <typename T> bool AbstractScraper::getSearchResultsOffline(
                                                QList<T> &gameIds, const QString &searchName,
-                                               QMultiMap<QString, T> &fullTitles,
-                                               QMultiMap<QString, T> &mainTitles)
+                                               const QMultiMap<QString, T> &fullTitles,
+                                               const QMultiMap<QString, T> &mainTitles)
 {
   QList<T> match = {};
   QListIterator<T> matchIterator(match);
@@ -874,23 +909,28 @@ template <typename T> bool AbstractScraper::getSearchResultsOffline(
 
 template bool AbstractScraper::getSearchResultsOffline(
                  QList<int> &gameIds, const QString &searchName,
-                 QMultiMap<QString, int> &fullTitles,
-                 QMultiMap<QString, int> &mainTitles);
+                 const QMultiMap<QString, int> &fullTitles,
+                 const QMultiMap<QString, int> &mainTitles);
 
 template bool AbstractScraper::getSearchResultsOffline(
                  QList<QPair<int, QString>> &gameIds, const QString &searchName,
-                 QMultiMap<QString, QPair<int, QString>> &fullTitles,
-                 QMultiMap<QString, QPair<int, QString>> &mainTitles);
+                 const QMultiMap<QString, QPair<int, QString>> &fullTitles,
+                 const QMultiMap<QString, QPair<int, QString>> &mainTitles);
 
 template bool AbstractScraper::getSearchResultsOffline(
                  QList<QPair<QString, QString>> &gameIds, const QString &searchName,
-                 QMultiMap<QString, QPair<QString, QString>> &fullTitles,
-                 QMultiMap<QString, QPair<QString, QString>> &mainTitles);
+                 const QMultiMap<QString, QPair<QString, QString>> &fullTitles,
+                 const QMultiMap<QString, QPair<QString, QString>> &mainTitles);
+
+template bool AbstractScraper::getSearchResultsOffline(
+                 QList<QPair<int, QPair<QString, int>>> &gameIds, const QString &searchName,
+                 const QMultiMap<QString, QPair<int, QPair<QString, int>>> &fullTitles,
+                 const QMultiMap<QString, QPair<int, QPair<QString, int>>> &mainTitles);
 
 template bool AbstractScraper::getSearchResultsOffline(
                  QList<QPair<QString, QPair<QString, QString>>> &gameIds, const QString &searchName,
-                 QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &fullTitles,
-                 QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &mainTitles);
+                 const QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &fullTitles,
+                 const QMultiMap<QString, QPair<QString, QPair<QString, QString>>> &mainTitles);
 
 //
 
@@ -1073,7 +1113,8 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
     // no matter the query... Adding them as exceptions here we try all the search names,
     // even if more than one returns results.
     // This trick of accumulating all the the passes even if a positive result was found
-    // CANNOT be used with: ScreenScraper, ESGameList, CustomFlags, ArcadeDB, ImportScraper.
+    // CANNOT be used with: ScreenScraper, ESGameList, CustomFlags, ArcadeDB, DocsDB
+    // or ImportScraper.
     if(!gameEntries.isEmpty() &&
        config->scraper != "worldofspectrum") { //&& config->scraper != "rawg") {
       break;

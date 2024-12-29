@@ -54,7 +54,7 @@ LaunchBox::LaunchBox(Settings *config,
   QString databaseUrl = "https://gamesdb.launchbox-app.com/Metadata.zip";
 
   loadMaps();
-  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "launchbox");
+  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "launchbox" + threadId);
 
   if(config->generateLbDb) {
   
@@ -71,7 +71,7 @@ LaunchBox::LaunchBox(Settings *config,
     GameEntry currentGame;
 
     QXmlStreamReader reader;
-    QFile xmlFile (config->launchBoxDb);
+    QFile xmlFile (config->dbPath);
     if(xmlFile.open(QIODevice::ReadOnly)) {
       reader.setDevice(&xmlFile);
       if(reader.readNext() && reader.isStartDocument() &&
@@ -79,16 +79,16 @@ LaunchBox::LaunchBox(Settings *config,
           schema.value(reader.name().toString()) == LBLAUNCHBOX) {
 
         printf("INFO: Preparing database... "); fflush(stdout);
-        QFile::remove(config->launchBoxDb + ".db");
-        if(QFile::exists(config->launchBoxDb + ".db")) {
+        QFile::remove(config->dbPath + ".db");
+        if(QFile::exists(config->dbPath + ".db")) {
           printf("ERROR: Old database could not be removed. Exiting.\n");
           reqRemaining = 0;
           return;
         }
-        db.setDatabaseName(config->launchBoxDb + ".db");
+        db.setDatabaseName(config->dbPath + ".db");
         if(!db.open()) {
           printf("ERROR: Could not create the database %s%s.\n",
-                 config->launchBoxDb.toStdString().c_str(), ".db");
+                 config->dbPath.toStdString().c_str(), ".db");
           qDebug() << db.lastError();
           reqRemaining = 0;
           return;
@@ -517,7 +517,7 @@ LaunchBox::LaunchBox(Settings *config,
     }
     else {
       printf("ERROR: Database file '%s' cannot be found or is corrupted.\n",
-             config->launchBoxDb.toStdString().c_str());
+             config->dbPath.toStdString().c_str());
       printf("INFO: Please download it from '%s'\n", databaseUrl.toStdString().c_str());
       reqRemaining = 0;
       return;
@@ -662,13 +662,13 @@ LaunchBox::LaunchBox(Settings *config,
       qDebug() << db.lastError();
       db.rollback();
       db.close();
-      QFile::remove(config->launchBoxDb + ".db");
+      QFile::remove(config->dbPath + ".db");
       printf("ERROR: Error while creating the database. Removing the "
              "in-progress file to avoid corruption while scraping.\n");
     } else {
+      db.close();
       printf("INFO: Export completed successfully. Now exiting.\n");
     }
-    db.close();
     reqRemaining = 0;
     return;
 
@@ -681,11 +681,11 @@ LaunchBox::LaunchBox(Settings *config,
       return;
     }
   
-    db.setDatabaseName(config->launchBoxDb + ".db");
+    db.setDatabaseName(config->dbPath + ".db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
     if(!db.open()) {
       printf("ERROR: Could not open the database %s%s.\n",
-             config->launchBoxDb.toStdString().c_str(), ".db");
+             config->dbPath.toStdString().c_str(), ".db");
       printf("Please regenerate it by executing 'Skyscraper --generatelbdb -s launchbox'.\n");
       qDebug() << db.lastError();
       reqRemaining = 0;
@@ -735,6 +735,7 @@ LaunchBox::LaunchBox(Settings *config,
                                  qMakePair(query.value(1).toInt(), query.value(2).toString()));
     }
     query.finish();
+    db.close();
 
     printf("INFO: LaunchBox database has been parsed, %d games have been loaded into memory.\n",
            launchBoxDb.count());
@@ -772,10 +773,15 @@ LaunchBox::LaunchBox(Settings *config,
   }
 }
 
+LaunchBox::~LaunchBox()
+{
+  QSqlDatabase::removeDatabase("launchbox" + threadId);
+}
+
 void LaunchBox::getSearchResults(QList<GameEntry> &gameEntries,
                                  QString searchName, QString)
 {
-  QList<QPair<int, QString>> matches = {};
+  QList<QPair<int, QString>> matches;
 
   if(getSearchResultsOffline(matches, searchName, searchNameToId, searchNameToIdTitle)) {
     for(const auto &databaseId: std::as_const(matches)) {

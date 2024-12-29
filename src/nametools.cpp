@@ -840,7 +840,8 @@ CanonicalData NameTools::getCanonicalData(const QFileInfo &info, bool onlyChecks
     get().cache->fillBlanks(cachedData, "generic");
     if(cachedData.canonical.size > 0) {
       canonicalData = cachedData.canonical;
-      if(!onlyChecksums && canonicalData.name.isEmpty()) {
+      if(!onlyChecksums && (canonicalData.name.isEmpty() ||
+                            canonicalData.mameid.isEmpty())) {
         get().searchCanonicalData(canonicalData);
       }
       foundInCache = true;
@@ -939,7 +940,7 @@ bool NameTools::searchCanonicalData(CanonicalData &canonical)
   }
   QSqlQuery query(db);
   query.setForwardOnly(true);
-  query.prepare("SELECT platform, game, file FROM canonicalData WHERE"
+  query.prepare("SELECT platform, game, file, mameid FROM canonicalData WHERE"
                 " sha1='" + canonical.sha1 + "' OR md5='" + canonical.md5 + "'");
   if(!query.exec()) {
     qDebug() << query.lastError();
@@ -951,20 +952,23 @@ bool NameTools::searchCanonicalData(CanonicalData &canonical)
   while(query.next()) {
     QString platform = query.value(0).toString();
     if(platformCatalogs.contains(platform)) {
-      // We stop at the first positive match
+      // We stop at the first complete positive match
       canonical.platform = platform;
       canonical.name = query.value(1).toString();
       canonical.file = query.value(2).toString();
+      canonical.mameid = query.value(3).toString();
       found = true;
-      break;
+      if(!canonical.mameid.isEmpty()) {
+        break;
+      }
     } else {
-      foundOtherPlatform = platform;
+      foundOtherPlatform += ";" + platform;
     }
   }
   query.finish();
 
   if(!found && !foundOtherPlatform.isEmpty()) {
-    printf("WARNING: Match to another catalog: Consider adding '%s' as a catalog"
+    printf("WARNING: Match to other catalog(s): Consider adding '%s' as catalog(s)"
            " for platform '%s' in 'checksumcatalogs.json'.\n",
            foundOtherPlatform.toStdString().c_str(),
            Skyscraper::config.platform.toStdString().c_str());
@@ -988,7 +992,7 @@ bool NameTools::importCanonicalData(const QString &file)
     printf("INFO: Creating SQLite database... "); fflush(stdout);
     // Database structure creation
     query.prepare("CREATE TABLE canonicalData (platform TEXT not NULL, game TEXT not NULL,"
-                  " file TEXT, size INTEGER, crc TEXT, sha1 TEXT, md5 TEXT)");
+                  " file TEXT, size INTEGER, crc TEXT, sha1 TEXT, md5 TEXT, mameid TEXT)");
     if(query.exec()) {
       query.finish();
       query.prepare("CREATE INDEX md5sumidx ON canonicalData(md5)");
@@ -1027,59 +1031,64 @@ bool NameTools::importCanonicalData(const QString &file)
   printf("INFO: Reading data from import file... "); fflush(stdout);
   QList<CanonicalData> canonicalImport;
   if(file == "LUTRISDB") {
-    QSqlDatabase lutrisdb = QSqlDatabase::addDatabase("QMYSQL", "lutrisdb");
-    lutrisdb.setHostName("db");
-    lutrisdb.setDatabaseName("lutrisdb");
-    lutrisdb.setUserName("lutrisdb");
-    lutrisdb.setPassword("lutrisdb");
-    if(!lutrisdb.open()) {
-      qDebug() << lutrisdb.lastError();
-      printf("ERROR: Connection to Lutris database has failed.\n");
-    }
-    QString queryString = "SELECT tosec_toseccategory.name, tosec_tosecgame.name,"
-                          " tosec_tosecrom.name, tosec_tosecrom.size, tosec_tosecrom.crc,"
-                          " tosec_tosecrom.sha1, tosec_tosecrom.md5 "
-                          "FROM tosec_tosecrom"
-                          " INNER JOIN tosec_tosecgame ON"
-                          "  tosec_tosecrom.game_id = tosec_tosecgame.id"
-                          " INNER JOIN tosec_toseccategory ON"
-                          "  tosec_tosecgame.category_id = tosec_toseccategory.id";
-    QSqlQuery queryLutris(lutrisdb);
-    queryLutris.setForwardOnly(true);
-    queryLutris.prepare(queryString);
-    if(!queryLutris.exec()) {
-      qDebug() << queryLutris.lastError();
-      printf("ERROR: Error while accessing TOSEC data from Lutris database.\n");
-      return false;
-    }
-    printf("Reading TOSEC database..."); fflush(stdout);
-    while(queryLutris.next()) {
-      CanonicalData item;
-      item.platform = queryLutris.value(0).toString();
-      item.name = queryLutris.value(1).toString();
-      item.file = queryLutris.value(2).toString();
-      item.size = queryLutris.value(3).toLongLong();
-      item.crc  = queryLutris.value(4).toString().toLower();
-      item.sha1 = queryLutris.value(5).toString().toLower();
-      item.md5  = queryLutris.value(6).toString().toLower();
-      if(item.name.isEmpty()) {
-        gamesWithoutName++;
-      } else if(item.sha1.isEmpty() && item.md5.isEmpty()) {
-        gamesWithoutChecksums++;
-      } else {
-        if(item.size == 0) {
-          gamesWithoutSize++;
-        }
-        canonicalImport.append(item);
-        gamesOk++;
-        if(gamesOk % 1000 == 0) {
-          printf("."); fflush(stdout);
+    // LutrisDB stores a TOSEC dump:
+    {
+      QSqlDatabase lutrisdb = QSqlDatabase::addDatabase("QMYSQL", "lutrisdb");
+      lutrisdb.setHostName("db");
+      lutrisdb.setDatabaseName("lutrisdb");
+      lutrisdb.setUserName("lutrisdb");
+      lutrisdb.setPassword("lutrisdb");
+      if(!lutrisdb.open()) {
+        qDebug() << lutrisdb.lastError();
+        printf("ERROR: Connection to Lutris database has failed.\n");
+      }
+      QString queryString = "SELECT tosec_toseccategory.name, tosec_tosecgame.name,"
+                            " tosec_tosecrom.name, tosec_tosecrom.size, tosec_tosecrom.crc,"
+                            " tosec_tosecrom.sha1, tosec_tosecrom.md5 "
+                            "FROM tosec_tosecrom"
+                            " INNER JOIN tosec_tosecgame ON"
+                            "  tosec_tosecrom.game_id = tosec_tosecgame.id"
+                            " INNER JOIN tosec_toseccategory ON"
+                            "  tosec_tosecgame.category_id = tosec_toseccategory.id";
+      QSqlQuery queryLutris(lutrisdb);
+      queryLutris.setForwardOnly(true);
+      queryLutris.prepare(queryString);
+      if(!queryLutris.exec()) {
+        qDebug() << queryLutris.lastError();
+        printf("ERROR: Error while accessing TOSEC data from Lutris database.\n");
+        return false;
+      }
+      printf("Reading TOSEC database..."); fflush(stdout);
+      while(queryLutris.next()) {
+        CanonicalData item;
+        item.platform = queryLutris.value(0).toString();
+        item.name = queryLutris.value(1).toString();
+        item.file = queryLutris.value(2).toString();
+        item.size = queryLutris.value(3).toLongLong();
+        item.crc  = queryLutris.value(4).toString().toLower();
+        item.sha1 = queryLutris.value(5).toString().toLower();
+        item.md5  = queryLutris.value(6).toString().toLower();
+        if(item.name.isEmpty()) {
+          gamesWithoutName++;
+        } else if(item.sha1.isEmpty() && item.md5.isEmpty()) {
+          gamesWithoutChecksums++;
+        } else {
+          if(item.size == 0) {
+            gamesWithoutSize++;
+          }
+          canonicalImport.append(item);
+          gamesOk++;
+          if(gamesOk % 1000 == 0) {
+            printf("."); fflush(stdout);
+          }
         }
       }
+      queryLutris.finish();
+      lutrisdb.close();
     }
-    queryLutris.finish();
-    lutrisdb.close();
+    QSqlDatabase::removeDatabase("lutrisdb");
   } else if(file.endsWith(".dat")) {
+    // DAT files are used by the no-intro and redump initiatives:
     QXmlStreamReader reader;
     QFile xmlFile(file);
     if(xmlFile.open(QIODevice::ReadOnly)) {
@@ -1156,6 +1165,7 @@ bool NameTools::importCanonicalData(const QString &file)
       return false;
     }
   } else if(file.endsWith(".xml")) {
+    // These are the MAME hash files
     QXmlStreamReader reader;
     QFile xmlFile(file);
     if(xmlFile.open(QIODevice::ReadOnly)) {
@@ -1175,6 +1185,11 @@ bool NameTools::importCanonicalData(const QString &file)
         while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
           QString currentElement = reader.name().toString();
           if(currentElement == "software") {
+            if(reader.attributes().hasAttribute("name")) {
+              item.mameid = reader.attributes().value("name").toString();
+            } else {
+              item.mameid = "";
+            }
             //printf("ZZZ;\"%s\";", reader.attributes().value("name").toString().toStdString().c_str());
             while(!reader.atEnd() && !reader.hasError() && reader.readNextStartElement()) {
               QString currentElement = reader.name().toString();
@@ -1265,16 +1280,17 @@ bool NameTools::importCanonicalData(const QString &file)
   if(gamesOk) {
     printf("INFO: Loading data into database... "); fflush(stdout);
     if(!errorDb) {
-      query.prepare("INSERT INTO canonicalData VALUES (?, ?, ?, ?, ?, ?, ?)");
-      QVariantList platforms, games, files, sizes, crcs, sha1s, md5s;
+      query.prepare("INSERT INTO canonicalData VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+      QVariantList platforms, games, files, sizes, crcs, sha1s, md5s, mameids;
       for(const auto &item: std::as_const(canonicalImport)) {
         platforms << item.platform;
-        games << item.name;
-        files << item.file;
-        sizes << item.size;
-        crcs  << item.crc;
-        sha1s << item.sha1;
-        md5s  << item.md5;
+        games     << item.name;
+        files     << item.file;
+        sizes     << item.size;
+        crcs      << item.crc;
+        sha1s     << item.sha1;
+        md5s      << item.md5;
+        mameids   << item.mameid;
       }
       query.addBindValue(platforms);
       query.addBindValue(games);
@@ -1283,6 +1299,7 @@ bool NameTools::importCanonicalData(const QString &file)
       query.addBindValue(crcs);
       query.addBindValue(sha1s);
       query.addBindValue(md5s);
+      query.addBindValue(mameids);
       if(!query.execBatch()) {
         printf("\nERROR: Error while adding data into table canonicalData. Exiting.\n");
         qDebug() << query.lastError();
@@ -1301,7 +1318,7 @@ bool NameTools::importCanonicalData(const QString &file)
       printf("INFO: Data import completed successfully. Now deleting duplicates... "); fflush(stdout);
       query.prepare("DELETE FROM canonicalData WHERE ROWID NOT IN"
                     " (SELECT MIN(ROWID) FROM canonicalData GROUP BY"
-                    "  platform, game, file, crc, sha1, md5)");
+                    "  platform, game, file, crc, sha1, md5, mameid)");
       if(query.exec()) {
         query.finish();
       }

@@ -49,6 +49,9 @@ constexpr int GUIDES = 19;
 constexpr int PLATFORM = 20;
 constexpr int TRIVIA = 21;
 constexpr int VGMAPS = 22;
+constexpr int CHEATS = 23;
+constexpr int REVIEWS = 24;
+constexpr int ARTBOOKS = 25;
 
 #include <QImage>
 #include <QByteArray>
@@ -61,6 +64,7 @@ struct CanonicalData {
   QString sha1 = "";
   QString md5 = "";
   QString file = "";
+  QString mameid = "";
   QString platform = "";
 };
 
@@ -135,6 +139,12 @@ public:
   QString manualSrc = "";
   QString guides = "";
   QString guidesSrc = "";
+  QString cheats = "";
+  QString cheatsSrc = "";
+  QString reviews = "";
+  QString reviewsSrc = "";
+  QString artbooks = "";
+  QString artbooksSrc = "";
   QString vgmaps = "";
   QString vgmapsSrc = "";
   QString chiptuneId = "";

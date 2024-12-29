@@ -50,7 +50,7 @@ VGFacts::VGFacts(Settings *config, QSharedPointer<NetManager> manager, QString t
   limitTimer.setSingleShot(false);
   limitTimer.start();
 
-  QFile dbFile(config->vgfactsDb + "/" + "trivia.json");
+  QFile dbFile(config->dbPath + "/trivia.json");
   if(!dbFile.open(QIODevice::ReadOnly)){
     dbFile.close();
     printf("\nERROR: Database file %s cannot be accessed. ", dbFile.fileName().toStdString().c_str());

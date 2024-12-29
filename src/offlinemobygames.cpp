@@ -56,7 +56,7 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
     return;
   }
 
-  QFile dbFile(config->mobygamesDb + "/" + config->platform + ".json");
+  QFile dbFile(config->dbPath + "/" + config->platform + ".json");
   if(!dbFile.open(QIODevice::ReadOnly)){
     dbFile.close();
     printf("\nERROR: Database file %s cannot be accessed. ", dbFile.fileName().toStdString().c_str());

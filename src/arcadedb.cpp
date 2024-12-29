@@ -38,7 +38,7 @@ ArcadeDB::ArcadeDB(Settings *config,
   baseUrl = "http://adb.arcadeitalia.net";
   searchUrlPre = "http://adb.arcadeitalia.net/service_scraper.php?ajax=query_mame&lang=en&use_parent=1&game_name=";
 
-  if(Platform::get().getFamily(config->platform) != "arcade" &&
+  if(Platform::get().getFamily(config->platform) != "arcade" && !config->useChecksum &&
      (!config->extensions.contains("mame") && !config->addExtensions.contains("mame"))) {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by ArcadeItalia "
@@ -267,7 +267,7 @@ void ArcadeDB::getManual(GameEntry &game)
 QStringList ArcadeDB::getSearchNames(const QFileInfo &info)
 {
   QStringList searchNames;
-  if(info.isSymbolicLink() && info.suffix() == "mame") {
+  if(info.suffix() == "mame" && info.isSymbolicLink()) {
     QFileInfo mameFile = info.symLinkTarget();
     searchNames.append(mameFile.baseName());
   } else {

@@ -232,12 +232,13 @@ int main(int argc, char *argv[])
   parser.addVersionOption();
   QCommandLineOption fOption("f", "\nThe frontend you wish to generate a gamelist for. Remember to leave out the '-s' option when using this in order to enable Skyscraper's gamelist generation mode.\n(Currently supports 'emulationstation', 'retrobat', 'attractmode', 'pegasus', 'koillection' and 'xmlexport').\n(default is 'emulationstation')\n", "FRONTEND", "");
   QCommandLineOption pOption("p", "The platform you wish to scrape.\n(Currently supports " + platforms + ").\n.", "PLATFORM", "");
-  QCommandLineOption sOption("s", "The scraping module you wish to gather resources from for the platform set with '-p'.\nLeave the '-s' option out to enable Skyscraper's gamelist generation mode.\n(WEB: 'arcadedb', 'igdb', 'mobygames', 'openretro', 'screenscraper', 'thegamesdb', 'rawg' and 'worldofspectrum'; HYBRID: 'offlinemobygames', 'giantbomb', 'vgfacts' and 'launchbox'; OFFLINE: 'chiptune', 'vgmaps' and 'gamefaqs'; LOCAL: 'customflags', 'esgamelist' and 'import').\n \nSUPPORT PARAMETERS:\n", "MODULE", "");
+  QCommandLineOption sOption("s", "The scraping module you wish to gather resources from for the platform set with '-p'.\nLeave the '-s' option out to enable Skyscraper's gamelist generation mode.\n(WEB: 'arcadedb', 'igdb', 'mobygames', 'openretro', 'rawg', 'screenscraper', 'thegamesdb'  and 'worldofspectrum'; HYBRID: 'giantbomb', 'launchbox', 'offlinemobygames', 'offlinetgdb' and 'vgfacts'; OFFLINE: 'chiptune', 'docsdb', 'gamefaqs', 'mamehistory' and 'vgmaps'; LOCAL: 'customflags', 'esgamelist' and 'import').\n \nSUPPORT PARAMETERS:\n", "MODULE", "");
   QCommandLineOption aOption("a", "Specify a non-default artwork.xml file to use when setting up the artwork compositing when in gamelist generation mode.\n(default is '~/.skyscraper/artwork.xml')", "FILENAME", "");
   QCommandLineOption addextOption("addext", "Add this or these file extension(s) to accepted file extensions during a scraping run. (example: '*.zst' or '*.zst *.ext')", "EXTENSION(S)", "");
   QCommandLineOption cOption("c", "Use this config file to set up Skyscraper.\n(default is '~/.skyscraper/config.ini')", "FILENAME", "");
   QCommandLineOption cacheGbOption("cachegb", "Retrieve GiantBomb game header database for the selected platform.");
   QCommandLineOption dOption("d", "Set custom resource cache folder.\n(default is '~/.skyscraper/cache/PLATFORM')", "FOLDER", "");
+  QCommandLineOption doctypesOption("doctypes", "Indicate the set of document sources that will be checked by the 'docsdb' scraper. (example: 'guidespdf cheatsttg')", "DOCTYPES", "");
   QCommandLineOption eOption("e", "Set extra frontend option. This is required by the 'attractmode' frontend to set the emulator and optionally for the 'pegasus' frontend to set the launch command.\n(default is none)", "STRING", "");
   QCommandLineOption endatOption("endat", "Tells Skyscraper which file to end at. Forces '--refresh' (or '--rescan').", "FILENAME", "");
   QCommandLineOption excludefilesOption("excludefiles", "(DEPRECATED, please use '--excludepattern' instead) Tells Skyscraper to always exclude the files matching the provided asterisk pattern(s). Remember to double-quote the pattern to avoid weird behaviour. You can add several patterns by separating them with ','. In cases where you need to match for a comma you need to escape it as '\\,'. (Pattern example: '\"*[BIOS]*,*proto*\"')", "PATTERN", "");
@@ -250,7 +251,6 @@ int main(int argc, char *argv[])
   QCommandLineOption includefilesOption("includefiles", "(DEPRECATED, please use '--includepattern' instead) Tells Skyscraper to only include the files matching the provided asterisk pattern(s). Remember to double-quote the pattern to avoid weird behaviour. You can add several patterns by separating them with ','. In cases where you need to match for a comma you need to escape it as '\\,'. (Pattern example: '\"Super*,*Fighter*\"')", "PATTERN", "");
   QCommandLineOption includefromOption("includefrom", "Tells Skyscraper to only include the files listed in FILENAME. One filename per line. This file can be generated with the '--cache report:missing' option or made manually.", "FILENAME", "");
   QCommandLineOption includepatternOption("includepattern", "Tells Skyscraper to only include the files matching the provided asterisk pattern(s). Remember to double-quote the pattern to avoid weird behaviour. You can add several patterns by separating them with ','. In cases where you need to match for a comma you need to escape it as '\\,'. (Pattern example: '\"Super*,*Fighter*\"')", "PATTERN", "");
-  QCommandLineOption removeSubtitleOption("removesubtitle", "Remove subtitles/second names of the file name.\n(default is to keep them)");
   QCommandLineOption lOption("l", "Maximum game description length. Everything longer than this will be truncated.\n(default is 2500)", "0-100000", "");
   QCommandLineOption langOption("lang", "Set preferred result language for scraping modules that support it.\n(default is 'en')", "CODE", "en");
   QCommandLineOption loadChecksum("loadchecksum", "Load the canonical data (game name, file name, size, CRC, SHA1, MD5) from an XML '.dat' (TOSEC, No-Intro, Redump) or '.xml' (MAME) file into the canonical database. The filename must be indicated. Use 'LUTRISDB' as filename to retrieve checksum data from the Lutris database.", "FILENAME", "");
@@ -258,13 +258,12 @@ int main(int argc, char *argv[])
   QCommandLineOption maxfailsOption("maxfails", "Sets the allowed number of initial 'Not found' results before rage-quitting.\n(default is 42)", "1-200", "");
   QCommandLineOption oOption("o", "Game media export folder.\n(default depends on frontend)", "PATH", "");
   QCommandLineOption queryOption("query", "Allows you to set a custom search query (eg. 'rick+dangerous' for name based modules or 'sha1=CHECKSUM', 'md5=CHECKSUM' or 'romnom=FILENAME' for the 'screenscraper' module). Requires the single rom filename you wish to override for to be passed on command line as well, otherwise it will be ignored.", "QUERY", "");
-  QCommandLineOption refreshOption("refresh", "Same as '--cache refresh'. Incompatible with --rescan.");
+  QCommandLineOption refreshOption("refresh", "Forces a refresh of existing cached resources for any scraping module. Same as '--cache refresh'. Incompatible with --rescan.");
   QCommandLineOption regionOption("region", "Add preferred game region for scraping modules that support it.\n(default prioritization is 'eu', 'us', 'wor' and 'jp' + others in that order)", "CODE", "eu");
-  QCommandLineOption rescanOption("rescan", "Executes the scraping process for entries with existing resources, and validates that the scraper provides the same information as in the cache database. Deletes/refreshes it otherwise. Incompatible with --refresh.");
+  QCommandLineOption rescanOption("rescan", "Executes the scraping process for entries with existing resources, and validates that the scraper provides the same information as in the cache database. Deletes/refreshes it otherwise. Same as '--cache rescan'. Incompatible with (and overrides) --refresh.");
   QCommandLineOption startatOption("startat", "Tells Skyscraper which file to start at. Forces '--refresh' (or '--rescan').", "FILENAME", "");
   QCommandLineOption tOption("t", "Number of scraper threads to use. This might change depending on the scraping module limits.\n(default is 4)", "1-8", "");
   QCommandLineOption uOption("u", "userKey or UserID and Password for use with the selected scraping module.\n(default is none)", "KEY/USER:PASSWORD[:APIKEY]", "");
-  QCommandLineOption useChecksum("usechecksum", "Activates checksum (MD5SUM) search instead of filename based search for compatible scrapers.");
   QCommandLineOption verbosityOption("verbosity", "Print more info while scraping.\n(default is 0)\n \nSUBCOMMANDS:\n", "0-3", "0");
   QCommandLineOption cacheOption("cache", "This option is the master option for all options related to the resource cache. It must be followed by 'COMMAND[:OPTIONS]'.\nSee '--cache help' for a full description of all functions.", "COMMAND[:OPTIONS]", "");
   QCommandLineOption flagsOption("flags", "Allows setting flags that will impact the run in various ways. See '--flags help' for a list of all available flags and what they do.", "FLAG1,FLAG2,...", "");
@@ -277,6 +276,7 @@ int main(int argc, char *argv[])
   parser.addOption(cOption);
   parser.addOption(cacheGbOption);
   parser.addOption(dOption);
+  parser.addOption(doctypesOption);
   parser.addOption(eOption);
   parser.addOption(endatOption);
   parser.addOption(excludefilesOption);
@@ -299,11 +299,9 @@ int main(int argc, char *argv[])
   parser.addOption(refreshOption);
   parser.addOption(rescanOption);
   parser.addOption(regionOption);
-  parser.addOption(removeSubtitleOption);
   parser.addOption(startatOption);
   parser.addOption(tOption);
   parser.addOption(uOption);
-  parser.addOption(useChecksum);
   parser.addOption(verbosityOption);
   parser.addOption(cacheOption);
   parser.addOption(flagsOption);

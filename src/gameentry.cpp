@@ -38,6 +38,7 @@ GameEntry::GameEntry(const QByteArray & buffer)
         id >>
         path >>
         canonical.name >>
+        canonical.mameid >>
         canonical.size >>
         canonical.crc >>
         canonical.sha1 >>
@@ -102,6 +103,12 @@ GameEntry::GameEntry(const QByteArray & buffer)
         manualSrc >>
         guides >>
         guidesSrc >>
+        cheats >>
+        cheatsSrc >>
+        reviews >>
+        reviewsSrc >>
+        artbooks >>
+        artbooksSrc >>
         vgmaps >>
         vgmapsSrc >>
         chiptuneId >>
@@ -132,6 +139,7 @@ QByteArray GameEntry::serialize() const
          id <<
          path <<
          canonical.name <<
+         canonical.mameid <<
          canonical.size <<
          canonical.crc <<
          canonical.sha1 <<
@@ -196,6 +204,12 @@ QByteArray GameEntry::serialize() const
          manualSrc <<
          guides <<
          guidesSrc <<
+         cheats <<
+         cheatsSrc <<
+         reviews <<
+         reviewsSrc <<
+         artbooks <<
+         artbooksSrc <<
          vgmaps <<
          vgmapsSrc <<
          chiptuneId <<
@@ -245,7 +259,16 @@ int GameEntry::getCompleteness() const
   if(Skyscraper::config.guides) {
     noOfTypes += 1;
   }
-  if(Skyscraper::config.vgmaps) {
+  if(Skyscraper::config.cheats) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.reviews) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.artbooks) {
+    noOfTypes += 1;
+  }
+  if(Skyscraper::config.maps) {
     noOfTypes += 1;
   }
   if(Skyscraper::config.chiptunes) {
@@ -256,12 +279,20 @@ int GameEntry::getCompleteness() const
     noOfTypes = 12;
     if(Skyscraper::config.videos) noOfTypes++;
     if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "mamehistory") {
+    noOfTypes = 3;
   } else if(Skyscraper::config.scraper == "chiptune") {
     noOfTypes = 2;
     if(Skyscraper::config.chiptunes) noOfTypes++;
   } else if(Skyscraper::config.scraper == "vgmaps") {
     noOfTypes = 2;
-    if(Skyscraper::config.vgmaps) noOfTypes++;
+    if(Skyscraper::config.maps) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "docsdb") {
+    noOfTypes = 2;
+    if(Skyscraper::config.guides) noOfTypes++;
+    if(Skyscraper::config.cheats) noOfTypes++;
+    if(Skyscraper::config.reviews) noOfTypes++;
+    if(Skyscraper::config.artbooks) noOfTypes++;
   } else if(Skyscraper::config.scraper == "gamefaqs") {
     noOfTypes = 12;
     if(Skyscraper::config.guides) noOfTypes++;
@@ -295,6 +326,9 @@ int GameEntry::getCompleteness() const
     if(Skyscraper::config.videos) noOfTypes++;
     if(Skyscraper::config.manuals) noOfTypes++;
   } else if(Skyscraper::config.scraper == "thegamesdb") {
+    noOfTypes = 14;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "offlinetgdb") {
     noOfTypes = 14;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "worldofspectrum") {
@@ -363,7 +397,16 @@ int GameEntry::getCompleteness() const
   if(Skyscraper::config.guides && !guides.isEmpty()) {
     completeness += valuePerType;
   }
-  if(Skyscraper::config.vgmaps && !vgmaps.isEmpty()) {
+  if(Skyscraper::config.cheats && !cheats.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.reviews && !reviews.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.artbooks && !artbooks.isEmpty()) {
+    completeness += valuePerType;
+  }
+  if(Skyscraper::config.maps && !vgmaps.isEmpty()) {
     completeness += valuePerType;
   }
   if(Skyscraper::config.chiptunes && !chiptuneId.isEmpty() && !chiptunePath.isEmpty()) {
@@ -377,6 +420,7 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
   in >> game.id >>
         game.path >>
         game.canonical.name >>
+        game.canonical.mameid >>
         game.canonical.size >>
         game.canonical.crc >>
         game.canonical.sha1 >>
@@ -441,6 +485,12 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
         game.manualSrc >>
         game.guides >>
         game.guidesSrc >>
+        game.cheats >>
+        game.cheatsSrc >>
+        game.reviews >>
+        game.reviewsSrc >>
+        game.artbooks >>
+        game.artbooksSrc >>
         game.vgmaps >>
         game.vgmapsSrc >>
         game.chiptuneId >>
@@ -469,6 +519,7 @@ QDataStream &operator<<(QDataStream &out, const GameEntry &game)
   out << game.id <<
          game.path <<
          game.canonical.name <<
+         game.canonical.mameid <<
          game.canonical.size <<
          game.canonical.crc <<
          game.canonical.sha1 <<
@@ -533,6 +584,12 @@ QDataStream &operator<<(QDataStream &out, const GameEntry &game)
          game.manualSrc <<
          game.guides <<
          game.guidesSrc <<
+         game.cheats <<
+         game.cheatsSrc <<
+         game.reviews <<
+         game.reviewsSrc <<
+         game.artbooks <<
+         game.artbooksSrc <<
          game.vgmaps <<
          game.vgmapsSrc <<
          game.chiptuneId <<
@@ -562,6 +619,7 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'id': " << game.id <<
       "\nField 'path': " << game.path <<
       "\nField 'Canonical name': " <<  game.canonical.name <<
+      "\nField 'Canonical MAME id': " <<  game.canonical.mameid <<
       "\nField 'Canonical size': " <<  game.canonical.size <<
       "\nField 'Canonical CRC': " <<  game.canonical.crc <<
       "\nField 'Canonical SHA1': " <<  game.canonical.sha1 <<
@@ -626,6 +684,12 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'manualSrc': " << game.manualSrc <<
       "\nField 'guides': " << game.guides <<
       "\nField 'guidesSrc': " << game.guidesSrc <<
+      "\nField 'cheats': " << game.cheats <<
+      "\nField 'cheatsSrc': " << game.cheatsSrc <<
+      "\nField 'reviews': " << game.reviews <<
+      "\nField 'reviewsSrc': " << game.reviewsSrc <<
+      "\nField 'artbooks': " << game.artbooks <<
+      "\nField 'artbooksSrc': " << game.artbooksSrc <<
       "\nField 'vgmaps': " << game.vgmaps <<
       "\nField 'vgmapsSrc': " << game.vgmapsSrc <<
       "\nField 'chiptuneId': " << game.chiptuneId <<

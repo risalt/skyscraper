@@ -1,5 +1,5 @@
 /***************************************************************************
- *            launchbox.h
+ *            offlinetgdb.h
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
@@ -23,55 +23,27 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
-#ifndef LAUNCHBOX_H
-#define LAUNCHBOX_H
+#ifndef OFFLINETGDB_H
+#define OFFLINETGDB_H
 
-#include <QMap>
 #include <QList>
-#include <QTimer>
-#include <QString>
-#include <QStringList>
+#include <QMap>
 #include <QMultiMap>
+#include <QTimer>
 #include <QEventLoop>
-#include <QJsonObject>
-#include <QJsonDocument>
+#include <QVariant>
+#include <QSqlRecord>
+#include <QSqlDatabase>
 
 #include "abstractscraper.h"
-#include "gameentry.h"
 
-constexpr int LBNULL = 0;
-constexpr int LBGAME = 1;
-constexpr int LBRELEASEYEAR = 2;
-constexpr int LBNAME = 3;
-constexpr int LBRELEASEDATE = 4;
-constexpr int LBOVERVIEW = 5;
-constexpr int LBMAXPLAYERS = 6;
-constexpr int LBVIDEOURL = 7;
-constexpr int LBDATABASEID = 8;
-constexpr int LBCOMMUNITYRATING = 9;
-constexpr int LBPLATFORM = 10;
-constexpr int LBESRB = 11;
-constexpr int LBGENRES = 12;
-constexpr int LBDEVELOPER = 13;
-constexpr int LBPUBLISHER = 14;
-constexpr int LBGAMEALTERNATENAME = 15;
-constexpr int LBALTERNATENAME = 16;
-constexpr int LBREGION = 17;
-constexpr int LBGAMEIMAGE = 18;
-constexpr int LBFILENAME = 19;
-constexpr int LBTYPE = 20;
-constexpr int LBLAUNCHBOX = 21;
-constexpr int LBMAMEFILE = 22;
-
-
-class LaunchBox : public AbstractScraper
+class OfflineTGDB : public AbstractScraper
 {
   Q_OBJECT
 
 public:
-  LaunchBox(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
-  ~LaunchBox();
-
+  OfflineTGDB(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  ~OfflineTGDB();
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
@@ -84,7 +56,6 @@ protected:
   void getAges(GameEntry &game) override;
   void getDescription(GameEntry &game) override;
   void getTags(GameEntry &game) override;
-  void getRating(GameEntry &game) override;
 
   void getCover(GameEntry &game) override;
   void getScreenshot(GameEntry &game) override;
@@ -95,20 +66,24 @@ protected:
 
 private:
   void loadMaps();
+  QString platformId;
 
   QTimer limitTimer;
   QEventLoop limiter;
 
-  QJsonDocument jsonDoc;
-  QJsonObject jsonObj;
-  QMap<int, GameEntry> launchBoxDb;
-  QMultiMap<QString, QPair<int, QString>> searchNameToId;
-  QMultiMap<QString, QPair<int, QString>> searchNameToIdTitle;
+  QMap<int, QString> regionMap;
+  QMap<int, QString> genreMap;
+  QMap<int, QString> developerMap;
+  QMap<int, QString> publisherMap;
 
-  QMap<QString, int> schema;
-  QMap<int, QStringList> priorityImages;
-  QStringList priorityRegions;
+  QList<int> gamesIds;
+  QStringList similarIds;
+  QMultiMap<QString, QPair<int, QPair<QString, int>>> searchNameToId;
+  QMultiMap<QString, QPair<int, QPair<QString, int>>> searchNameToIdTitle;
+
+  QSqlDatabase db;
+  QSqlRecord queryData;
 
 };
 
-#endif // LAUNCHBOX_H
+#endif // OFFLINETGDB_H

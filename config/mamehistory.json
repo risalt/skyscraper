@@ -1,0 +1,2884 @@
+{
+  "platforms": [
+    {
+      "code": "32x",
+      "platform": "sega32x;Sega 32X cartridges"
+    },
+    {
+      "code": "3do_m2",
+      "platform": "3do;3DO M2 CD-ROMs"
+    },
+    {
+      "code": "a2600",
+      "platform": "atari2600;Atari 2600 cartridges"
+    },
+    {
+      "code": "a2600_cass",
+      "platform": "atari2600;Atari 2600 cassettes"
+    },
+    {
+      "code": "a5200",
+      "platform": "atari5200;Atari 5200 cartridges"
+    },
+    {
+      "code": "a7800",
+      "platform": "atari7800;Atari 7800 cartridges"
+    },
+    {
+      "code": "a800",
+      "platform": "atari800;Atari 800 cartridges"
+    },
+    {
+      "code": "a800_cass",
+      "platform": "atari800;Atari 400 / 800 cassettes"
+    },
+    {
+      "code": "a800_flop",
+      "platform": "atari800;Atari 400 / 800 floppy disks"
+    },
+    {
+      "code": "abc1600_flop",
+      "platform": ";Luxor ABC 1600 diskettes"
+    },
+    {
+      "code": "abc800",
+      "platform": ";Luxor ABC 800 diskettes"
+    },
+    {
+      "code": "abc800_hdd",
+      "platform": ";Luxor ABC 800 hard disks"
+    },
+    {
+      "code": "abc806",
+      "platform": ";Luxor ABC 806 diskettes"
+    },
+    {
+      "code": "abc80_cass",
+      "platform": ";Luxor ABC 80 cassettes"
+    },
+    {
+      "code": "abc80_flop",
+      "platform": ";Luxor ABC 80 diskettes"
+    },
+    {
+      "code": "acrnsys_flop",
+      "platform": "acornelectron;Acorn System disk images"
+    },
+    {
+      "code": "acrnsys_rom",
+      "platform": "acornelectron;Acorn System ROM images"
+    },
+    {
+      "code": "adam_cart",
+      "platform": "coleco;Coleco Adam cartridges"
+    },
+    {
+      "code": "adam_cass",
+      "platform": "coleco;Coleco Adam Digital Data Packs"
+    },
+    {
+      "code": "adam_flop",
+      "platform": "coleco;Coleco ADAM diskettes"
+    },
+    {
+      "code": "advantage",
+      "platform": ";NorthStar Advantage diskettes"
+    },
+    {
+      "code": "advision",
+      "platform": ";Entex Adventure Vision cartridges"
+    },
+    {
+      "code": "aim65_cart",
+      "platform": ";Rockwell AIM 65 cartridges"
+    },
+    {
+      "code": "aleste",
+      "platform": ";Patisonic Aleste 520EX floppies"
+    },
+    {
+      "code": "alice32",
+      "platform": ";Matra Alice 32 cassettes"
+    },
+    {
+      "code": "alice90",
+      "platform": ";Matra Alice 90 cassettes"
+    },
+    {
+      "code": "alphasmart_kapps",
+      "platform": ";AlphaSmart 3000 SmartApplets"
+    },
+    {
+      "code": "alphatro_cart",
+      "platform": ";Triumph-Adler Alphatronic PC cartridges"
+    },
+    {
+      "code": "alphatro_flop",
+      "platform": ";Triumph-Adler Alphatronic PC diskettes"
+    },
+    {
+      "code": "altos5",
+      "platform": ";Altos Series 5 floppies"
+    },
+    {
+      "code": "altos8600",
+      "platform": ";Altos 8600 floppies"
+    },
+    {
+      "code": "amiga_a1000",
+      "platform": "amiga;Commodore Amiga 1000 System disks"
+    },
+    {
+      "code": "amiga_a3000",
+      "platform": "amiga;Commodore Amiga 3000 System disks"
+    },
+    {
+      "code": "amiga_apps",
+      "platform": "amiga;Commodore Amiga Application disks"
+    },
+    {
+      "code": "amiga_demos",
+      "platform": "amiga;Commodore Amiga demos"
+    },
+    {
+      "code": "amiga_flop",
+      "platform": "amiga;Commodore Amiga disk images (misc list)"
+    },
+    {
+      "code": "amiga_hardware",
+      "platform": "amiga;Commodore Amiga Hardware driver disks"
+    },
+    {
+      "code": "amiga_hdd",
+      "platform": "amiga;Commodore Amiga hard disk images"
+    },
+    {
+      "code": "amiga_workbench",
+      "platform": "amiga;Commodore Amiga Workbench disks"
+    },
+    {
+      "code": "amigaaga_flop",
+      "platform": "amiga;Commodore Amiga AGA disk images"
+    },
+    {
+      "code": "amigaecs_flop",
+      "platform": "amiga;Commodore Amiga ECS disk images"
+    },
+    {
+      "code": "amigaocs_flop",
+      "platform": "amiga;Commodore Amiga OCS disk images"
+    },
+    {
+      "code": "ampro",
+      "platform": ";Ampro Little Z80 Board Disk Images"
+    },
+    {
+      "code": "apc",
+      "platform": ";NEC Advanced Personal Computer Disk Images"
+    },
+    {
+      "code": "apexc_cyl",
+      "platform": ";APEXC Cylinder images"
+    },
+    {
+      "code": "apfimag_cass",
+      "platform": ";APF Imagination cassettes"
+    },
+    {
+      "code": "apfm1000",
+      "platform": ";APF M-1000 cartridges"
+    },
+    {
+      "code": "apogee",
+      "platform": ";Apogee BK-01 cassettes"
+    },
+    {
+      "code": "apollo_ctape",
+      "platform": ";Apollo cartridge tapes"
+    },
+    {
+      "code": "apple1",
+      "platform": ";Apple 1 cassettes"
+    },
+    {
+      "code": "apple2_cass",
+      "platform": "apple2;Apple II cassettes"
+    },
+    {
+      "code": "apple2_flop_clcracked",
+      "platform": "apple2;Apple II cleanly cracked disks"
+    },
+    {
+      "code": "apple2_flop_misc",
+      "platform": "apple2;Apple II miscellaneous disks"
+    },
+    {
+      "code": "apple2_flop_orig",
+      "platform": "apple2;Apple II original disks"
+    },
+    {
+      "code": "apple2gs_flop_clcracked",
+      "platform": "apple2gs;Apple IIgs cleanly cracked disks"
+    },
+    {
+      "code": "apple2gs_flop_misc",
+      "platform": "apple2gs;Apple IIgs miscellaneous disks"
+    },
+    {
+      "code": "apple2gs_flop_orig",
+      "platform": "apple2gs;Apple IIgs original disks"
+    },
+    {
+      "code": "apple3",
+      "platform": ";Apple III 5.25 disks"
+    },
+    {
+      "code": "applix_flop",
+      "platform": ";Applix 1616 floppies"
+    },
+    {
+      "code": "apricot_flop",
+      "platform": ";ACT Apricot PC/Xi floppy disks"
+    },
+    {
+      "code": "apxen_flop",
+      "platform": ";ACT Apricot XEN floppy disks"
+    },
+    {
+      "code": "aquarius_cart",
+      "platform": ";Mattel Aquarius cartridges"
+    },
+    {
+      "code": "aquarius_cass",
+      "platform": ";Mattel Aquarius cassettes"
+    },
+    {
+      "code": "arb",
+      "platform": ";ARB Modules"
+    },
+    {
+      "code": "arcadia",
+      "platform": "arcadia;Emerson Arcadia 2001 cartridges"
+    },
+    {
+      "code": "archimedes",
+      "platform": "acorn;Acorn Archimedes floppy images"
+    },
+    {
+      "code": "archimedes_hdd",
+      "platform": "acorn;Acorn Archimedes hard disks"
+    },
+    {
+      "code": "archimedes_rom",
+      "platform": "acorn;Acorn Archimedes ROM images"
+    },
+    {
+      "code": "astrocde",
+      "platform": "astrocade;Bally Professional Arcade cartridges"
+    },
+    {
+      "code": "atom_cass",
+      "platform": ";Acorn Atom cassettes"
+    },
+    {
+      "code": "atom_flop",
+      "platform": ";Acorn Atom disk images"
+    },
+    {
+      "code": "atom_rom",
+      "platform": ";Acorn Atom Utility ROMs"
+    },
+    {
+      "code": "attache",
+      "platform": ";Otrona Attache disk images"
+    },
+    {
+      "code": "aussiebyte",
+      "platform": ";Aussie Byte II floppies"
+    },
+    {
+      "code": "b2m",
+      "platform": ";BNPO Bashkiria-2M disk images"
+    },
+    {
+      "code": "basf7100",
+      "platform": ";BASF 7100 floppy disks"
+    },
+    {
+      "code": "bbc_cass",
+      "platform": "bbcmicro;Acorn BBC Micro cassettes"
+    },
+    {
+      "code": "bbc_flop_32016",
+      "platform": "bbcmicro;Acorn 32016 Co-Processor discs"
+    },
+    {
+      "code": "bbc_flop_6502",
+      "platform": "bbcmicro;Acorn 6502 2nd Processor discs"
+    },
+    {
+      "code": "bbc_flop_68000",
+      "platform": "bbcmicro;Casper 68000 2nd Processor discs"
+    },
+    {
+      "code": "bbc_flop_80186",
+      "platform": "bbcmicro;Acorn 80186 Co-Processor discs"
+    },
+    {
+      "code": "bbc_flop_arm",
+      "platform": "bbcmicro;Acorn ARM Co-Processor discs"
+    },
+    {
+      "code": "bbc_flop_hybrid",
+      "platform": "bbcmicro;Hybrid Music System discs"
+    },
+    {
+      "code": "bbc_flop_torch",
+      "platform": "bbcmicro;Torch Co-Processor discs"
+    },
+    {
+      "code": "bbc_flop_z80",
+      "platform": "bbcmicro;Acorn Z80 2nd Processor discs"
+    },
+    {
+      "code": "bbc_hdd",
+      "platform": "bbcmicro;Acorn BBC Micro hard disks"
+    },
+    {
+      "code": "bbc_rom",
+      "platform": "bbcmicro;Acorn BBC Micro ROMs"
+    },
+    {
+      "code": "bbcb_flop",
+      "platform": "bbcmicro;Acorn BBC Micro Model B disks"
+    },
+    {
+      "code": "bbcb_flop_orig",
+      "platform": "bbcmicro;Acorn BBC Micro Model B Original disks"
+    },
+    {
+      "code": "bbcb_flop_us",
+      "platform": "bbcmicro;Acorn BBC Micro Model B (US) disks"
+    },
+    {
+      "code": "bbcbc",
+      "platform": ";BBC Bridge Companion cartridges"
+    },
+    {
+      "code": "bbcm_cart",
+      "platform": "bbcmicro;Acorn BBC Master cartridges"
+    },
+    {
+      "code": "bbcm_flop",
+      "platform": "bbcmicro;Acorn BBC Master disks"
+    },
+    {
+      "code": "bbcmc_flop",
+      "platform": "bbcmicro;Acorn BBC Master Compact disks"
+    },
+    {
+      "code": "bdesignm_design_cart",
+      "platform": ";Bandai Design Master 'Design / Media' cartridges"
+    },
+    {
+      "code": "bdesignm_game_cart",
+      "platform": ";Bandai Design Master 'Game' cartridges"
+    },
+    {
+      "code": "bk0010",
+      "platform": ";Elektronika BK-0010 cassettes"
+    },
+    {
+      "code": "bkrankp_cart",
+      "platform": ";Bandai Karaoke Ranking Party cartridges"
+    },
+    {
+      "code": "bml3_flop",
+      "platform": ";Hitachi Basic Master Level 3 disk images"
+    },
+    {
+      "code": "bungo_flop",
+      "platform": ";NEC Bungo disk images"
+    },
+    {
+      "code": "buzztime_cart",
+      "platform": ";Cadaco Buzztime Trivia Cartridges"
+    },
+    {
+      "code": "bw12",
+      "platform": ";Bondwell 12 disk images"
+    },
+    {
+      "code": "bw14",
+      "platform": ";Bondwell 14 disk images"
+    },
+    {
+      "code": "bw2",
+      "platform": ";Bondwell 2 disk images"
+    },
+    {
+      "code": "bx256hp_flop",
+      "platform": "c64;Commodore BX256-80HP / CBM 730 diskettes"
+    },
+    {
+      "code": "c128_cart",
+      "platform": "c64;Commodore 128 cartridges"
+    },
+    {
+      "code": "c128_flop",
+      "platform": "c64;Commodore 128 diskettes"
+    },
+    {
+      "code": "c128_rom",
+      "platform": "c64;Commodore 128 Function ROMs"
+    },
+    {
+      "code": "c2color_cart",
+      "platform": ";C2 Color cartridges"
+    },
+    {
+      "code": "c64_cart",
+      "platform": "c64;Commodore 64 cartridges"
+    },
+    {
+      "code": "c64_cass",
+      "platform": "c64;Commodore 64 cassettes"
+    },
+    {
+      "code": "c64_flop_misc",
+      "platform": "c64;Commodore 64 miscellaneous disks"
+    },
+    {
+      "code": "c64_flop_orig",
+      "platform": "c64;Commodore 64 original disks"
+    },
+    {
+      "code": "c65_flop",
+      "platform": "c64;Commodore 65 diskettes"
+    },
+    {
+      "code": "camplynx_cass",
+      "platform": ";Camputers Lynx cassettes"
+    },
+    {
+      "code": "camplynx_flop",
+      "platform": ";Camputers Lynx diskettes"
+    },
+    {
+      "code": "casio_rompack",
+      "platform": ";Casio ROM Packs"
+    },
+    {
+      "code": "casloopy",
+      "platform": "loopy;Casio Loopy cartridges"
+    },
+    {
+      "code": "cbm2_cart",
+      "platform": "c64;Commodore CBM-II cartridges"
+    },
+    {
+      "code": "cbm2_flop",
+      "platform": "c64;Commodore CBM-II diskettes"
+    },
+    {
+      "code": "cbm8096_flop",
+      "platform": "c64;Commodore 8096 diskettes"
+    },
+    {
+      "code": "cbm8296_flop",
+      "platform": "c64;Commodore 8296 diskettes"
+    },
+    {
+      "code": "cc40_cart",
+      "platform": ";CC-40 cartridges"
+    },
+    {
+      "code": "cd32",
+      "platform": "amigacd32;Commodore Amiga CD32 CD-ROMs"
+    },
+    {
+      "code": "cdi",
+      "platform": "cdi;Philips CD-i CD-ROMs"
+    },
+    {
+      "code": "cdtv",
+      "platform": "amigacd32;Commodore Amiga CDTV CD-ROMs"
+    },
+    {
+      "code": "cecflop",
+      "platform": ";China Education Computer 5.25 inch floppies"
+    },
+    {
+      "code": "cgenie_cass",
+      "platform": ";EACA Colour Genie EG2000 cassettes"
+    },
+    {
+      "code": "cgenie_flop_rom",
+      "platform": ";EACA Colour Genie EG2000 ROMs"
+    },
+    {
+      "code": "channelf",
+      "platform": "channelf;Fairchild Channel F cartridges"
+    },
+    {
+      "code": "chessmstdm",
+      "platform": ";Chess-Master Diamond Modules"
+    },
+    {
+      "code": "chip8_quik",
+      "platform": ";CHIP8 quickload"
+    },
+    {
+      "code": "clickstart_cart",
+      "platform": ";LeapFrog ClickStart cartridges"
+    },
+    {
+      "code": "clipper_flop",
+      "platform": ";PDC Clipper disks"
+    },
+    {
+      "code": "coco_cart",
+      "platform": "trs80;Tandy Radio Shack Color Computer cartridges"
+    },
+    {
+      "code": "coco_flop",
+      "platform": "trs80;Tandy Radio Shack Color Computer disk images"
+    },
+    {
+      "code": "coleco",
+      "platform": "coleco;Coleco ColecoVision cartridges"
+    },
+    {
+      "code": "compclr2_flop",
+      "platform": ";Compucolor II Disk Images"
+    },
+    {
+      "code": "compis",
+      "platform": ";Telenova Compis disk images"
+    },
+    {
+      "code": "comx35_flop",
+      "platform": ";COMX-35 diskettes"
+    },
+    {
+      "code": "conchess_plymate",
+      "platform": ";Conchess Plymate Modules"
+    },
+    {
+      "code": "conchess_standard",
+      "platform": ";Conchess Standard Modules"
+    },
+    {
+      "code": "copera",
+      "platform": ";Yamaha / Sega Copera cartridges"
+    },
+    {
+      "code": "cpc_cass",
+      "platform": "amstradcpc;Amstrad CPC cassettes"
+    },
+    {
+      "code": "cpc_flop",
+      "platform": "amstradcpc;Amstrad CPC disk images"
+    },
+    {
+      "code": "crvision",
+      "platform": "creativision;V-Tech Creativision cartridges"
+    },
+    {
+      "code": "cx3000tc",
+      "platform": ";Palson CX 3000 Tele Computer cartridges"
+    },
+    {
+      "code": "dai_cass",
+      "platform": ";DAI Personal Computer cassettes"
+    },
+    {
+      "code": "database",
+      "platform": ";Voltmace Database cartridges"
+    },
+    {
+      "code": "dc",
+      "platform": "dreamcast;Sega Dreamcast GD-ROMs"
+    },
+    {
+      "code": "dgnalpha_flop",
+      "platform": ";Dragon Alpha (Professional) diskettes"
+    },
+    {
+      "code": "dgnbeta_flop",
+      "platform": ";Dragon Beta diskettes"
+    },
+    {
+      "code": "digiblast_cart",
+      "platform": ";Nikko Entertainment B.V. / Grey Innovation digiBLAST cartridges"
+    },
+    {
+      "code": "digilog320",
+      "platform": ";Digilog 320 Disks"
+    },
+    {
+      "code": "dim68k",
+      "platform": ";Dimension 68000 Disks"
+    },
+    {
+      "code": "dmv",
+      "platform": ";NCR Decision Mate V disk images"
+    },
+    {
+      "code": "dps1",
+      "platform": ";Ithaca InterSystems DPS-1 diskettes"
+    },
+    {
+      "code": "dragon_cart",
+      "platform": "dragon32;Dragon cartridges"
+    },
+    {
+      "code": "dragon_cass",
+      "platform": "dragon32;Dragon 32/64 cassettes"
+    },
+    {
+      "code": "dragon_flex",
+      "platform": "dragon32;Dragon FLEX diskettes"
+    },
+    {
+      "code": "dragon_flop",
+      "platform": "dragon32;Dragon DOS diskettes"
+    },
+    {
+      "code": "dragon_os9",
+      "platform": "dragon32;Dragon OS-9 diskettes"
+    },
+    {
+      "code": "e01_flop",
+      "platform": "acorn;Acorn FileStore Discs"
+    },
+    {
+      "code": "easy_karaoke_cart",
+      "platform": ";IVL Technologies Easy Karaoke cartridges"
+    },
+    {
+      "code": "ec1841",
+      "platform": ";EC 1841 disk images"
+    },
+    {
+      "code": "einstein",
+      "platform": ";Tatung Einstein TC-01 disk images"
+    },
+    {
+      "code": "einstein_rom",
+      "platform": ";Tatung Einstein ROM images"
+    },
+    {
+      "code": "ekara_japan",
+      "platform": ";Takara e-kara (Japan) ECxxxx- series cartridges"
+    },
+    {
+      "code": "ekara_japan_a",
+      "platform": ";Takara e-pitch / e-kara (Japan) A-x series cartridges"
+    },
+    {
+      "code": "ekara_japan_ac",
+      "platform": ";Takara e-kara (Japan) ACxxxx series cartridges"
+    },
+    {
+      "code": "ekara_japan_bh",
+      "platform": ";Takara e-kara (Japan) BH-xx series cartridges"
+    },
+    {
+      "code": "ekara_japan_d",
+      "platform": ";Takara e-kara (Japan) Dream Cartridge series (D-xx / DCxxxx-)"
+    },
+    {
+      "code": "ekara_japan_en",
+      "platform": ";Takara e-kara (Japan) EN-xx series cartridges"
+    },
+    {
+      "code": "ekara_japan_g",
+      "platform": ";Takara e-kara (Japan) Gold Cartridge series (G-xx / GCxxxx-)"
+    },
+    {
+      "code": "ekara_japan_gk",
+      "platform": ";Takara e-kara (Japan) Game and Karaoke Cartridge series (GK-xx)"
+    },
+    {
+      "code": "ekara_japan_m",
+      "platform": ";Takara e-kara (Japan) Saiten Cartridge mini series (M-xx / MCxxxx-)"
+    },
+    {
+      "code": "ekara_japan_p",
+      "platform": ";Takara e-kara (Japan) Platinum Cartridge series (P-xx / PCxxxx-)"
+    },
+    {
+      "code": "ekara_japan_s",
+      "platform": ";Takara e-kara (Japan) Saiten Cartridge series (S-xx / SCxxxx-)"
+    },
+    {
+      "code": "ekara_japan_sp",
+      "platform": ";Takara e-kara (Japan) Super Cartridge series (SP-xx)"
+    },
+    {
+      "code": "ekara_japan_web",
+      "platform": ";Takara e-kara (Japan) Web cartridges"
+    },
+    {
+      "code": "ekara_pal",
+      "platform": ";Takara e-kara (UK/Europe, PAL) cartridges"
+    },
+    {
+      "code": "ekara_us",
+      "platform": ";Takara e-kara (US) cartridges"
+    },
+    {
+      "code": "electron_cart",
+      "platform": "acornelectron;Acorn Electron cartridges"
+    },
+    {
+      "code": "electron_cass",
+      "platform": "acornelectron;Acorn Electron cassettes"
+    },
+    {
+      "code": "electron_flop",
+      "platform": "acornelectron;Acorn Electron disks"
+    },
+    {
+      "code": "electron_rom",
+      "platform": "acornelectron;Acorn Electron ROMs"
+    },
+    {
+      "code": "entex_sag",
+      "platform": ";Select-A-Game cartridges"
+    },
+    {
+      "code": "ep64_cart",
+      "platform": ";Enterprise Sixty Four cartridges"
+    },
+    {
+      "code": "ep64_cass",
+      "platform": ";Enterprise Sixty Four cassettes"
+    },
+    {
+      "code": "ep64_flop",
+      "platform": ";Enterprise Sixty Four diskettes"
+    },
+    {
+      "code": "epson_cpm",
+      "platform": ";Epson CPM systems floppy disks"
+    },
+    {
+      "code": "eti660_quik",
+      "platform": ";ETI-660 quickload"
+    },
+    {
+      "code": "evio",
+      "platform": ";Tomy evio Media cartridges"
+    },
+    {
+      "code": "ews286_flop",
+      "platform": ";Ericsson PC AT WS286 diskettes"
+    },
+    {
+      "code": "excalibur64",
+      "platform": ";Excalibur 64 floppies"
+    },
+    {
+      "code": "exl100",
+      "platform": ";Exelvision EXL 100 cartridges"
+    },
+    {
+      "code": "famibox",
+      "platform": "nes;Nintendo FamicomBox cartridges"
+    },
+    {
+      "code": "famicom_cass",
+      "platform": "nes;Nintendo Famicom Family BASIC cassettes"
+    },
+    {
+      "code": "famicom_flop",
+      "platform": "fds;Nintendo Famicom Disk images"
+    },
+    {
+      "code": "fidel_msc",
+      "platform": ";Fidelity MSC Modules"
+    },
+    {
+      "code": "fidel_sc6",
+      "platform": ";Fidelity SC6 Modules"
+    },
+    {
+      "code": "fidel_scc",
+      "platform": ";Fidelity SCC Modules"
+    },
+    {
+      "code": "fm77av",
+      "platform": "fm7;Fujitsu FM-77AV disk images"
+    },
+    {
+      "code": "fm7_cass",
+      "platform": "fm7;Fujitsu FM-7 cassettes"
+    },
+    {
+      "code": "fm7_disk",
+      "platform": "fm7;Fujitsu FM-7 disk images"
+    },
+    {
+      "code": "fm8_cass",
+      "platform": "fm7;Fujitsu FM-8 cassettes"
+    },
+    {
+      "code": "fmtowns_cd",
+      "platform": "fmtowns;Fujitsu FM Towns CD-ROMs"
+    },
+    {
+      "code": "fmtowns_flop_cracked",
+      "platform": "fmtowns;Fujitsu FM Towns cracked floppy disk images"
+    },
+    {
+      "code": "fmtowns_flop_misc",
+      "platform": "fmtowns;Fujitsu FM Towns miscellaneous floppy disk images"
+    },
+    {
+      "code": "fmtowns_flop_orig",
+      "platform": "fmtowns;Fujitsu FM Towns original floppy disk images"
+    },
+    {
+      "code": "galaxy",
+      "platform": ";Galaksija &amp"
+    },
+    {
+      "code": "gamate",
+      "platform": ";Bit Corp Gamate cartridges"
+    },
+    {
+      "code": "gameboy",
+      "platform": "gb;Nintendo Game Boy cartridges"
+    },
+    {
+      "code": "gamecom",
+      "platform": ";Tiger Game.com cartridges"
+    },
+    {
+      "code": "gamegear",
+      "platform": "gamegear;Sega Game Gear cartridges"
+    },
+    {
+      "code": "gameking",
+      "platform": ";TimeTop GameKing cartridges"
+    },
+    {
+      "code": "gameking3",
+      "platform": ";TimeTop GameKing 3 cartridges"
+    },
+    {
+      "code": "gamepock",
+      "platform": ";Epoch Game Pocket Computer cartridges"
+    },
+    {
+      "code": "gba",
+      "platform": "gba;Nintendo Game Boy Advance cartridges"
+    },
+    {
+      "code": "gba_ereader",
+      "platform": "gba;Nintendo Game Boy Advance (e-cards)"
+    },
+    {
+      "code": "gbcolor",
+      "platform": "gbc;Nintendo Game Boy Color cartridges"
+    },
+    {
+      "code": "gcslottv",
+      "platform": ";Gachinko Shōbu! PachisloTV cartridges"
+    },
+    {
+      "code": "ggm",
+      "platform": ";GGM Cartridges"
+    },
+    {
+      "code": "gimix",
+      "platform": ";Gimix 6809 System disks"
+    },
+    {
+      "code": "gj4000",
+      "platform": ";VTech Genius Junior 4000 cartridges"
+    },
+    {
+      "code": "gjmovie",
+      "platform": ";VTech Genius Junior Movie cartridges"
+    },
+    {
+      "code": "gjrstar",
+      "platform": ";VTech Genius Junior Redstar cartridges"
+    },
+    {
+      "code": "gl2000",
+      "platform": ";VTech Genius Leader 2000 cartridges"
+    },
+    {
+      "code": "gl6000sl",
+      "platform": ";VTech Genius Leader 6000SL cartridges"
+    },
+    {
+      "code": "glcolor",
+      "platform": ";VTech Genius Leader Color cartridges"
+    },
+    {
+      "code": "glcx",
+      "platform": ";VTech Genius Leader CX cartridges"
+    },
+    {
+      "code": "gln",
+      "platform": ";VTech Genius Leader Notebook cartridges"
+    },
+    {
+      "code": "gls",
+      "platform": ";VTech Genius Leader Select cartridges"
+    },
+    {
+      "code": "gmaster",
+      "platform": ";Hartung Game Master cartridges"
+    },
+    {
+      "code": "gp32",
+      "platform": "gp32;GamePark GP32 SmartMedia cards"
+    },
+    {
+      "code": "gtfore",
+      "platform": ";Incredible Technologies Golden Tee Fore! upgrade CD-ROM images"
+    },
+    {
+      "code": "guab",
+      "platform": ";JPM Give us a Break floppy disks"
+    },
+    {
+      "code": "gx4000",
+      "platform": "amstradgx4000;Amstrad CPC Plus &amp"
+    },
+    {
+      "code": "h21",
+      "platform": ";TRQ Video Computer H-21 cartridges"
+    },
+    {
+      "code": "horizon",
+      "platform": ";NorthStar Horizon diskettes"
+    },
+    {
+      "code": "hp85_rom",
+      "platform": ";HP-85 Option ROMs"
+    },
+    {
+      "code": "hp86_rom",
+      "platform": ";HP-86/7 Option ROMs"
+    },
+    {
+      "code": "hp9825_rom",
+      "platform": ";HP 9825 Option ROMs"
+    },
+    {
+      "code": "hp9831_rom",
+      "platform": ";HP 9831 Option ROMs"
+    },
+    {
+      "code": "hp9835a_rom",
+      "platform": ";HP 9835A/B Option ROMs"
+    },
+    {
+      "code": "hp9845a_rom",
+      "platform": ";HP 9845A/S Option ROMs"
+    },
+    {
+      "code": "hp9845b_rom",
+      "platform": ";HP 9845B/T/C Option ROMs"
+    },
+    {
+      "code": "hp9k3xx_cdrom",
+      "platform": ";HP9000/300 CD-ROM images"
+    },
+    {
+      "code": "hp9k3xx_flop",
+      "platform": ";HP9000/300 disks"
+    },
+    {
+      "code": "hp9k3xx_hdd",
+      "platform": ";HP9000/300 hard disk images"
+    },
+    {
+      "code": "hp_ipc",
+      "platform": ";HP Integral PC diskettes"
+    },
+    {
+      "code": "hp_ipc_rom",
+      "platform": ";HP Integral PC optional ROMs"
+    },
+    {
+      "code": "ht68k",
+      "platform": ";HT68K 5.25 disks"
+    },
+    {
+      "code": "hx20_rom",
+      "platform": ";Epson HX-20 Optional ROMs"
+    },
+    {
+      "code": "hyperscan",
+      "platform": ";HyperScan CD-ROMs"
+    },
+    {
+      "code": "hyperscan_card",
+      "platform": ";Mattel Hyperscan RFID cards"
+    },
+    {
+      "code": "i7000_card",
+      "platform": ";Itautec I-7000 cartridges"
+    },
+    {
+      "code": "ibm5140",
+      "platform": "pc;IBM PC 5140 Convertible disk images"
+    },
+    {
+      "code": "ibm5150",
+      "platform": "pc;IBM PC floppy disk images"
+    },
+    {
+      "code": "ibm5150_cass",
+      "platform": "pc;IBM PC/XT cassettes"
+    },
+    {
+      "code": "ibm5150_hdd",
+      "platform": "pc;IBM PC hard disk images"
+    },
+    {
+      "code": "ibm5170",
+      "platform": "pc;IBM PC/AT floppy disk images"
+    },
+    {
+      "code": "ibm5170_cdrom",
+      "platform": "pc;IBM PC/AT CD-ROM images"
+    },
+    {
+      "code": "ibm5170_hdd",
+      "platform": "pc;IBM PC/AT hard disk images"
+    },
+    {
+      "code": "ibm6580",
+      "platform": ";IBM Displaywriter disk images"
+    },
+    {
+      "code": "ibmpcjr_cart",
+      "platform": "pc;IBM PC Jr cartridges"
+    },
+    {
+      "code": "ibmpcjr_flop",
+      "platform": "pc;IBM PCjr disk images"
+    },
+    {
+      "code": "icanguit",
+      "platform": ";Fisher-Price / Mattel I Can Play Guitar cartridges"
+    },
+    {
+      "code": "icanpian",
+      "platform": ";Fisher-Price / Mattel I Can Play Piano cartridges"
+    },
+    {
+      "code": "intellect02",
+      "platform": ";Intellect-02 cartridges"
+    },
+    {
+      "code": "interact",
+      "platform": ";Interact Family Computer cassettes"
+    },
+    {
+      "code": "interpro",
+      "platform": ";Intergraph InterPro software"
+    },
+    {
+      "code": "intv",
+      "platform": "intellivision;Intellivision cartridges"
+    },
+    {
+      "code": "intvecs",
+      "platform": "intellivision;Intellivision ECS cartridges"
+    },
+    {
+      "code": "iq128",
+      "platform": ";VTech Genius IQ 128 cartridges"
+    },
+    {
+      "code": "iq151_cart",
+      "platform": ";IQ-151 cartridges"
+    },
+    {
+      "code": "iq151_flop",
+      "platform": ";IQ-151 disk images"
+    },
+    {
+      "code": "ique",
+      "platform": "n64;Nintendo iQue depot downloads"
+    },
+    {
+      "code": "iqunlim_cart",
+      "platform": ";VTech IQ Unlimited cartridges"
+    },
+    {
+      "code": "itt3030",
+      "platform": ";ITT 3030 disk images"
+    },
+    {
+      "code": "jaguar",
+      "platform": "atarijaguar;Atari Jaguar cartridges"
+    },
+    {
+      "code": "jakks_gamekey_dp",
+      "platform": ";JAKKS Pacific 'DP' Game Keys"
+    },
+    {
+      "code": "jakks_gamekey_dy",
+      "platform": ";JAKKS Pacific 'DY' Game Keys"
+    },
+    {
+      "code": "jakks_gamekey_mv",
+      "platform": ";JAKKS Pacific 'MV' Game Keys"
+    },
+    {
+      "code": "jakks_gamekey_nk",
+      "platform": ";JAKKS Pacific 'NK' Game Keys"
+    },
+    {
+      "code": "jakks_gamekey_nm",
+      "platform": ";JAKKS Pacific 'NM' Game Keys"
+    },
+    {
+      "code": "jakks_gamekey_sw",
+      "platform": ";JAKKS Pacific 'SW' Game Keys"
+    },
+    {
+      "code": "jazz",
+      "platform": ";Jazz software"
+    },
+    {
+      "code": "jb3000_flop",
+      "platform": ";Panasonic JB-3000 diskettes"
+    },
+    {
+      "code": "jpopira_jp",
+      "platform": ";Takara Jumping Popira (Japan) JP-xx series cartridges"
+    },
+    {
+      "code": "juicebox",
+      "platform": ";Mattel Juice Box SmartMedia Flash ROM"
+    },
+    {
+      "code": "juku",
+      "platform": ";Juku E5101 floppy disks"
+    },
+    {
+      "code": "jupace_cass",
+      "platform": ";Jupiter Cantab Jupiter Ace cassettes"
+    },
+    {
+      "code": "jupace_snap",
+      "platform": ";Jupiter Cantab Jupiter Ace snapshots"
+    },
+    {
+      "code": "k28m2",
+      "platform": ";K28 model 7-232 modules"
+    },
+    {
+      "code": "kaypro",
+      "platform": ";Kaypro CP/M disk images"
+    },
+    {
+      "code": "kc_cart",
+      "platform": ";VEB Mikroelektronik KC 85 cartridges"
+    },
+    {
+      "code": "kc_cass",
+      "platform": ";VEB Mikroelektronik KC 85 cassettes"
+    },
+    {
+      "code": "kc_flop",
+      "platform": ";VEB Mikroelektronik KC 85 disk images"
+    },
+    {
+      "code": "kim1_cass",
+      "platform": ";KIM-1 cassettes"
+    },
+    {
+      "code": "korvet_flop",
+      "platform": ";Korvet disk images"
+    },
+    {
+      "code": "kpython2",
+      "platform": ";Python 2 upgrade DVD-ROM images"
+    },
+    {
+      "code": "lanteach",
+      "platform": ";Language Teacher modules"
+    },
+    {
+      "code": "lantrans",
+      "platform": ";Language Translator modules"
+    },
+    {
+      "code": "laser2001_cart",
+      "platform": ";V-Tech Laser 2001 / Salora Manager cartridges"
+    },
+    {
+      "code": "laser2001_flop",
+      "platform": ";V-Tech Laser 2001 / Salora Manager disks"
+    },
+    {
+      "code": "leapfrog_didj_cart",
+      "platform": ";LeapFrog Didj Cartridges"
+    },
+    {
+      "code": "leapfrog_iquest_cart",
+      "platform": ";LeapFrog IQuest cartridges"
+    },
+    {
+      "code": "leapfrog_leappad_cart",
+      "platform": ";LeapFrog LeapPad cartridges"
+    },
+    {
+      "code": "leapfrog_ltleappad_cart",
+      "platform": ";LeapFrog Little Touch LeapPad cartridges"
+    },
+    {
+      "code": "leapfrog_mfleappad_cart",
+      "platform": ";LeapFrog My First LeapPad cartridges"
+    },
+    {
+      "code": "leapfrog_zippity_cart",
+      "platform": ";LeapFrog Zippity Cartridges"
+    },
+    {
+      "code": "leapster",
+      "platform": ";LeapFrog Leapster cartridges"
+    },
+    {
+      "code": "leapster_explorer_cart",
+      "platform": ";LeapFrog Leapster Explorer Cartridges"
+    },
+    {
+      "code": "lisa",
+      "platform": ";Apple Lisa"
+    },
+    {
+      "code": "lisa2",
+      "platform": ";Apple Lisa 2"
+    },
+    {
+      "code": "lk3000",
+      "platform": ";LK-3000 Cartridges"
+    },
+    {
+      "code": "lviv",
+      "platform": ";Lviv cassettes"
+    },
+    {
+      "code": "lynx",
+      "platform": "atarilynx;Atari Lynx cartridges"
+    },
+    {
+      "code": "m20",
+      "platform": ";Olivetti M20 floppies"
+    },
+    {
+      "code": "m24",
+      "platform": ";Olivetti M24 floppies"
+    },
+    {
+      "code": "m5_cart",
+      "platform": ";Sord M5 cartridges"
+    },
+    {
+      "code": "m5_cass",
+      "platform": ";Sord M5 cassettes"
+    },
+    {
+      "code": "m5_flop",
+      "platform": ";Sord m5 diskettes"
+    },
+    {
+      "code": "mac_flop",
+      "platform": "macintosh;Macintosh 400K/800K Disk images"
+    },
+    {
+      "code": "mac_hdd",
+      "platform": "macintosh;Mac Harddisks"
+    },
+    {
+      "code": "mac_hdflop",
+      "platform": "macintosh;Macintosh High Density Disk images"
+    },
+    {
+      "code": "mbc200",
+      "platform": ";Sanyo MBC-200/MBC-1200 diskettes"
+    },
+    {
+      "code": "mbc55x",
+      "platform": ";Sanyo MBC-550 and MBC-555 disk images"
+    },
+    {
+      "code": "mbee_cart",
+      "platform": ";Microbee NET/PAK roms"
+    },
+    {
+      "code": "mbee_cass",
+      "platform": ";Microbee cassettes"
+    },
+    {
+      "code": "mbee_flop",
+      "platform": ";Microbee floppy disks"
+    },
+    {
+      "code": "mbee_quik",
+      "platform": ";Microbee quickload"
+    },
+    {
+      "code": "mc10",
+      "platform": ";Tandy MC-10 cassettes"
+    },
+    {
+      "code": "mc1000_cass",
+      "platform": ";CCE MC-1000 cassettes"
+    },
+    {
+      "code": "mc1502_flop",
+      "platform": ";MC-1502 disk images"
+    },
+    {
+      "code": "md2_flop",
+      "platform": ";MD-2 disk images"
+    },
+    {
+      "code": "megacd",
+      "platform": "megacd;Sega Mega CD (Europe) CD-ROMs"
+    },
+    {
+      "code": "megacdj",
+      "platform": "megacd;Sega Mega CD (Japan) CD-ROMs"
+    },
+    {
+      "code": "megadriv",
+      "platform": "genesis;Sega Mega Drive/Genesis cartridges"
+    },
+    {
+      "code": "megaduck",
+      "platform": "megaduck;Creatronic Mega Duck cartridges"
+    },
+    {
+      "code": "megapc",
+      "platform": "pc;Amstrad Mega PC disk images"
+    },
+    {
+      "code": "megatech",
+      "platform": "genesis;Sega MegaTech cartridges"
+    },
+    {
+      "code": "mephisto_mm1",
+      "platform": ";Mephisto MM I Modules"
+    },
+    {
+      "code": "mephisto_mm2",
+      "platform": ";Mephisto MM II Modules"
+    },
+    {
+      "code": "mephisto_mm4",
+      "platform": ";Mephisto MM IV Modules"
+    },
+    {
+      "code": "mephisto_mm5",
+      "platform": ";Mephisto MM V Modules"
+    },
+    {
+      "code": "mephisto_smondial2",
+      "platform": ";Mephisto Super Mondial II Modules"
+    },
+    {
+      "code": "microvision",
+      "platform": ";Milton Bradley Microvision cartridges"
+    },
+    {
+      "code": "midi_flop",
+      "platform": ";Standard MIDI floppy disks"
+    },
+    {
+      "code": "mikro80",
+      "platform": ";Mikro-80 cassettes"
+    },
+    {
+      "code": "mikrosha_cart",
+      "platform": ";Mikrosha cartridges"
+    },
+    {
+      "code": "mikrosha_cass",
+      "platform": ";Mikrosha cassettes"
+    },
+    {
+      "code": "mindset_flop",
+      "platform": ";Mindset Corporation Mindset Floppy Discs"
+    },
+    {
+      "code": "misterx",
+      "platform": ";Yeno MisterX cartridges"
+    },
+    {
+      "code": "mk14_quik",
+      "platform": ";MK-14 quickloads"
+    },
+    {
+      "code": "mm1_flop",
+      "platform": ";MikroMikko 1 floppies"
+    },
+    {
+      "code": "mo5_cart",
+      "platform": "moto;Thomson MO5 cartridges"
+    },
+    {
+      "code": "mo5_cass",
+      "platform": "moto;Thomson MO5 cassettes"
+    },
+    {
+      "code": "mo5_flop",
+      "platform": "moto;Thomson MO5 floppy disks"
+    },
+    {
+      "code": "mo5_qd",
+      "platform": "moto;Thomson MO5 QD disks"
+    },
+    {
+      "code": "mo6_cass",
+      "platform": "moto;Thomson MO6 cassettes"
+    },
+    {
+      "code": "mo6_flop",
+      "platform": "moto;Thomson MO6 floppy disks"
+    },
+    {
+      "code": "mobigo_cart",
+      "platform": ";VTech Mobigo Cartridges"
+    },
+    {
+      "code": "monon_color",
+      "platform": ";M&amp"
+    },
+    {
+      "code": "mpf1_rom",
+      "platform": ";Micro-Professor 1 ROMs"
+    },
+    {
+      "code": "mpu1000",
+      "platform": ";Acetronic MPU-1000 cartridges"
+    },
+    {
+      "code": "mpz80",
+      "platform": ";Morrow MPZ80 diskettes"
+    },
+    {
+      "code": "msx1_bee_card",
+      "platform": "msx;MSX1 Hudson Soft Bee Cards"
+    },
+    {
+      "code": "msx1_cart",
+      "platform": "msx;MSX1 cartridges"
+    },
+    {
+      "code": "msx1_cass",
+      "platform": "msx;MSX1 cassettes"
+    },
+    {
+      "code": "msx1_flop",
+      "platform": "msx;MSX1 disk images"
+    },
+    {
+      "code": "msx1_flop_525",
+      "platform": "msx;MSX1 5.25&quot"
+    },
+    {
+      "code": "msx2_cart",
+      "platform": "msx2;MSX2 cartridges"
+    },
+    {
+      "code": "msx2_cass",
+      "platform": "msx2;MSX2 cassettes"
+    },
+    {
+      "code": "msx2_flop",
+      "platform": "msx2;MSX2 disk images"
+    },
+    {
+      "code": "msx2p_flop",
+      "platform": "msx2;MSX2+ disk images"
+    },
+    {
+      "code": "msx_softcard",
+      "platform": "msx;MSX1 Astron SoftCards"
+    },
+    {
+      "code": "msxr_flop",
+      "platform": "msx2;MSX Turbo-R disk images"
+    },
+    {
+      "code": "mt65_cass",
+      "platform": ";Microtan 65 cassettes"
+    },
+    {
+      "code": "mt65_rom",
+      "platform": ";Microtan 65 ROM images"
+    },
+    {
+      "code": "mt65_snap",
+      "platform": ";Microtan 65 snapshots"
+    },
+    {
+      "code": "mtu130_flop",
+      "platform": ";MTU-130 floppies"
+    },
+    {
+      "code": "mtx_cart",
+      "platform": ";Memotech MTX ROMPAK cartridges"
+    },
+    {
+      "code": "mtx_cass",
+      "platform": ";Memotech MTX cassettes"
+    },
+    {
+      "code": "mtx_flop",
+      "platform": ";Memotech MTX diskettes"
+    },
+    {
+      "code": "mtx_hdd",
+      "platform": ";Memotech MTX Compact Flash images"
+    },
+    {
+      "code": "mtx_rom",
+      "platform": ";Memotech MTX ROM extensions"
+    },
+    {
+      "code": "myvision",
+      "platform": ";Nichibutsu My Vision cartridges"
+    },
+    {
+      "code": "mz2000_cass",
+      "platform": ";MZ-2000 cassettes"
+    },
+    {
+      "code": "mz2000_flop",
+      "platform": ";MZ-2000 disk images"
+    },
+    {
+      "code": "mz2200_cass",
+      "platform": ";Sharp MZ-2200 cassettes"
+    },
+    {
+      "code": "mz2500",
+      "platform": ";MZ-2500 disk images"
+    },
+    {
+      "code": "mz700_cass",
+      "platform": ";Sharp MZ-700 cassettes"
+    },
+    {
+      "code": "mz800_cass",
+      "platform": ";Sharp MZ-800 cassettes"
+    },
+    {
+      "code": "n64",
+      "platform": "n64;Nintendo 64 cartridges"
+    },
+    {
+      "code": "n64dd",
+      "platform": "n64;Nintendo 64 DD disks"
+    },
+    {
+      "code": "nascom_flop",
+      "platform": ";Nascom disk images"
+    },
+    {
+      "code": "nascom_snap",
+      "platform": ";Nascom snapshot images"
+    },
+    {
+      "code": "nascom_socket",
+      "platform": ";Nascom internal sockets"
+    },
+    {
+      "code": "neocd",
+      "platform": "neogeocd;SNK NeoGeo CD CD-ROMs"
+    },
+    {
+      "code": "neogeo",
+      "platform": "neogeo;SNK Neo-Geo cartridges"
+    },
+    {
+      "code": "nes",
+      "platform": "nes;Nintendo Entertainment System cartridges"
+    },
+    {
+      "code": "nes_ade",
+      "platform": "nes;Nintendo Entertainment System - Aladdin Deck Enhancer cartridges"
+    },
+    {
+      "code": "nes_datach",
+      "platform": "nes;Nintendo Entertainment System - Datach Joint ROM System mini-cartridges"
+    },
+    {
+      "code": "nes_kstudio",
+      "platform": "nes;Nintendo Entertainment System - Karaoke Studio expansion cartridges"
+    },
+    {
+      "code": "nes_ntbrom",
+      "platform": "nes;Nintendo Entertainment System - Nantettatte!! Baseball mini-cartridges"
+    },
+    {
+      "code": "nes_vt_cart",
+      "platform": "nes;Cartridges compatible with VRT VT0x based units"
+    },
+    {
+      "code": "next",
+      "platform": ";NeXT disk images"
+    },
+    {
+      "code": "next_cdrom",
+      "platform": ";NeXT CD-ROM software"
+    },
+    {
+      "code": "next_hdd",
+      "platform": ";Hard disk images for NeXT"
+    },
+    {
+      "code": "ngp",
+      "platform": "ngp;SNK Neo Geo Pocket cartridges"
+    },
+    {
+      "code": "ngpc",
+      "platform": "ngpc;SNK Neo Geo Pocket Color cartridges"
+    },
+    {
+      "code": "nimbus",
+      "platform": ";RM Nimbus disk images"
+    },
+    {
+      "code": "novag_ssensor4",
+      "platform": ";Super Sensor IV expansion ROMs"
+    },
+    {
+      "code": "nuon",
+      "platform": ";NUON DVD-ROMs"
+    },
+    {
+      "code": "octopus",
+      "platform": ";LSI Octopus floppy disk images"
+    },
+    {
+      "code": "ondra",
+      "platform": ";Ondra &amp"
+    },
+    {
+      "code": "orao",
+      "platform": ";PEL Varazdin Orao cassettes"
+    },
+    {
+      "code": "orion_cart",
+      "platform": ";Orion-128 &amp"
+    },
+    {
+      "code": "orion_cass",
+      "platform": ";Orion 128 cassettes"
+    },
+    {
+      "code": "orion_flop",
+      "platform": ";Orion 128 disk images"
+    },
+    {
+      "code": "orionpro_flop",
+      "platform": ";OrionPro disk images"
+    },
+    {
+      "code": "osborne1",
+      "platform": ";Osborne-1 floppies"
+    },
+    {
+      "code": "osborne2",
+      "platform": ";Osborne 2 Executive diskettes"
+    },
+    {
+      "code": "p500_flop",
+      "platform": ";Commodore P500 diskettes"
+    },
+    {
+      "code": "partner_cass",
+      "platform": ";Partner-01.01 cassettes"
+    },
+    {
+      "code": "partner_flop",
+      "platform": ";Partner-01.01 disk images"
+    },
+    {
+      "code": "pasogo",
+      "platform": ";Koei PasoGo cartridges"
+    },
+    {
+      "code": "pasopia_cass",
+      "platform": ";Toshiba Personal Computer Pasopia PA7010 cassettes"
+    },
+    {
+      "code": "pb2000c",
+      "platform": ";Casio PB-2000C memory cards"
+    },
+    {
+      "code": "pc1000",
+      "platform": ";VTech PreComputer 1000 cartridges"
+    },
+    {
+      "code": "pc1512_flop",
+      "platform": ";Amstrad PC1512 diskettes"
+    },
+    {
+      "code": "pc1512_hdd",
+      "platform": ";Amstrad PC1512 hard disks"
+    },
+    {
+      "code": "pc1640_flop",
+      "platform": ";Amstrad PC1640 diskettes"
+    },
+    {
+      "code": "pc1640_hdd",
+      "platform": ";Amstrad PC1640 hard disks"
+    },
+    {
+      "code": "pc200",
+      "platform": ";Sinclair PC200 disk images"
+    },
+    {
+      "code": "pc6001_cart",
+      "platform": "pc88;NEC PC-6001 cartridges"
+    },
+    {
+      "code": "pc8001_flop",
+      "platform": "pc88;NEC PC-8001 (N-BASIC) disk images"
+    },
+    {
+      "code": "pc8001mk2_flop",
+      "platform": "pc88;NEC PC-8001mkII (N80 BASIC) disk images"
+    },
+    {
+      "code": "pc8001mk2sr_flop",
+      "platform": "pc88;NEC PC-8001mkIISR (N80SR BASIC) disk images"
+    },
+    {
+      "code": "pc8201",
+      "platform": "pc88;NEC PC-8201(A) Option ROMs"
+    },
+    {
+      "code": "pc8801_cass",
+      "platform": "pc88;NEC PC-8801 cassettes"
+    },
+    {
+      "code": "pc8801_cdrom",
+      "platform": "pc88;NEC PC-8801 CD-ROMs"
+    },
+    {
+      "code": "pc8801_flop",
+      "platform": "pc88;NEC PC-8801 disk images"
+    },
+    {
+      "code": "pc88va",
+      "platform": "pc88;NEC PC-88VA disk images"
+    },
+    {
+      "code": "pc98",
+      "platform": "pc98;NEC PC-9801 disk images"
+    },
+    {
+      "code": "pc98_cd",
+      "platform": "pc98;NEC PC-9801 CD-ROMs"
+    },
+    {
+      "code": "pcd_flop",
+      "platform": ";Siemens PC-D disk images"
+    },
+    {
+      "code": "pce",
+      "platform": "pcengine;NEC PC-Engine cartridges"
+    },
+    {
+      "code": "pce_tourvision",
+      "platform": "pcengine;TourVisión (bootleg Arcade NEC PC-Engine) cartridges"
+    },
+    {
+      "code": "pcecd",
+      "platform": "pcenginecd;NEC PC-Engine / Turbografx 16 CD-ROMs"
+    },
+    {
+      "code": "pcfx",
+      "platform": "pcfx;NEC PC-FX CD-ROMs"
+    },
+    {
+      "code": "pcw",
+      "platform": ";Amstrad PCW disk images"
+    },
+    {
+      "code": "pcw16",
+      "platform": ";Amstrad PCW16 disk images"
+    },
+    {
+      "code": "pcx_flop",
+      "platform": ";Siemens PC-X disk images"
+    },
+    {
+      "code": "pdp1_ptp",
+      "platform": ";PDP-1 Paper Tape Reader images"
+    },
+    {
+      "code": "pecom_cass",
+      "platform": ";Pecom32 cassettes"
+    },
+    {
+      "code": "pegasus_cart",
+      "platform": ";Technosys Aamber Pegasus ROM expansions"
+    },
+    {
+      "code": "pencil2",
+      "platform": ";Hanimex Pencil II cartridges"
+    },
+    {
+      "code": "pentagon_cass",
+      "platform": ";Pentagon (ZX Spectrum clone) cassettes"
+    },
+    {
+      "code": "pet_cass",
+      "platform": "cpet;Commodore PET cassettes"
+    },
+    {
+      "code": "pet_flop",
+      "platform": "cpet;Commodore PET diskettes"
+    },
+    {
+      "code": "pet_hdd",
+      "platform": "cpet;Commodore PET hard disks"
+    },
+    {
+      "code": "pet_quik",
+      "platform": "cpet;Commodore PET quickload"
+    },
+    {
+      "code": "pet_rom",
+      "platform": "cpet;Commodore PET Function ROMs"
+    },
+    {
+      "code": "phc25_cass",
+      "platform": ";PHC-25 cassettes"
+    },
+    {
+      "code": "pi_storyreader_cart",
+      "platform": ";Publications International Ltd. Story Reader cartridges"
+    },
+    {
+      "code": "pi_storyreader_v2_cart",
+      "platform": ";Publications International Ltd Story Reader 2.0 cartridges"
+    },
+    {
+      "code": "picno",
+      "platform": ";Konami Picno cartridges"
+    },
+    {
+      "code": "pico",
+      "platform": ";Sega Pico cartridges"
+    },
+    {
+      "code": "pippin",
+      "platform": ";Pippin CD-ROMs"
+    },
+    {
+      "code": "pippin_flop",
+      "platform": ";Pippin disk images"
+    },
+    {
+      "code": "playmaker",
+      "platform": ";Tiger Playmaker playcards"
+    },
+    {
+      "code": "plus4_cart",
+      "platform": "c16;Commodore Plus/4 cartridges"
+    },
+    {
+      "code": "plus4_cass",
+      "platform": "c16;Commodore Plus/4 / C16 / C116 cassettes"
+    },
+    {
+      "code": "plus4_flop",
+      "platform": "c16;Commodore Plus/4 diskettes"
+    },
+    {
+      "code": "pmd85_cass",
+      "platform": ";Tesla PMD-85 cassettes"
+    },
+    {
+      "code": "pockchalv2",
+      "platform": ";Pocket Challenge V2 cartridges"
+    },
+    {
+      "code": "pockchalw",
+      "platform": ";Pocket Challenge W cartridges"
+    },
+    {
+      "code": "pofo",
+      "platform": ";Atari Portfolio cartridges"
+    },
+    {
+      "code": "poisk1_flop",
+      "platform": ";Poisk-1 disk images"
+    },
+    {
+      "code": "pokemini",
+      "platform": "pokemini;Nintendo Pokemini cartridges"
+    },
+    {
+      "code": "poly_flop",
+      "platform": ";Poly diskettes"
+    },
+    {
+      "code": "princ",
+      "platform": ";Tomy Prin-C cartridges"
+    },
+    {
+      "code": "pro128_cart",
+      "platform": ";Olivetti Prodest PC 128 cartridges"
+    },
+    {
+      "code": "pro128_cass",
+      "platform": ";Olivetti Prodest PC 128 cassettes"
+    },
+    {
+      "code": "pro128_flop",
+      "platform": ";Olivetti Prodest PC 128 floppy disks"
+    },
+    {
+      "code": "pro128s_flop",
+      "platform": ";Olivetti Prodest PC 128S disks"
+    },
+    {
+      "code": "prof180",
+      "platform": ";Conitec PROF-180 floppy disks"
+    },
+    {
+      "code": "prof80",
+      "platform": ";Conitec PROF-80 floppy disks"
+    },
+    {
+      "code": "psi98",
+      "platform": ";Kontron PSI98 floppy disks"
+    },
+    {
+      "code": "psion1",
+      "platform": ";Psion Organiser I Datapack"
+    },
+    {
+      "code": "psion2",
+      "platform": ";Psion Organiser II Datapack"
+    },
+    {
+      "code": "psx",
+      "platform": "psx;Sony Playstation CD-ROMs"
+    },
+    {
+      "code": "pt68k2",
+      "platform": ";PT68K2 5.25 disks"
+    },
+    {
+      "code": "pv1000",
+      "platform": "pv1000;Casio PV-1000 cartridges"
+    },
+    {
+      "code": "pv2000",
+      "platform": ";Casio PV-2000 cartridges"
+    },
+    {
+      "code": "px4_cart",
+      "platform": ";EPSON PX-4 ROM capsules"
+    },
+    {
+      "code": "px8_cart",
+      "platform": ";EPSON PX-8 ROM capsules"
+    },
+    {
+      "code": "pyl601",
+      "platform": ";Pyldin-601 disk images"
+    },
+    {
+      "code": "ql_cart",
+      "platform": ";Sinclair QL cartridges"
+    },
+    {
+      "code": "ql_cass",
+      "platform": ";Sinclair QL cassettes"
+    },
+    {
+      "code": "ql_flop",
+      "platform": ";Sinclair QL diskettes"
+    },
+    {
+      "code": "quizwiz",
+      "platform": ";Coleco Quiz Wiz cartridges"
+    },
+    {
+      "code": "qx10_flop",
+      "platform": ";Epson QX-10 diskettes"
+    },
+    {
+      "code": "r8_card",
+      "platform": ";Roland R-8 PCM memory cards"
+    },
+    {
+      "code": "r9751",
+      "platform": ";ROLM CBX 9751 floppy disk images"
+    },
+    {
+      "code": "radio86_cart",
+      "platform": ";Radio-86RK cartridges"
+    },
+    {
+      "code": "radio86_cass",
+      "platform": ";Radio-86RK cassettes"
+    },
+    {
+      "code": "rainbow",
+      "platform": ";DEC Rainbow 100 Disk Images"
+    },
+    {
+      "code": "roland_tnsc1",
+      "platform": ";Roland TN-SC1 Music Style Cards"
+    },
+    {
+      "code": "rwtrntcs",
+      "platform": ";Rowtron Television Computer System cartridges"
+    },
+    {
+      "code": "rx78_cart",
+      "platform": ";Gundam RX-78 cartridges"
+    },
+    {
+      "code": "rx78_cass",
+      "platform": ";Gundam RX-78 cassettes"
+    },
+    {
+      "code": "rz1_cass",
+      "platform": ";Casio RZ-1 cassettes"
+    },
+    {
+      "code": "sagafox",
+      "platform": ";Saga Fox floppies"
+    },
+    {
+      "code": "sage2",
+      "platform": ";Sage II Disk Images"
+    },
+    {
+      "code": "saitek_egr",
+      "platform": ";Saitek Endgame ROM"
+    },
+    {
+      "code": "saitek_kso",
+      "platform": ";Saitek KSO ROM"
+    },
+    {
+      "code": "saitek_schess",
+      "platform": ";Sensor Chess Modules"
+    },
+    {
+      "code": "samcoupe_cass",
+      "platform": "samcoupe;SAM Coupé cassettes"
+    },
+    {
+      "code": "samcoupe_flop",
+      "platform": "samcoupe;SAM Coupé floppy disks"
+    },
+    {
+      "code": "sat_cart",
+      "platform": "saturn;Sega Saturn cartridges"
+    },
+    {
+      "code": "sat_vccart",
+      "platform": "saturn;Sega Saturn VideoCD cartridges"
+    },
+    {
+      "code": "saturn",
+      "platform": "saturn;Sega Saturn CD-ROMs"
+    },
+    {
+      "code": "sawatte",
+      "platform": ";Sega Sawatte Pico cartridges"
+    },
+    {
+      "code": "sbrain",
+      "platform": ";Super Brain floppies"
+    },
+    {
+      "code": "sc3000_cart",
+      "platform": "sg1000;Sega Computer 3000 cartridges"
+    },
+    {
+      "code": "sc3000_cass",
+      "platform": "sg1000;Sega Computer 3000 cassettes"
+    },
+    {
+      "code": "scv",
+      "platform": "epochscv;Epoch Super Cassette Vision cartridges"
+    },
+    {
+      "code": "sdk85",
+      "platform": ";SDK-85 expansion ROMs"
+    },
+    {
+      "code": "sega_beena_cart",
+      "platform": ";Sega Beena cartridges"
+    },
+    {
+      "code": "segacd",
+      "platform": "segacd;Sega CD CD-ROMs"
+    },
+    {
+      "code": "sf7000",
+      "platform": "sg1000;Sega Super Control Station SF-7000 disk images"
+    },
+    {
+      "code": "sg1000",
+      "platform": "sg1000;Sega SG-1000 and SG-1000 MarkII cartridges"
+    },
+    {
+      "code": "sgi_mips",
+      "platform": ";SGI MIPS/IRIX software"
+    },
+    {
+      "code": "sgi_mips_hdd",
+      "platform": ";Hard disk images for SGI MIPS"
+    },
+    {
+      "code": "sgx",
+      "platform": "supergrafx;NEC Supergrafx cartridges"
+    },
+    {
+      "code": "singingstarkaraoke_cart",
+      "platform": ";Taikee Singing Star Karaoke cartridges"
+    },
+    {
+      "code": "sitcom",
+      "platform": ";SITCOM"
+    },
+    {
+      "code": "smarttv_cart",
+      "platform": ";WinFun KidConnection SmarTV Adventures / Funtastic TV Adventures cartridges"
+    },
+    {
+      "code": "smc777",
+      "platform": ";Sony SMC777 Disks"
+    },
+    {
+      "code": "sms",
+      "platform": "mastersystem;Sega Master System cartridges"
+    },
+    {
+      "code": "snes",
+      "platform": "snes;Nintendo SNES cartridges"
+    },
+    {
+      "code": "snes_bspack",
+      "platform": "satellaview;Nintendo SNES Satellaview Memory Packs"
+    },
+    {
+      "code": "snes_strom",
+      "platform": "snes;Nintendo SNES - Sufami Turbo cartridges"
+    },
+    {
+      "code": "snes_vkun",
+      "platform": ";Voicer-kun audio compact discs"
+    },
+    {
+      "code": "snotec",
+      "platform": ";Bandai Super Note Club cartridges"
+    },
+    {
+      "code": "snread",
+      "platform": ";Speak &amp"
+    },
+    {
+      "code": "snspell",
+      "platform": ";Speak &amp"
+    },
+    {
+      "code": "socrates",
+      "platform": ";Video Technology Socrates cartridges"
+    },
+    {
+      "code": "softbox",
+      "platform": ";SSE SoftBox diskettes"
+    },
+    {
+      "code": "sol20_cass",
+      "platform": ";PTC SOL-20 cassettes"
+    },
+    {
+      "code": "sorcerer_cart",
+      "platform": ";Exidy Sorcerer cartridges"
+    },
+    {
+      "code": "sorcerer_cass",
+      "platform": ";Exidy Sorcerer cassettes"
+    },
+    {
+      "code": "sorcerer_flop",
+      "platform": ";Exidy Sorcerer floppies"
+    },
+    {
+      "code": "spc1000_cass",
+      "platform": ";Samsung SPC-1000 cassettes"
+    },
+    {
+      "code": "spc1500_cass",
+      "platform": ";Samsung SPC-1500 cassettes"
+    },
+    {
+      "code": "special_cass",
+      "platform": ";Specialist cassettes"
+    },
+    {
+      "code": "special_flop",
+      "platform": ";Specialist MX disk images"
+    },
+    {
+      "code": "specpls3_flop",
+      "platform": "zxspectrum;Sinclair ZX Spectrum +3 disk images"
+    },
+    {
+      "code": "spectrum_betadisc_flop",
+      "platform": "zxspectrum;Sinclair ZX Spectrum Beta Disc / TR-DOS disk images"
+    },
+    {
+      "code": "spectrum_cart",
+      "platform": "zxspectrum;Sinclair ZX Spectrum cartridges"
+    },
+    {
+      "code": "spectrum_cass",
+      "platform": "zxspectrum;Sinclair ZX Spectrum cassettes"
+    },
+    {
+      "code": "spectrum_flop_opus",
+      "platform": "zxspectrum;Sinclair ZX Spectrum Opus Discovery disk images"
+    },
+    {
+      "code": "spectrum_mgt_flop",
+      "platform": "zxspectrum;ZX Spectrum MGT DISCiPLE/+D disks"
+    },
+    {
+      "code": "spectrum_microdrive",
+      "platform": "zxspectrum;Sinclair ZX Microdrive tapes/cartridges"
+    },
+    {
+      "code": "spectrum_wafadrive",
+      "platform": "zxspectrum;Sinclair ZX Wafadrive tapes/cartridges"
+    },
+    {
+      "code": "sprachmg",
+      "platform": ";Gerät 32620 (Sprach/Morsegenerator) Speech Modules"
+    },
+    {
+      "code": "squale_cart",
+      "platform": ";Squale cartridges"
+    },
+    {
+      "code": "ssem_quik",
+      "platform": ";SSEM quickload"
+    },
+    {
+      "code": "st_cart",
+      "platform": "atarist;Atari ST cartridges"
+    },
+    {
+      "code": "st_flop",
+      "platform": "atarist;Atari ST disk images"
+    },
+    {
+      "code": "stepone_flop",
+      "platform": ";Ericsson PC step/one diskettes"
+    },
+    {
+      "code": "studio2",
+      "platform": ";RCA Studio II / Victory MPT-02 cartridges"
+    },
+    {
+      "code": "stv",
+      "platform": "saturn;Sega Titan Video cartridges"
+    },
+    {
+      "code": "super6",
+      "platform": ";ADC Super Six diskettes"
+    },
+    {
+      "code": "super80_cass",
+      "platform": ";Super-80 cassettes"
+    },
+    {
+      "code": "super80_flop",
+      "platform": ";Dick Smith Super-80 floppies"
+    },
+    {
+      "code": "superpet_flop",
+      "platform": "cpet;Commodore SuperPET / MMF 9000 diskettes"
+    },
+    {
+      "code": "supracan",
+      "platform": ";Funtech Super A'Can cartridges"
+    },
+    {
+      "code": "sv8000",
+      "platform": ";Bandai Super Vision 8000 cartridges"
+    },
+    {
+      "code": "svi318_cart",
+      "platform": ";Spectravision SVI-318 cartridges"
+    },
+    {
+      "code": "svi318_cass",
+      "platform": ";Spectravision SVI-318 cassettes"
+    },
+    {
+      "code": "svi318_flop",
+      "platform": ";Spectravision SVI-318/328 disk images"
+    },
+    {
+      "code": "svision",
+      "platform": "watara;Watara Supervision cartridges"
+    },
+    {
+      "code": "svmu",
+      "platform": "dreamcast;Sega Visual Memory Unit quickloads"
+    },
+    {
+      "code": "t1000",
+      "platform": ";Tandy 1000 series disk images"
+    },
+    {
+      "code": "tandy200",
+      "platform": ";Tandy 200 Option ROMs"
+    },
+    {
+      "code": "tandy2k",
+      "platform": ";Tandy 2000 disk images"
+    },
+    {
+      "code": "tandy6k",
+      "platform": ";Tandy 6000 disk images"
+    },
+    {
+      "code": "tc4",
+      "platform": ";Coleco Total Control 4 cartridges"
+    },
+    {
+      "code": "tdv2324",
+      "platform": ";Tandberg TDV 2324 disk images"
+    },
+    {
+      "code": "tek4052_cart",
+      "platform": ";Tektronix 4052 ROM packs"
+    },
+    {
+      "code": "telestory_cart",
+      "platform": ";JAKKS Pacific Telestory cartridges"
+    },
+    {
+      "code": "tg16",
+      "platform": "pcengine;NEC Turbografx 16 cartridges"
+    },
+    {
+      "code": "ti74_cart",
+      "platform": ";TI-74 cartridges"
+    },
+    {
+      "code": "ti95_cart",
+      "platform": ";TI-95 cartridges"
+    },
+    {
+      "code": "ti99_cart",
+      "platform": "ti99;TI-99/4A cartridges"
+    },
+    {
+      "code": "tiki100",
+      "platform": ";TIKI-100 Disk Images"
+    },
+    {
+      "code": "timex_cass",
+      "platform": ";Timex Sinclair 2068 cassettes"
+    },
+    {
+      "code": "timex_dock",
+      "platform": ";Timex Sinclair TS-2068 DOCK cartridges"
+    },
+    {
+      "code": "tntell",
+      "platform": ";Touch &amp"
+    },
+    {
+      "code": "to770_cart",
+      "platform": "moto;Thomson TO7/70 cartridges"
+    },
+    {
+      "code": "to770a_cart",
+      "platform": "moto;Thomson TO7/70 Arabic cartridges"
+    },
+    {
+      "code": "to7_cart",
+      "platform": "moto;Thomson TO7 cartridges"
+    },
+    {
+      "code": "to7_cass",
+      "platform": "moto;Thomson TO7 &amp"
+    },
+    {
+      "code": "to7_qd",
+      "platform": "moto;Thomson TO7 &amp"
+    },
+    {
+      "code": "to8_cass",
+      "platform": "moto;Thomson TO8 cassetes"
+    },
+    {
+      "code": "to8_qd",
+      "platform": "moto;Thomson TO8 QD disks"
+    },
+    {
+      "code": "to_flop",
+      "platform": "moto;Thomson TO-series floppy disks"
+    },
+    {
+      "code": "triton_rom",
+      "platform": ";Transam Triton ROMs"
+    },
+    {
+      "code": "trs80_cass",
+      "platform": "trs80;Radio Shack TRS-80 cassettes"
+    },
+    {
+      "code": "trs80_flop",
+      "platform": "trs80;Radio Shack TRS-80 floppies"
+    },
+    {
+      "code": "trs80_quik",
+      "platform": "trs80;Radio Shack TRS-80 quickload"
+    },
+    {
+      "code": "trs80m2",
+      "platform": "trs80;Tandy TRS-80 Model II disk images"
+    },
+    {
+      "code": "trsm100",
+      "platform": "trs80;TRS-80 Model 100 Option ROMs"
+    },
+    {
+      "code": "tsconf_betadisc_flop",
+      "platform": ";TS-Configuration Beta Disc / TR-DOS disk images"
+    },
+    {
+      "code": "ttwist_brainquest_cart",
+      "platform": ";LeapFrog Turbo Twist Brain Quest cartridges"
+    },
+    {
+      "code": "turboextreme_cart",
+      "platform": ";LeapFrog Turbo Extreme cartridges"
+    },
+    {
+      "code": "tutor",
+      "platform": ";Tomy Tutor &amp"
+    },
+    {
+      "code": "tvc_cart",
+      "platform": ";Videoton TVC 64 cartridges"
+    },
+    {
+      "code": "tvc_cass",
+      "platform": ";Videoton TVC cassettes"
+    },
+    {
+      "code": "tvc_flop",
+      "platform": ";Videoton TVC floppies"
+    },
+    {
+      "code": "tvgogo",
+      "platform": ";Toyquest TV Go Go cartridges"
+    },
+    {
+      "code": "tx0_ptp",
+      "platform": ";TX-0 Paper Tape Reader images"
+    },
+    {
+      "code": "u110_card",
+      "platform": ";Roland U-110 PCM memory cards"
+    },
+    {
+      "code": "unichamp",
+      "platform": ";Unisonic Champion 2711 cartridges"
+    },
+    {
+      "code": "ut88",
+      "platform": ";UT-88 cassettes"
+    },
+    {
+      "code": "uzebox",
+      "platform": "uzebox;Uzebox internal EPROMs"
+    },
+    {
+      "code": "v1050_flop",
+      "platform": ";Visual Technology Visual 1050 diskettes"
+    },
+    {
+      "code": "v1050_hdd",
+      "platform": ";Visual Technology Visual 1050 hard disks"
+    },
+    {
+      "code": "vbaby_cart",
+      "platform": ";VTech V.Baby cartridges"
+    },
+    {
+      "code": "vboy",
+      "platform": "virtualboy;Nintendo Virtual Boy cartridges"
+    },
+    {
+      "code": "vc4000",
+      "platform": ";Interton VC 4000 cartridges"
+    },
+    {
+      "code": "vector06_cart",
+      "platform": ";Vector-06C cartridges"
+    },
+    {
+      "code": "vector06_flop",
+      "platform": ";Vector-06C disk images"
+    },
+    {
+      "code": "vectrex",
+      "platform": "vectrex;GCE Vectrex cartridges"
+    },
+    {
+      "code": "vg5k",
+      "platform": ";Philips VG-5000 cassette"
+    },
+    {
+      "code": "vgmplay",
+      "platform": ";Video Game Music Files"
+    },
+    {
+      "code": "vic10",
+      "platform": ";Commodore VIC-10 / Max Machine / UltiMax cartridges"
+    },
+    {
+      "code": "vic1001_cart",
+      "platform": ";Commodore VIC-1001 / VIC-20 cartridges"
+    },
+    {
+      "code": "vic1001_cass",
+      "platform": ";Commodore VIC-1001 / VIC-20 cassettes"
+    },
+    {
+      "code": "vic1001_flop",
+      "platform": ";Commodore VIC-1001 / VIC-20 diskettes"
+    },
+    {
+      "code": "victor9k_flop",
+      "platform": ";Victor 9000 / ACT Sirius 1 diskettes"
+    },
+    {
+      "code": "vidbrain",
+      "platform": ";VideoBrain Family Computer cartridges"
+    },
+    {
+      "code": "videopac",
+      "platform": "videopac;Philips Videopac / Odyssey 2 cartridges"
+    },
+    {
+      "code": "vii",
+      "platform": ";JungleTac/KenSingTon Vii cartridges"
+    },
+    {
+      "code": "vip",
+      "platform": ";RCA VIP cassettes"
+    },
+    {
+      "code": "vis",
+      "platform": ";Tandy/Memorex Video Information System CD-ROM images"
+    },
+    {
+      "code": "visicom",
+      "platform": ";Toshiba Visicom cartridges"
+    },
+    {
+      "code": "vixen",
+      "platform": ";Osborne 4 Vixen Disk Images"
+    },
+    {
+      "code": "vsmile_cart",
+      "platform": "vsmile;VTech V.Smile cartridges"
+    },
+    {
+      "code": "vsmile_cd",
+      "platform": "vsmile;VTech V.Flash/V.Smile Pro V.Disc images"
+    },
+    {
+      "code": "vsmileb_cart",
+      "platform": "vsmile;VTech V.Smile Baby cartridges"
+    },
+    {
+      "code": "vsmilem_cart",
+      "platform": "vsmile;VTech V.Smile Motion cartridges"
+    },
+    {
+      "code": "vtech2_cass",
+      "platform": ";VTech Laser 500 cassettes"
+    },
+    {
+      "code": "vtech_innotab_cart",
+      "platform": ";VTech InnoTAB 1/2/3 Cartridges"
+    },
+    {
+      "code": "vtech_innotv_cart",
+      "platform": ";VTech InnoTV / InnoTAB MAX cartridges"
+    },
+    {
+      "code": "vtech_storio_cart",
+      "platform": ";VTech Storio V.Reader cartridges"
+    },
+    {
+      "code": "vz_cass",
+      "platform": ";Dick Smith Electronics VZ-200/300 cassettes"
+    },
+    {
+      "code": "vz_snap",
+      "platform": ";Dick Smith Electronics VZ-200/300 snapshots"
+    },
+    {
+      "code": "wangpc",
+      "platform": ";Wang PC disk images"
+    },
+    {
+      "code": "waveterm",
+      "platform": ";Waveterm A disk images"
+    },
+    {
+      "code": "wicat",
+      "platform": ";Millennium Systems Wicat"
+    },
+    {
+      "code": "wizard_cart",
+      "platform": ";Sharp Wizard series cartridges"
+    },
+    {
+      "code": "wmbullet",
+      "platform": ";WaveMate Bullet disk images"
+    },
+    {
+      "code": "wscolor",
+      "platform": "wonderswancolor;Bandai Wonderswan Color cartridges"
+    },
+    {
+      "code": "wswan",
+      "platform": "wonderswan;Bandai Wonderswan cartridges"
+    },
+    {
+      "code": "x07_card",
+      "platform": ";Canon X-07 memory cards"
+    },
+    {
+      "code": "x07_cass",
+      "platform": ";Canon X-07 cassettes"
+    },
+    {
+      "code": "x1_cass",
+      "platform": "x1;Sharp X1 cassettes"
+    },
+    {
+      "code": "x1_flop",
+      "platform": "x1;Sharp X1 disk images"
+    },
+    {
+      "code": "x37_flop",
+      "platform": ";Luxor X37 diskettes"
+    },
+    {
+      "code": "x68k_flop",
+      "platform": "x68000;Sharp X68k disk images"
+    },
+    {
+      "code": "xegs",
+      "platform": "atarist;Atari XE Game System cartridges"
+    },
+    {
+      "code": "xerox820",
+      "platform": ";Xerox 820 Disk Images"
+    },
+    {
+      "code": "xerox820ii",
+      "platform": ";Xerox 820-II Disk Images"
+    },
+    {
+      "code": "z80clock",
+      "platform": ";Z80 Clock ROMs"
+    },
+    {
+      "code": "z80ne_cass",
+      "platform": ";Nuova Elettronica Z80NE cassettes"
+    },
+    {
+      "code": "z80ne_flop",
+      "platform": ";Nuova Elettronica Z80NE floppies"
+    },
+    {
+      "code": "z88_cart",
+      "platform": ";Z88 ROM cartridges"
+    },
+    {
+      "code": "zorba",
+      "platform": ";Telcon Zorba floppy disks"
+    },
+    {
+      "code": "zx80_cass",
+      "platform": "zx80;Sinclair ZX80 cassettes"
+    },
+    {
+      "code": "zx81_cass",
+      "platform": "zx81;Sinclair ZX81 cassettes"
+    },
+    {
+      "code": "abc1600_hdd",
+      "platform": "Luxor ABC 1600 hard disks"
+    },
+    {
+      "code": "abc806_flop",
+      "platform": "Luxor ABC 806 diskettes"
+    },
+    {
+      "code": "abc80_rom",
+      "platform": "Luxor ABC 80 memory card ROMs"
+    },
+    {
+      "code": "abc830_flop",
+      "platform": "Luxor ABC 830 diskettes"
+    },
+    {
+      "code": "abc832_flop",
+      "platform": "Luxor ABC 832 diskettes"
+    },
+    {
+      "code": "abc838_flop",
+      "platform": "Luxor ABC 838 diskettes"
+    },
+    {
+      "code": "altos586",
+      "platform": "Altos 586 floppies"
+    },
+    {
+      "code": "bingobear",
+      "platform": "Bingo Bear modules"
+    },
+    {
+      "code": "bmjr_cass",
+      "platform": "Hitachi Basic Master Jr. cassettes"
+    },
+    {
+      "code": "bml3_cass",
+      "platform": "Hitachi Basic Master Level 3 cassettes"
+    },
+    {
+      "code": "brother_pn",
+      "platform": "Brother PowerNote disks"
+    },
+    {
+      "code": "carbeena",
+      "platform": "Car Beena cartridge"
+    },
+    {
+      "code": "coleco_homebrew",
+      "platform": "coleco;Coleco ColecoVision homebrew cartridges"
+    },
+    {
+      "code": "conchess",
+      "platform": "Conchess library modules"
+    },
+    {
+      "code": "ctvboy",
+      "platform": "Gakken Compact Vision TV Boy cartridges"
+    },
+    {
+      "code": "cubieboard4",
+      "platform": "Cubieboard4 software"
+    },
+    {
+      "code": "cz1_cart",
+      "platform": "Casio CZ-1 ROM cartridges"
+    },
+    {
+      "code": "ekara_cart",
+      "platform": "Takara e-kara / Popira / Jumping Popira / Taiko de Popira / Dance Dance Revolution Family Mat cartridges"
+    },
+    {
+      "code": "fp1100_cass",
+      "platform": "Casio FP-1100 cassettes"
+    },
+    {
+      "code": "h88_cass",
+      "platform": "Heath H88 cassettes"
+    },
+    {
+      "code": "hikara",
+      "platform": "Takara Tomy Hi-kara cartridges"
+    },
+    {
+      "code": "jaminator",
+      "platform": "Jaminator cartridges"
+    },
+    {
+      "code": "k28",
+      "platform": "K-2-8 (model 7-232) modules"
+    },
+    {
+      "code": "kisssite_cd",
+      "platform": "Tomy Kiss-Site CD-ROMs"
+    },
+    {
+      "code": "mac_cdrom",
+      "platform": "macintosh;Apple Macintosh CD-ROMs"
+    },
+    {
+      "code": "mac_flop_clcracked",
+      "platform": "macintosh;Apple Macintosh 400K/800K cleanly cracked disks"
+    },
+    {
+      "code": "mac_flop_orig",
+      "platform": "macintosh;Apple Macintosh 400K/800K cleanly cracked disks"
+    },
+    {
+      "code": "msx_yamaha_minicart",
+      "platform": "msx;MSX Yamaha Mini Cartridges"
+    },
+    {
+      "code": "n64_lodgenet",
+      "platform": "n64;LodgeNet 64 software"
+    },
+    {
+      "code": "oric1_cass",
+      "platform": "oric;Tangerine Oric-1 cassettes"
+    },
+    {
+      "code": "psion_ssd",
+      "platform": "Psion Solid State Disks"
+    },
+    {
+      "code": "roland_tnsc2",
+      "platform": "Roland TN-SC2 Music Style Cards"
+    },
+    {
+      "code": "segaai",
+      "platform": "Sega AI Software"
+    },
+    {
+      "code": "videoart",
+      "platform": "LJN VideoArt cartridges"
+    }
+  ]
+}

@@ -33,6 +33,7 @@
 #include "settings.h"
 #include "compositor.h"
 #include "openretro.h"
+#include "offlinetgdb.h"
 #include "thegamesdb.h"
 #include "launchbox.h"
 #include "chiptune.h"
@@ -45,11 +46,13 @@
 #include "giantbomb.h"
 #include "gamefaqs.h"
 #include "vgfacts.h"
+#include "docsdb.h"
 #include "mobygames.h"
 #include "offlinemobygames.h"
 #include "localscraper.h"
 #include "importscraper.h"
 #include "arcadedb.h"
+#include "mamehistory.h"
 #include "esgamelist.h"
 #include "platform.h"
 #include "skyscraper.h"
@@ -72,7 +75,8 @@ ScraperWorker::~ScraperWorker()
 // Protected by mutex as there can be several scraper workers in parallel.
 void ScraperWorker::run()
 {
-  if(!Platform::get().getScrapers(config.platform).contains(config.scraper) && !config.generateLbDb)
+  if(!Platform::get().getScrapers(config.platform).contains(config.scraper) &&
+     !config.generateLbDb && !config.useChecksum)
   {
     printf("ERROR: The scraper selected does not support this platform. Exiting.\n");
     emit allDone(true);
@@ -83,6 +87,8 @@ void ScraperWorker::run()
     scraper = new OpenRetro(&config, manager, threadId);
   } else if(config.scraper == "thegamesdb") {
     scraper = new TheGamesDb(&config, manager, threadId);
+  } else if(config.scraper == "offlinetgdb") {
+    scraper = new OfflineTGDB(&config, manager, threadId);
   } else if(config.scraper == "launchbox") {
     scraper = new LaunchBox(&config, manager, threadId);
   } else if(config.scraper == "chiptune") {
@@ -93,6 +99,8 @@ void ScraperWorker::run()
     scraper = new CustomFlags(&config, manager, threadId);
   } else if(config.scraper == "arcadedb") {
     scraper = new ArcadeDB(&config, manager, threadId);
+  } else if(config.scraper == "mamehistory") {
+    scraper = new MAMEHistory(&config, manager, threadId);
   } else if(config.scraper == "screenscraper") {
     scraper = new ScreenScraper(&config, manager, threadId);
   } else if(config.scraper == "igdb") {
@@ -103,6 +111,8 @@ void ScraperWorker::run()
     scraper = new GameFaqs(&config, manager, threadId);
   } else if(config.scraper == "vgfacts") {
     scraper = new VGFacts(&config, manager, threadId);
+  } else if(config.scraper == "docsdb") {
+    scraper = new DocsDB(&config, manager, threadId);
   } else if(config.scraper == "rawg") {
     scraper = new RawG(&config, manager, threadId);
   } else if(config.scraper == "mobygames") {
@@ -215,21 +225,40 @@ void ScraperWorker::run()
     if(action == "refresh" || action == "update") {
       if(config.useChecksum && config.scraper != "screenscraper") {
         canonicalData = NameTools::getCanonicalData(info);
-        if(canonicalData.name.isEmpty()) {
-          game.found = false;
-          game.title = info.baseName();
-          output.append("\033[1;33m---- Game '" + info.completeBaseName() +
-                        "' not found in the checksum database, skipping... :( ----\033[0m\n\n");
-          game.resetMedia();
-          emit entryReady(game, output, debug, lowMatch);
-          if(forceEnd) {
-            break;
+        if(config.scraper == "arcadedb" || config.scraper == "mamehistory") {
+          if(canonicalData.mameid.isEmpty()) {
+            game.found = false;
+            game.title = info.baseName();
+            output.append("\033[1;33m---- Game '" + info.completeBaseName() +
+                          "' not found in the checksum MAME database, skipping... :( ----\033[0m\n\n");
+            game.resetMedia();
+            emit entryReady(game, output, debug, lowMatch);
+            if(forceEnd) {
+              break;
+            } else {
+              continue;
+            }
           } else {
-            continue;
+            searchInfo = QFileInfo(canonicalData.mameid + ".zip");
+            game.canonical = canonicalData;
           }
         } else {
-          searchInfo = QFileInfo(canonicalData.name);
-          game.canonical = canonicalData;
+          if(canonicalData.name.isEmpty()) {
+            game.found = false;
+            game.title = info.baseName();
+            output.append("\033[1;33m---- Game '" + info.completeBaseName() +
+                          "' not found in the checksum database, skipping... :( ----\033[0m\n\n");
+            game.resetMedia();
+            emit entryReady(game, output, debug, lowMatch);
+            if(forceEnd) {
+              break;
+            } else {
+              continue;
+            }
+          } else {
+            searchInfo = QFileInfo(canonicalData.name + "." + info.suffix());
+            game.canonical = canonicalData;
+          }
         }
       }
       compareTitle = scraper->getCompareTitle(searchInfo);
@@ -492,7 +521,12 @@ void ScraperWorker::run()
     // Add all resources to the cache
     QString cacheOutput = "";
     if(config.scraper != "cache" && game.found && (!fromCache || potentialUpdates)) {
-      game.source = config.scraper;
+     // Very ugly hack because it's actually more than one database (3/3):
+      if(config.scraper == "docsdb") {
+        game.source = Skyscraper::docType;
+      } else {
+        game.source = config.scraper;
+      }
       cache->addResources(game, config, cacheOutput);
     }
 
@@ -518,6 +552,9 @@ void ScraperWorker::run()
     game.chiptuneId = StrTools::xmlUnescape(game.chiptuneId);
     game.chiptunePath = StrTools::xmlUnescape(game.chiptunePath);
     game.guides = StrTools::xmlUnescape(game.guides);
+    game.cheats = StrTools::xmlUnescape(game.cheats);
+    game.reviews = StrTools::xmlUnescape(game.reviews);
+    game.artbooks = StrTools::xmlUnescape(game.artbooks);
     game.vgmaps = StrTools::xmlUnescape(game.vgmaps);
     game.description = StrTools::xmlUnescape(game.description);
     game.trivia = StrTools::xmlUnescape(game.trivia);
@@ -575,6 +612,9 @@ void ScraperWorker::run()
     output.append("Franchises:     '\033[1;32m" + game.franchises + "\033[0m' (" + game.franchisesSrc + ")\n");
     output.append("Rating (0-1):   '\033[1;32m" + game.rating + "\033[0m' (" + game.ratingSrc + ")\n");
     output.append("Guides:         '\033[1;32m" + game.guides + "\033[0m' (" + game.guidesSrc + ")\n");
+    output.append("Cheats:         '\033[1;32m" + game.cheats + "\033[0m' (" + game.cheatsSrc + ")\n");
+    output.append("Reviews:        '\033[1;32m" + game.reviews + "\033[0m' (" + game.reviewsSrc + ")\n");
+    output.append("Artbooks:       '\033[1;32m" + game.artbooks + "\033[0m' (" + game.artbooksSrc + ")\n");
     output.append("Maps:           '\033[1;32m" + game.vgmaps + "\033[0m' (" + game.vgmapsSrc + ")\n");
     output.append("Cover:          " + QString((game.coverData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheCovers || config.scraper == "cache"?"":" (uncached)")) + " (" + game.coverSrc + ")\n");
     output.append("Screenshot:     " + QString((game.screenshotData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheScreenshots || config.scraper == "cache"?"":" (uncached)")) + " (" + game.screenshotSrc + ")\n");
@@ -665,7 +705,7 @@ GameEntry ScraperWorker::getBestEntry(const QList<GameEntry> &gameEntries,
   // If scraper isn't filename search based, always return first entry
   if(config.scraper == "cache"          || config.scraper == "import"         ||
      config.scraper == "esgamelist"     || config.scraper == "customflags"    ||
-     config.scraper == "arcadedb"       ||
+     config.scraper == "arcadedb"       || config.scraper == "mamehistory"    ||
      (config.scraper == "openretro"     && gameEntries.first().url.isEmpty()) ||
      (config.scraper == "screenscraper" && 
       (Platform::get().getFamily(config.platform) == "arcade" ||

@@ -97,8 +97,8 @@ protected:
   // information for the offline scrapers (the ones for which the database ids are fully
   // accessible). Needs to be executed as part of the scraper overriden getSearchResults.
   template <typename T> bool getSearchResultsOffline(QList<T> &gameIds, const QString &searchName,
-                                                     QMultiMap<QString, T> &fullTitles,
-                                                     QMultiMap<QString, T> &mainTitles);
+                                                     const QMultiMap<QString, T> &fullTitles,
+                                                     const QMultiMap<QString, T> &mainTitles);
 
   void loadConfig(const QString &configPath, const QString &code, const QString &name);
 
@@ -121,6 +121,9 @@ protected:
   virtual void getVideo(GameEntry &game);
   virtual void getManual(GameEntry &game);
   virtual void getGuides(GameEntry &game);
+  virtual void getCheats(GameEntry &game);
+  virtual void getReviews(GameEntry &game);
+  virtual void getArtbooks(GameEntry &game);
   virtual void getVGMaps(GameEntry &game);
   virtual void getTrivia(GameEntry &game);
   virtual void getChiptune(GameEntry &game);
@@ -193,6 +196,12 @@ protected:
   QString manualPost;
   QStringList guidesPre;
   QString guidesPost;
+  QStringList cheatsPre;
+  QString cheatsPost;
+  QStringList reviewsPre;
+  QString reviewsPost;
+  QStringList artbooksPre;
+  QString artbooksPost;
   QStringList vgmapsPre;
   QString vgmapsPost;
   QStringList triviaPre;

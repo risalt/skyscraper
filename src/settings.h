@@ -30,6 +30,7 @@
 #include <QPair>
 #include <QList>
 #include <QString>
+#include <QStringList>
 
 struct Settings {
 
@@ -46,17 +47,15 @@ struct Settings {
   QString scraper = "";
   QString userCreds = "";
   QString dbServer = "";
-  QString koiDb = "";
+  QString dbName = "";
   QString dbUser = "";
   QString dbPassword = "";
-  QString giantBombDb = "";
-  QString mobygamesDb = "";
-  QString gamefaqsDb = "";
-  QString vgfactsDb = "";
-  QString launchBoxDb = "";
+  bool cacheGb = false;
   bool generateLbDb = false;
+  QString dbPath = "";
   QString guidesPath = "";
-  QString vgmapsPath = "";
+  QString docsPath = "";
+  QString mapsPath = "";
   QString igdbToken = "";
   QString apiKey = "";
   QString inputFolder = "";
@@ -121,6 +120,7 @@ struct Settings {
   QString scummIni = "";
   qint64 negCacheExpiration = 0;
   int negCacheDaysExpiration = 180;
+  QStringList docTypes;
 
   int romLimit = -1;
 
@@ -128,7 +128,10 @@ struct Settings {
   bool videoPreferNormalized = true;
   int videoSizeLimit = 100*1024*1024;
   bool guides = false;
-  bool vgmaps = false;
+  bool cheats = false;
+  bool reviews = false;
+  bool artbooks = false;
+  bool maps = false;
   bool manuals = false;
   int manualSizeLimit = 100*1024*1024;
   QString videoConvertCommand = "";
@@ -149,8 +152,6 @@ struct Settings {
   bool cacheTextures = true;
   bool getMissingResources = false;
   bool chiptunes = false;
-  QString navidromeDb = "";
-  bool cacheGb = false;
 
   QString user = "";
   QString password = "";

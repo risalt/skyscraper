@@ -47,8 +47,8 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
 
   // Extract table media_file from database selecting by artist=config->platform
   // and dump fields album (normalized), album_id and path: soundtrackList [album]{album_id, path}
-  QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE", "navidrome");
-  navidrome.setDatabaseName(config->navidromeDb);
+  QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE", "navidrome" + threadId);
+  navidrome.setDatabaseName(config->dbName);
   navidrome.setConnectOptions("QSQLITE_OPEN_READONLY");
   printf("INFO: Reading the videogame music database... "); fflush(stdout);
   if(!navidrome.open()) {
@@ -56,7 +56,8 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
     qDebug() << navidrome.lastError();
     naviOk = false;
   }
-  QString queryString = "select path, album, album_id from media_file where artist='" + config->platform + "'";
+  QString queryString = "select path, album, album_id from media_file where artist='" +
+                        config->platform + "'";
   QSqlQuery naviQuery(queryString, navidrome);
   while(naviOk && naviQuery.next()) {
     QStringList safeVariations, unsafeVariations;
@@ -96,8 +97,6 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
     printf("DONE\n");
   }
 
-  fetchOrder.append(CHIPTUNE);
-
   if(naviOk){
     printf("INFO: Navidrome database has been parsed, %d games have been loaded into memory.\n\n",
            soundtrackList.count());
@@ -106,6 +105,13 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
     reqRemaining = 0;
     return;
   }
+
+  fetchOrder.append(CHIPTUNE);
+}
+
+Chiptune::~Chiptune()
+{
+  QSqlDatabase::removeDatabase("navidrome" + threadId);
 }
 
 void Chiptune::getSearchResults(QList<GameEntry> &gameEntries,

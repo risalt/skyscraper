@@ -64,6 +64,9 @@ private:
   QString franchisesTag = "###FRANCHISES###";
   QString releaseDateTag = "###RELEASEDATE###";
   QString guidesTag = "###GUIDES###";
+  QString cheatsTag = "###CHEATS###";
+  QString reviewsTag = "###REVIEWS###";
+  QString artbooksTag = "###ARTBOOKS###";
   QString platformTag = "###PLATFORM###";
   QString triviaTag = "###TRIVIA###";
   QString vgmapsTag = "###VGMAPS###";
