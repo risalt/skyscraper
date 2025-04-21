@@ -1,0 +1,454 @@
+{
+  "platforms": [
+    {
+      "code": "3ds",
+      "id": "3ds",
+      "name": "3DS"
+    },
+    {
+      "code": "arcade",
+      "id": "arcade",
+      "name": "Arcade"
+    },
+    {
+      "code": "atomiswave",
+      "id": "arcade",
+      "name": "Arcade"
+    },
+    {
+      "code": "nds",
+      "id": "ds_dsi",
+      "name": "DS / DSi"
+    },
+    {
+      "code": "gb",
+      "id": "game_boy_gbc",
+      "name": "Game Boy / GBC"
+    },
+    {
+      "code": "gbc",
+      "id": "game_boy_gbc",
+      "name": "Game Boy / GBC"
+    },
+    {
+      "code": "gba",
+      "id": "game_boy_advance",
+      "name": "Game Boy Advance"
+    },
+    {
+      "code": "gc",
+      "id": "gamecube",
+      "name": "GameCube"
+    },
+    {
+      "code": "mastersystem",
+      "id": "master_system",
+      "name": "Master System"
+    },
+    {
+      "code": "pc",
+      "id": "ms_dos",
+      "name": "MS-DOS"
+    },
+    {
+      "code": "scummvm",
+      "id": "ms_dos",
+      "name": "MS-DOS"
+    },
+    {
+      "code": "neogeo",
+      "id": "neo_geo_ngcd",
+      "name": "Neo Geo / NGCD"
+    },
+    {
+      "code": "neogeocd",
+      "id": "neo_geo_ngcd",
+      "name": "Neo Geo / NGCD"
+    },
+    {
+      "code": "nes",
+      "id": "nes",
+      "name": "NES"
+    },
+    {
+      "code": "fds",
+      "id": "nes",
+      "name": "NES"
+    },
+    {
+      "code": "n64",
+      "id": "nintendo_64",
+      "name": "Nintendo 64"
+    },
+    {
+      "code": "switch",
+      "id": "nintendo_switch",
+      "name": "Nintendo Switch"
+    },
+    {
+      "code": "windows",
+      "id": "pc_computer",
+      "name": "PC / Computer"
+    },
+    {
+      "code": "linux",
+      "id": "pc_computer",
+      "name": "PC / Computer"
+    },
+    {
+      "code": "psx",
+      "id": "playstation",
+      "name": "PlayStation"
+    },
+    {
+      "code": "ps2",
+      "id": "playstation_2",
+      "name": "PlayStation 2"
+    },
+    {
+      "code": "ps3",
+      "id": "playstation_3",
+      "name": "PlayStation 3"
+    },
+    {
+      "code": "ps4",
+      "id": "playstation_4",
+      "name": "PlayStation 4"
+    },
+    {
+      "code": "psp",
+      "id": "psp",
+      "name": "PSP"
+    },
+    {
+      "code": "megacd",
+      "id": "sega_cd",
+      "name": "Sega CD"
+    },
+    {
+      "code": "genesis",
+      "id": "sega_genesis_32x",
+      "name": "Sega Genesis / 32X"
+    },
+    {
+      "code": "sega32x",
+      "id": "sega_genesis_32x",
+      "name": "Sega Genesis / 32X"
+    },
+    {
+      "code": "snes",
+      "id": "snes",
+      "name": "SNES"
+    },
+    {
+      "code": "wii",
+      "id": "wii",
+      "name": "Wii"
+    },
+    {
+      "code": "wiiu",
+      "id": "wii_u",
+      "name": "Wii U"
+    },
+    {
+      "code": "3do",
+      "id": "3do",
+      "name": "3DO"
+    },
+    {
+      "code": "acorn",
+      "id": "acorn_archimedes",
+      "name": "Acorn Archimedes"
+    },
+    {
+      "code": "acornelectron",
+      "id": "acorn_electron",
+      "name": "Acorn Electron"
+    },
+    {
+      "code": "amiga",
+      "id": "amiga_amiga_cd32",
+      "name": "Amiga / Amiga CD32"
+    },
+    {
+      "code": "amigacd32",
+      "id": "amiga_amiga_cd32",
+      "name": "Amiga / Amiga CD32"
+    },
+    {
+      "code": "amstradcpc",
+      "id": "amstrad_cpc",
+      "name": "Amstrad CPC"
+    },
+    {
+      "code": "amstradgx4000",
+      "id": "amstrad_cpc",
+      "name": "Amstrad CPC"
+    },
+    {
+      "code": "apple2",
+      "id": "apple_ii",
+      "name": "Apple II"
+    },
+    {
+      "code": "atari800",
+      "id": "atari",
+      "name": "Atari"
+    },
+    {
+      "code": "atari2600",
+      "id": "atari",
+      "name": "Atari"
+    },
+    {
+      "code": "atari5200",
+      "id": "atari",
+      "name": "Atari"
+    },
+    {
+      "code": "atari7800",
+      "id": "atari",
+      "name": "Atari"
+    },
+    {
+      "code": "atarist",
+      "id": "atari_st",
+      "name": "Atari ST"
+    },
+    {
+      "code": "astrocade",
+      "id": "bally_astrocade",
+      "name": "Bally Astrocade"
+    },
+    {
+      "code": "bbcmicro",
+      "id": "bbc_micro",
+      "name": "BBC Micro"
+    },
+    {
+      "code": "cdi",
+      "id": "cd_i",
+      "name": "CD-i"
+    },
+    {
+      "code": "coleco",
+      "id": "colecovision",
+      "name": "ColecoVision"
+    },
+    {
+      "code": "c16",
+      "id": "commodore_16",
+      "name": "Commodore 16"
+    },
+    {
+      "code": "c64",
+      "id": "commodore_64",
+      "name": "Commodore 64"
+    },
+    {
+      "code": "dreamcast",
+      "id": "dreamcast",
+      "name": "Dreamcast"
+    },
+    {
+      "code": "fmtowns",
+      "id": "fm_towns",
+      "name": "FM Towns"
+    },
+    {
+      "code": "fm7",
+      "id": "fm_7",
+      "name": "FM-7"
+    },
+    {
+      "code": "fm7-2",
+      "id": "fujitsu_fm77av",
+      "name": "Fujitsu FM77AV"
+    },
+    {
+      "code": "gamegear",
+      "id": "game_gear",
+      "name": "Game Gear"
+    },
+    {
+      "code": "intellivision",
+      "id": "intellivision",
+      "name": "Intellivision"
+    },
+    {
+      "code": "atarijaguar",
+      "id": "jaguar",
+      "name": "Jaguar"
+    },
+    {
+      "code": "lcdhandheld",
+      "id": "lcd_handhelds",
+      "name": "LCD Handhelds"
+    },
+    {
+      "code": "gameandwatch",
+      "id": "lcd_handhelds",
+      "name": "LCD Handhelds"
+    },
+    {
+      "code": "atarilynx",
+      "id": "lynx",
+      "name": "Lynx"
+    },
+    {
+      "code": "megaduck",
+      "id": "mega_duck",
+      "name": "Mega Duck"
+    },
+    {
+      "code": "msx",
+      "id": "msx",
+      "name": "MSX"
+    },
+    {
+      "code": "msx2",
+      "id": "msx2",
+      "name": "MSX2"
+    },
+    {
+      "code": "pc60",
+      "id": "nec_pc_6001",
+      "name": "NEC PC-6001"
+    },
+    {
+      "code": "pc88",
+      "id": "nec_pc_8801",
+      "name": "NEC PC-8801"
+    },
+    {
+      "code": "pc98",
+      "id": "nec_pc_9801",
+      "name": "NEC PC-9801"
+    },
+    {
+      "code": "ngp",
+      "id": "neo_geo_pocket",
+      "name": "Neo Geo Pocket / NGPC"
+    },
+    {
+      "code": "ngpc",
+      "id": "neo_geo_pocket",
+      "name": "Neo Geo Pocket / NGPC"
+    },
+    {
+      "code": "videopac",
+      "id": "odyssey",
+      "name": "Odyssey²"
+    },
+    {
+      "code": "vita",
+      "id": "playstation_vita",
+      "name": "PlayStation Vita"
+    },
+    {
+      "code": "pokemini",
+      "id": "pokemon_mini",
+      "name": "Pokémon Mini"
+    },
+    {
+      "code": "saturn",
+      "id": "saturn",
+      "name": "Saturn"
+    },
+    {
+      "code": "sg-1000",
+      "id": "sg_1000",
+      "name": "SG-1000"
+    },
+    {
+      "code": "x1",
+      "id": "sharp_x1",
+      "name": "Sharp X1"
+    },
+    {
+      "code": "x68000",
+      "id": "sharp_x68000",
+      "name": "Sharp X68000"
+    },
+    {
+      "code": "epochscv",
+      "id": "super_cassette_vision",
+      "name": "Super Cassette Vision"
+    },
+    {
+      "code": "watara",
+      "id": "supervision",
+      "name": "Supervision"
+    },
+    {
+      "code": "ti99",
+      "id": "ti_99",
+      "name": "TI-99"
+    },
+    {
+      "code": "pcfx",
+      "id": "turbografx_16",
+      "name": "TurboGrafx-16"
+    },
+    {
+      "code": "supergrafx",
+      "id": "turbografx_16",
+      "name": "TurboGrafx-16"
+    },
+    {
+      "code": "pcengine",
+      "id": "turbografx_16",
+      "name": "TurboGrafx-16"
+    },
+    {
+      "code": "pcenginecd",
+      "id": "turbografx_16",
+      "name": "TurboGrafx-16"
+    },
+    {
+      "code": "vsmile",
+      "id": "v_smile",
+      "name": "V.Smile"
+    },
+    {
+      "code": "vectrex",
+      "id": "vectrex",
+      "name": "Vectrex"
+    },
+    {
+      "code": "virtualboy",
+      "id": "virtual_boy",
+      "name": "Virtual Boy"
+    },
+    {
+      "code": "wonderswan",
+      "id": "wonderswan_wsc",
+      "name": "WonderSwan / WSC"
+    },
+    {
+      "code": "wonderswancolor",
+      "id": "wonderswan_wsc",
+      "name": "WonderSwan / WSC"
+    },
+    {
+      "code": "xbox",
+      "id": "xbox",
+      "name": "Xbox"
+    },
+    {
+      "code": "xbox360",
+      "id": "xbox_360",
+      "name": "Xbox 360"
+    },
+    {
+      "code": "zxspectrum",
+      "id": "zx_spectrum",
+      "name": "ZX Spectrum"
+    },
+    {
+      "code": "samcoupe",
+      "id": "zx_spectrum",
+      "name": "ZX Spectrum"
+    }
+  ]
+}

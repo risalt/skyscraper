@@ -2,8 +2,7 @@
  *            chiptune.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -37,18 +36,21 @@
 #include "skyscraper.h"
 
 
-Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
-                   QString threadId)
-  : AbstractScraper(config, manager, threadId)
+Chiptune::Chiptune(Settings *config,
+                   QSharedPointer<NetManager> manager,
+                   QString threadId,
+                   NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   bool naviOk = true;
 
   offlineScraper = true;
+  baseUrl = config->dbPath + "/";
 
   // Extract table media_file from database selecting by artist=config->platform
   // and dump fields album (normalized), album_id and path: soundtrackList [album]{album_id, path}
   QSqlDatabase navidrome = QSqlDatabase::addDatabase("QSQLITE", "navidrome" + threadId);
-  navidrome.setDatabaseName(config->dbName);
+  navidrome.setDatabaseName(config->dbServer);
   navidrome.setConnectOptions("QSQLITE_OPEN_READONLY");
   printf("INFO: Reading the videogame music database... "); fflush(stdout);
   if(!navidrome.open()) {
@@ -106,6 +108,9 @@ Chiptune::Chiptune(Settings *config, QSharedPointer<NetManager> manager,
     return;
   }
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(CHIPTUNE);
 }
 
@@ -124,7 +129,8 @@ void Chiptune::getSearchResults(QList<GameEntry> &gameEntries,
       GameEntry game;
       game.title = record.second.second;
       game.chiptuneId = record.first;
-      game.chiptunePath = record.second.first;
+      game.id = game.chiptuneId;
+      game.chiptunePath = baseUrl + record.second.first;
       game.platform = Platform::get().getAliases(config->platform).at(1);
       gameEntries.append(game);
     }

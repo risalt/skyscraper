@@ -2,8 +2,7 @@
  *            mamehistory.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -32,9 +31,10 @@
 #include "platform.h"
 
 MAMEHistory::MAMEHistory(Settings *config,
-                   QSharedPointer<NetManager> manager,
-                   QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                         QSharedPointer<NetManager> manager,
+                         QString threadId,
+                         NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
 
@@ -51,7 +51,7 @@ MAMEHistory::MAMEHistory(Settings *config,
   printf("INFO: Reading data from MAME history file... "); fflush(stdout);
 
   QXmlStreamReader reader;
-  QFile xmlFile("history.xml");
+  QFile xmlFile(config->dbPath + "/history.xml");
   if(xmlFile.open(QIODevice::ReadOnly)) {
     reader.setDevice(&xmlFile);
     GameEntry item;
@@ -120,8 +120,9 @@ MAMEHistory::MAMEHistory(Settings *config,
     printf("DONE\n");
   } else {
     printf("ERROR: Cannot open MAME history XML file. Please (re-)download "
-           "it from 'https://www.arcade-history.com/dats/history272.zip' "
-           "and unzip it in the Skyscraper home directory.\n");
+           "it from 'https://www.arcade-history.com/dats/' "
+           "and unzip it in the Skyscraper '%s' directory.\n",
+           config->dbPath.toStdString().c_str());
     reqRemaining = 0;
     return;
   }
@@ -129,6 +130,9 @@ MAMEHistory::MAMEHistory(Settings *config,
   printf("INFO: MAME History database has been parsed, %d games have been loaded into memory.\n",
          historyMap.count());
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(DESCRIPTION);
 }
 

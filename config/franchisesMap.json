@@ -1,0 +1,20 @@
+[
+  { "from": "1","to": "2" },
+  { "from": "Playlist: 3DFX", "to": "DELETE" },
+  { "from": "Playlist: CGA Composite", "to": "DELETE" },
+  { "from": "Playlist: Gravis Ultrasound", "to": "DELETE" },
+  { "from": "Playlist: IBM Music Feature Card", "to": "DELETE" },
+  { "from": "Playlist: PCjr", "to": "DELETE" },
+  { "from": "Playlist: Printer Support", "to": "DELETE" },
+  { "from": "Playlist: REEL Magic", "to": "DELETE" },
+  { "from": "Playlist: Remote Multiplayer", "to": "DELETE" },
+  { "from": "Playlist: Roland MT-32", "to": "DELETE" },
+  { "from": "Playlist: Sound Canvas", "to": "DELETE" },
+  { "from": "Theme: Fantasy", "to": "DELETE" },
+  { "from": "Theme: Horror", "to": "DELETE" },
+  { "from": "Theme: Religion", "to": "DELETE" },
+  { "from": "Theme: Sci-Fi", "to": "DELETE" },
+  { "from": "\"Electronic Arts' \"\"Construction Set\"\" series\"", "to": "Construction Set" },
+  { "from": "\"Epyx \"\"Games\"\" series\"", "to": "DELETE" },
+  { "from": "\"Tynesoft \"\"Games\"\"\"", "to": "DELETE" }
+]

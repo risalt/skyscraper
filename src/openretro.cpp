@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -35,19 +35,22 @@
 
 OpenRetro::OpenRetro(Settings *config,
                      QSharedPointer<NetManager> manager,
-                     QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                     QString threadId,
+                     NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   loadConfig("openretro.json", "platform_name", "platform_id");
+
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
-    if(Platform::get().getFamily(config->platform) == "arcade") {
-      platformId = "arcade";
-    } else {
-      reqRemaining = 0;
-      printf("\033[0;31mPlatform not supported by OpenRetro (see file openretro.json)...\033[0m\n");
-      return;
-    }
+    reqRemaining = 0;
+    printf("\033[0;31mPlatform not supported by OpenRetro, see file "
+           "'openretro.json'.\033[0m\n");
+    return;
   }
 
   connect(&limitTimer, &QTimer::timeout, &limiter, &QEventLoop::quit);
@@ -112,6 +115,9 @@ OpenRetro::OpenRetro(Settings *config,
   manualPre.append("var page_size = ");
   manualPost = ";";
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(MARQUEE);
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(DEVELOPER);
@@ -242,6 +248,9 @@ void OpenRetro::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry
     q.exec();
     data = netComm->getData();
   }
+  game.id = game.url;
+  game.id.chop(5);
+  game.id = game.id.mid(game.id.lastIndexOf('/') + 1);
   // Remove all the variants so we don't choose between their screenshots
   data = data.left(data.indexOf("</table></div><div id='"));
 

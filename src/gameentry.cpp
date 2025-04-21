@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -36,6 +36,7 @@ GameEntry::GameEntry(const QByteArray & buffer)
   QDataStream bRead(buffer);
   bRead >>
         id >>
+        idSrc >>
         path >>
         canonical.name >>
         canonical.mameid >>
@@ -111,6 +112,8 @@ GameEntry::GameEntry(const QByteArray & buffer)
         artbooksSrc >>
         vgmaps >>
         vgmapsSrc >>
+        sprites >>
+        spritesSrc >>
         chiptuneId >>
         chiptuneIdSrc >>
         chiptunePath >>
@@ -137,6 +140,7 @@ QByteArray GameEntry::serialize() const
   QDataStream bWrite(&result, QIODevice::WriteOnly);
   bWrite << 
          id <<
+         idSrc <<
          path <<
          canonical.name <<
          canonical.mameid <<
@@ -212,6 +216,8 @@ QByteArray GameEntry::serialize() const
          artbooksSrc <<
          vgmaps <<
          vgmapsSrc <<
+         sprites <<
+         spritesSrc <<
          chiptuneId <<
          chiptuneIdSrc <<
          chiptunePath <<
@@ -236,14 +242,14 @@ QByteArray GameEntry::serialize() const
 void GameEntry::resetMedia()
 {
   CanonicalData empty;
-  coverData = QByteArray();
-  screenshotData = QByteArray();
-  wheelData = QByteArray();
-  marqueeData = QByteArray();
-  textureData = QByteArray();
-  videoData = "";
-  manualData = "";
   canonical = empty;
+  coverData.clear();
+  screenshotData.clear();
+  wheelData.clear();
+  marqueeData.clear();
+  textureData.clear();
+  videoData.clear();
+  manualData.clear();
 }
 
 int GameEntry::getCompleteness() const
@@ -274,19 +280,29 @@ int GameEntry::getCompleteness() const
   if(Skyscraper::config.chiptunes) {
     noOfTypes += 1;
   }
+  if(Skyscraper::config.sprites) {
+    noOfTypes += 1;
+  }
   // If we are scraping we can be more exact:
   if(Skyscraper::config.scraper == "arcadedb") {
-    noOfTypes = 12;
+    noOfTypes = 15;
     if(Skyscraper::config.videos) noOfTypes++;
     if(Skyscraper::config.manuals) noOfTypes++;
   } else if(Skyscraper::config.scraper == "mamehistory") {
-    noOfTypes = 3;
+    noOfTypes = 4;
   } else if(Skyscraper::config.scraper == "chiptune") {
-    noOfTypes = 2;
+    noOfTypes = 3;
     if(Skyscraper::config.chiptunes) noOfTypes++;
   } else if(Skyscraper::config.scraper == "vgmaps") {
     noOfTypes = 2;
     if(Skyscraper::config.maps) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "everygame") {
+    noOfTypes = 15;
+    if(Skyscraper::config.videos) noOfTypes++;
+    if(Skyscraper::config.manuals) noOfTypes++;
+    if(Skyscraper::config.guides) noOfTypes++;
+    if(Skyscraper::config.cheats) noOfTypes++;
+    if(Skyscraper::config.reviews) noOfTypes++;
   } else if(Skyscraper::config.scraper == "docsdb") {
     noOfTypes = 2;
     if(Skyscraper::config.guides) noOfTypes++;
@@ -294,68 +310,94 @@ int GameEntry::getCompleteness() const
     if(Skyscraper::config.reviews) noOfTypes++;
     if(Skyscraper::config.artbooks) noOfTypes++;
   } else if(Skyscraper::config.scraper == "gamefaqs") {
-    noOfTypes = 12;
+    noOfTypes = 13;
     if(Skyscraper::config.guides) noOfTypes++;
   } else if(Skyscraper::config.scraper == "vgfacts") {
-    noOfTypes = 9;
+    noOfTypes = 10;
   } else if(Skyscraper::config.scraper == "rawg") {
-    noOfTypes = 11;
+    noOfTypes = 12;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "giantbomb") {
-    noOfTypes = 14;
+    noOfTypes = 15;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "igdb") {
-    noOfTypes = 14;
+    noOfTypes = 15;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "launchbox") {
-    noOfTypes = 15;
+    noOfTypes = 16;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "customflags") {
     noOfTypes = 7;
   } else if(Skyscraper::config.scraper == "mobygames") {
-    noOfTypes = 15;
+    noOfTypes = 16;
     if(Skyscraper::config.manuals) noOfTypes++;
   } else if(Skyscraper::config.scraper == "offlinemobygames") {
-    noOfTypes = 15;
+    noOfTypes = 16;
     if(Skyscraper::config.manuals) noOfTypes++;
   } else if(Skyscraper::config.scraper == "openretro") {
-    noOfTypes = 14;
+    noOfTypes = 15;
     if(Skyscraper::config.manuals) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "vggeek") {
+    noOfTypes = 17;
+    if(Skyscraper::config.videos) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "exodos") {
+    noOfTypes = 17;
+    if(Skyscraper::config.videos) noOfTypes++;
+    if(Skyscraper::config.manuals) noOfTypes++;
+    if(Skyscraper::config.chiptunes) noOfTypes++;
+    if(Skyscraper::config.guides) noOfTypes++;
+    if(Skyscraper::config.cheats) noOfTypes++;
+    if(Skyscraper::config.artbooks) noOfTypes++;
+    if(Skyscraper::config.maps) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "gamebase") {
+    noOfTypes = 15;
+    if(Skyscraper::config.manuals) noOfTypes++;
+    if(Skyscraper::config.guides) noOfTypes++;
+    if(Skyscraper::config.cheats) noOfTypes++;
+    if(Skyscraper::config.artbooks) noOfTypes++;
+    if(Skyscraper::config.maps) noOfTypes++;
+    if(Skyscraper::config.chiptunes) noOfTypes++;
+  } else if(Skyscraper::config.scraper == "spriters") {
+    noOfTypes = 2;
+    if(Skyscraper::config.sprites) noOfTypes++;
   } else if(Skyscraper::config.scraper == "screenscraper") {
-    noOfTypes = 16;
+    noOfTypes = 17;
     if(Skyscraper::config.videos) noOfTypes++;
     if(Skyscraper::config.manuals) noOfTypes++;
   } else if(Skyscraper::config.scraper == "thegamesdb") {
-    noOfTypes = 14;
+    noOfTypes = 15;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "offlinetgdb") {
-    noOfTypes = 14;
+    noOfTypes = 15;
     if(Skyscraper::config.videos) noOfTypes++;
   } else if(Skyscraper::config.scraper == "worldofspectrum") {
-    noOfTypes = 12;
+    noOfTypes = 14;
     if(Skyscraper::config.videos) noOfTypes++;
     if(Skyscraper::config.manuals) noOfTypes++;
   }
   double valuePerType = 100.0 / (double)noOfTypes;
+  if(!id.isEmpty()) {
+    completeness += valuePerType;
+  }
   if(!title.isEmpty()) {
     completeness += valuePerType;
   }
   if(!platform.isEmpty()) {
     completeness += valuePerType;
   }
-  if(!coverData.isNull() && !emptyShell) {
+  if((!coverData.isNull() || !coverFile.isEmpty()) && !emptyShell) {
     completeness += valuePerType;
   }
-  if(!screenshotData.isNull()) {
+  if(!screenshotData.isNull() || !screenshotFile.isEmpty()) {
     completeness += valuePerType;
   }
-  if(!wheelData.isNull()) {
+  if(!wheelData.isNull() || !wheelFile.isEmpty()) {
     completeness += valuePerType;
   }
-  if(!marqueeData.isNull()) {
+  if(!marqueeData.isNull() || !marqueeFile.isEmpty()) {
     completeness += valuePerType;
   }
-  if(!textureData.isNull()) {
+  if(!textureData.isNull() || !textureFile.isEmpty()) {
     completeness += valuePerType;
   }
   if(!description.isEmpty()) {
@@ -409,6 +451,9 @@ int GameEntry::getCompleteness() const
   if(Skyscraper::config.maps && !vgmaps.isEmpty()) {
     completeness += valuePerType;
   }
+  if(Skyscraper::config.sprites && !sprites.isEmpty()) {
+    completeness += valuePerType;
+  }
   if(Skyscraper::config.chiptunes && !chiptuneId.isEmpty() && !chiptunePath.isEmpty()) {
     completeness += valuePerType;
   }
@@ -418,6 +463,7 @@ int GameEntry::getCompleteness() const
 QDataStream &operator>>(QDataStream &in, GameEntry &game)
 {
   in >> game.id >>
+        game.idSrc >>
         game.path >>
         game.canonical.name >>
         game.canonical.mameid >>
@@ -493,6 +539,8 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
         game.artbooksSrc >>
         game.vgmaps >>
         game.vgmapsSrc >>
+        game.sprites >>
+        game.spritesSrc >>
         game.chiptuneId >>
         game.chiptuneIdSrc >>
         game.chiptunePath >>
@@ -517,6 +565,7 @@ QDataStream &operator>>(QDataStream &in, GameEntry &game)
 QDataStream &operator<<(QDataStream &out, const GameEntry &game)
 {
   out << game.id <<
+         game.idSrc <<
          game.path <<
          game.canonical.name <<
          game.canonical.mameid <<
@@ -592,6 +641,8 @@ QDataStream &operator<<(QDataStream &out, const GameEntry &game)
          game.artbooksSrc <<
          game.vgmaps <<
          game.vgmapsSrc <<
+         game.sprites <<
+         game.spritesSrc <<
          game.chiptuneId <<
          game.chiptuneIdSrc <<
          game.chiptunePath <<
@@ -617,6 +668,7 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
     QDebugStateSaver saver(debug);
     debug.nospace() <<
       "\nField 'id': " << game.id <<
+      "\nField 'idSrc': " << game.idSrc <<
       "\nField 'path': " << game.path <<
       "\nField 'Canonical name': " <<  game.canonical.name <<
       "\nField 'Canonical MAME id': " <<  game.canonical.mameid <<
@@ -692,6 +744,8 @@ QDebug operator<<(QDebug debug, const GameEntry &game) {
       "\nField 'artbooksSrc': " << game.artbooksSrc <<
       "\nField 'vgmaps': " << game.vgmaps <<
       "\nField 'vgmapsSrc': " << game.vgmapsSrc <<
+      "\nField 'sprites': " << game.sprites <<
+      "\nField 'spritesSrc': " << game.spritesSrc <<
       "\nField 'chiptuneId': " << game.chiptuneId <<
       "\nField 'chiptuneIdSrc': " << game.chiptuneIdSrc <<
       "\nField 'chiptunePath': " << game.chiptunePath <<

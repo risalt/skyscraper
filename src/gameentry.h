@@ -3,7 +3,7 @@
  *
  *  Wed Jun 14 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -40,6 +40,7 @@ constexpr int WHEEL = 10;
 constexpr int MARQUEE = 11;
 constexpr int AGES = 12;
 constexpr int TITLE = 13;
+constexpr int ID = 27;
 constexpr int TEXTURE = 14;
 constexpr int FRANCHISES = 15;
 constexpr int MANUAL = 16;
@@ -52,6 +53,7 @@ constexpr int VGMAPS = 22;
 constexpr int CHEATS = 23;
 constexpr int REVIEWS = 24;
 constexpr int ARTBOOKS = 25;
+constexpr int SPRITES = 26;
 
 #include <QImage>
 #include <QByteArray>
@@ -78,6 +80,7 @@ public:
 
   // The following block is serialized into quickid.xml/db.xml:
   QString id = "";
+  QString idSrc = "";
   QString path = "";
   QString title = "";
   QString titleSrc = "";
@@ -147,6 +150,8 @@ public:
   QString artbooksSrc = "";
   QString vgmaps = "";
   QString vgmapsSrc = "";
+  QString sprites = "";
+  QString spritesSrc = "";
   QString chiptuneId = "";
   QString chiptuneIdSrc = "";
   QString chiptunePath = "";

@@ -1,0 +1,699 @@
+{
+  "platforms": [
+    {
+      "id": "4414",
+      "platform": "3DO",
+      "code": "3do"
+    },
+    {
+      "id": "5016",
+      "platform": "Acorn Archimedes",
+      "code": "acorn"
+    },
+    {
+      "id": "56311",
+      "platform": "Altair 8800",
+      "code": ""
+    },
+    {
+      "id": "4415",
+      "platform": "Amiga",
+      "code": "amiga"
+    },
+    {
+      "id": "40520",
+      "platform": "Amiga CD32",
+      "code": "amigacd32"
+    },
+    {
+      "id": "5203",
+      "platform": "Amstrad CPC",
+      "code": "amstradcpc"
+    },
+    {
+      "id": "5203",
+      "platform": "Amstrad CPC",
+      "code": "amstradgx4000"
+    },
+    {
+      "id": "6063",
+      "platform": "Android",
+      "code": ""
+    },
+    {
+      "id": "4978",
+      "platform": "Apple II",
+      "code": "apple2"
+    },
+    {
+      "id": "68620",
+      "platform": "Apple TV",
+      "code": ""
+    },
+    {
+      "id": "4781",
+      "platform": "Arcade",
+      "code": "arcade"
+    },
+    {
+      "id": "4781",
+      "platform": "Arcade",
+      "code": "atomiswave"
+    },
+    {
+      "id": "56313",
+      "platform": "Arduboy",
+      "code": "arduboy"
+    },
+    {
+      "id": "4416",
+      "platform": "Atari 2600",
+      "code": "atari2600"
+    },
+    {
+      "id": "4417",
+      "platform": "Atari 5200",
+      "code": "atari5200"
+    },
+    {
+      "id": "4418",
+      "platform": "Atari 7800",
+      "code": "atari7800"
+    },
+    {
+      "id": "4940",
+      "platform": "Atari 8-bit family",
+      "code": "atari800"
+    },
+    {
+      "id": "4428",
+      "platform": "Atari Jaguar",
+      "code": "atarijaguar"
+    },
+    {
+      "id": "4976",
+      "platform": "Atari ST",
+      "code": "atarist"
+    },
+    {
+      "id": "10097",
+      "platform": "Bally Professional Arcade",
+      "code": "astrocade"
+    },
+    {
+      "id": "5010",
+      "platform": "BBC Micro",
+      "code": "bbcmicro"
+    },
+    {
+      "id": "5010",
+      "platform": "BBC Micro",
+      "code": "acornelectron"
+    },
+    {
+      "id": "68332",
+      "platform": "Cassette Media Player",
+      "code": ""
+    },
+    {
+      "id": "5341",
+      "platform": "CD-i",
+      "code": "cdi"
+    },
+    {
+      "id": "58872",
+      "platform": "Cloud Platform",
+      "code": ""
+    },
+    {
+      "id": "11495",
+      "platform": "Coleco Adam",
+      "code": ""
+    },
+    {
+      "id": "4419,11495",
+      "platform": "ColecoVision",
+      "code": "coleco"
+    },
+    {
+      "id": "48123",
+      "platform": "Commodore 128",
+      "code": ""
+    },
+    {
+      "id": "5583",
+      "platform": "Commodore 16",
+      "code": ""
+    },
+    {
+      "id": "4420",
+      "platform": "Commodore 64",
+      "code": "c64"
+    },
+    {
+      "id": "10080",
+      "platform": "Commodore PET/CBM",
+      "code": "pet"
+    },
+    {
+      "id": "5932",
+      "platform": "Commodore Plus/4",
+      "code": ""
+    },
+    {
+      "id": "5933",
+      "platform": "CP/M",
+      "code": ""
+    },
+    {
+      "id": "12848",
+      "platform": "Didj",
+      "code": ""
+    },
+    {
+      "id": "4714,6550",
+      "platform": "DOS",
+      "code": "pc"
+    },
+    {
+      "id": "4714,6550",
+      "platform": "DOS",
+      "code": "scummvm"
+    },
+    {
+      "id": "5150",
+      "platform": "Dragon 32/64",
+      "code": "dragon32"
+    },
+    {
+      "id": "21276",
+      "platform": "Exidy Sorcerer",
+      "code": ""
+    },
+    {
+      "id": "10096",
+      "platform": "Fairchild Channel F",
+      "code": "channelf"
+    },
+    {
+      "id": "26578",
+      "platform": "Fire OS",
+      "code": ""
+    },
+    {
+      "id": "5571,5572",
+      "platform": "FM Towns",
+      "code": "fmtowns"
+    },
+    {
+      "id": "5572",
+      "platform": "FM Towns Marty",
+      "code": ""
+    },
+    {
+      "id": "56261",
+      "platform": "FM-7",
+      "code": "fm7"
+    },
+    {
+      "id": "4422",
+      "platform": "Game Boy",
+      "code": "gb"
+    },
+    {
+      "id": "4423",
+      "platform": "Game Boy Advance",
+      "code": "gba"
+    },
+    {
+      "id": "4424",
+      "platform": "Game Boy Color",
+      "code": "gbc"
+    },
+    {
+      "id": "4425",
+      "platform": "GameCube",
+      "code": "gc"
+    },
+    {
+      "id": "4745",
+      "platform": "Gizmondo",
+      "code": ""
+    },
+    {
+      "id": "23628",
+      "platform": "GP32",
+      "code": "gp32"
+    },
+    {
+      "id": "4427",
+      "platform": "Intellivision",
+      "code": "intellivision"
+    },
+    {
+      "id": "6826",
+      "platform": "iPad",
+      "code": ""
+    },
+    {
+      "id": "4443",
+      "platform": "iPhone",
+      "code": ""
+    },
+    {
+      "id": "5448",
+      "platform": "iQue Player",
+      "code": ""
+    },
+    {
+      "id": "12849",
+      "platform": "Leapster",
+      "code": ""
+    },
+    {
+      "id": "5248",
+      "platform": "Linux",
+      "code": "linux"
+    },
+    {
+      "id": "4429",
+      "platform": "Lynx",
+      "code": "atarilynx"
+    },
+    {
+      "id": "4729",
+      "platform": "Macintosh",
+      "code": "macintosh"
+    },
+    {
+      "id": "31541",
+      "platform": "Micro-console",
+      "code": ""
+    },
+    {
+      "id": "5134",
+      "platform": "MSX",
+      "code": "msx"
+    },
+    {
+      "id": "5134",
+      "platform": "MSX",
+      "code": "msx2"
+    },
+    {
+      "id": "8522",
+      "platform": "MUD",
+      "code": ""
+    },
+    {
+      "id": "4744",
+      "platform": "N-Gage",
+      "code": "ngage"
+    },
+    {
+      "id": "4431",
+      "platform": "Neo Geo",
+      "code": "neogeo"
+    },
+    {
+      "id": "7382",
+      "platform": "Neo Geo Pocket",
+      "code": "ngp"
+    },
+    {
+      "id": "5751",
+      "platform": "Neo Geo Pocket Color",
+      "code": "ngpc"
+    },
+    {
+      "id": "4430",
+      "platform": "NES",
+      "code": "nes"
+    },
+    {
+      "id": "4430",
+      "platform": "NES",
+      "code": "fds"
+    },
+    {
+      "id": "5857",
+      "platform": "Nintendo 3DS",
+      "code": "3ds"
+    },
+    {
+      "id": "4836",
+      "platform": "Nintendo 64",
+      "code": "n64"
+    },
+    {
+      "id": "4734",
+      "platform": "Nintendo DS",
+      "code": "nds"
+    },
+    {
+      "id": "39670",
+      "platform": "Nintendo Switch",
+      "code": "switch"
+    },
+    {
+      "id": "68452",
+      "platform": "Oculus Quest System",
+      "code": ""
+    },
+    {
+      "id": "8866",
+      "platform": "Odyssey",
+      "code": "odyssey"
+    },
+    {
+      "id": "5261",
+      "platform": "Odyssey²",
+      "code": "videopac"
+    },
+    {
+      "id": "23179",
+      "platform": "OnLive",
+      "code": ""
+    },
+    {
+      "id": "37618",
+      "platform": "Optical Media Player",
+      "code": ""
+    },
+    {
+      "id": "6975",
+      "platform": "Oric",
+      "code": "oric"
+    },
+    {
+      "id": "5249",
+      "platform": "OS/2",
+      "code": ""
+    },
+    {
+      "id": "23163",
+      "platform": "Other",
+      "code": "pokemini"
+    },
+    {
+      "id": "5188",
+      "platform": "Other Mobile Devices",
+      "code": ""
+    },
+    {
+      "id": "21998",
+      "platform": "OUYA",
+      "code": ""
+    },
+    {
+      "id": "6550",
+      "platform": "PC Booter",
+      "code": ""
+    },
+    {
+      "id": "56289",
+      "platform": "PC-6001",
+      "code": "pc60"
+    },
+    {
+      "id": "5724",
+      "platform": "PC-8801",
+      "code": "pc88"
+    },
+    {
+      "id": "17909",
+      "platform": "PC-9801",
+      "code": "pc98"
+    },
+    {
+      "id": "11496",
+      "platform": "PDP",
+      "code": ""
+    },
+    {
+      "id": "17617",
+      "platform": "PLATO",
+      "code": ""
+    },
+    {
+      "id": "108720,5188",
+      "platform": "Playdate",
+      "code": "playdate"
+    },
+    {
+      "id": "4433",
+      "platform": "PlayStation",
+      "code": "psx"
+    },
+    {
+      "id": "4434",
+      "platform": "PlayStation 2",
+      "code": "ps2"
+    },
+    {
+      "id": "4435",
+      "platform": "PlayStation 3",
+      "code": "ps3"
+    },
+    {
+      "id": "21674",
+      "platform": "PlayStation 4",
+      "code": "ps4"
+    },
+    {
+      "id": "58095",
+      "platform": "PlayStation 5",
+      "code": "ps5"
+    },
+    {
+      "id": "10373,31541",
+      "platform": "PlayStation Vita",
+      "code": "vita"
+    },
+    {
+      "id": "4432",
+      "platform": "PSP",
+      "code": "psp"
+    },
+    {
+      "id": "4437",
+      "platform": "SEGA 32X",
+      "code": "sega32x"
+    },
+    {
+      "id": "4436",
+      "platform": "SEGA CD",
+      "code": "megacd"
+    },
+    {
+      "id": "4421",
+      "platform": "Sega Dreamcast",
+      "code": "dreamcast"
+    },
+    {
+      "id": "4740",
+      "platform": "SEGA Game Gear",
+      "code": "gamegear"
+    },
+    {
+      "id": "4426",
+      "platform": "SEGA Genesis",
+      "code": "genesis"
+    },
+    {
+      "id": "4438",
+      "platform": "SEGA Master System",
+      "code": "mastersystem"
+    },
+    {
+      "id": "4439",
+      "platform": "SEGA Saturn",
+      "code": "saturn"
+    },
+    {
+      "id": "5582",
+      "platform": "SG-1000",
+      "code": "sg-1000"
+    },
+    {
+      "id": "56229",
+      "platform": "Sharp X1",
+      "code": "x1"
+    },
+    {
+      "id": "5501",
+      "platform": "Sharp X68000",
+      "code": "x68000"
+    },
+    {
+      "id": "23051",
+      "platform": "Sinclair ZX80",
+      "code": ""
+    },
+    {
+      "id": "23052",
+      "platform": "Sinclair ZX81",
+      "code": "zx81"
+    },
+    {
+      "id": "40035",
+      "platform": "Single Game Device",
+      "code": "lcdhandheld"
+    },
+    {
+      "id": "40035",
+      "platform": "Single Game Device",
+      "code": "gameandwatch"
+    },
+    {
+      "id": "4440",
+      "platform": "SNES",
+      "code": "snes"
+    },
+    {
+      "id": "4440",
+      "platform": "SNES",
+      "code": "satellaview"
+    },
+    {
+      "id": "6178",
+      "platform": "Software Interpreter",
+      "code": ""
+    },
+    {
+      "id": "21277",
+      "platform": "Sol-20",
+      "code": ""
+    },
+    {
+      "id": "5187",
+      "platform": "Symbian OS",
+      "code": ""
+    },
+    {
+      "id": "10136",
+      "platform": "Thomson MO/TO",
+      "code": "moto"
+    },
+    {
+      "id": "5812",
+      "platform": "TI-99",
+      "code": "ti99"
+    },
+    {
+      "id": "5930,10338",
+      "platform": "TRS-80 Color Computer",
+      "code": "trs80"
+    },
+    {
+      "id": "5930",
+      "platform": "TRS-80 Model I/III",
+      "code": ""
+    },
+    {
+      "id": "4725",
+      "platform": "TurboGrafx",
+      "code": "pcengine"
+    },
+    {
+      "id": "4725",
+      "platform": "TurboGrafx",
+      "code": "pcenginecd"
+    },
+    {
+      "id": "4725",
+      "platform": "TurboGrafx",
+      "code": "pcfx"
+    },
+    {
+      "id": "4725",
+      "platform": "TurboGrafx",
+      "code": "supergrafx"
+    },
+    {
+      "id": "12890",
+      "platform": "V.Smile",
+      "code": "vsmile"
+    },
+    {
+      "id": "5245",
+      "platform": "Vectrex",
+      "code": "vectrex"
+    },
+    {
+      "id": "4949",
+      "platform": "VIC-20",
+      "code": ""
+    },
+    {
+      "id": "5135",
+      "platform": "Virtual Boy",
+      "code": "virtualboy"
+    },
+    {
+      "id": "5084",
+      "platform": "Web Browser",
+      "code": ""
+    },
+    {
+      "id": "4441",
+      "platform": "Wii",
+      "code": "wii"
+    },
+    {
+      "id": "10763",
+      "platform": "Wii U",
+      "code": "wiiu"
+    },
+    {
+      "id": "4977",
+      "platform": "Windows",
+      "code": "windows"
+    },
+    {
+      "id": "11423",
+      "platform": "Windows Phone",
+      "code": ""
+    },
+    {
+      "id": "4726",
+      "platform": "WonderSwan",
+      "code": "wonderswan"
+    },
+    {
+      "id": "4746",
+      "platform": "WonderSwan Color",
+      "code": "wonderswancolor"
+    },
+    {
+      "id": "4442",
+      "platform": "Xbox",
+      "code": "xbox"
+    },
+    {
+      "id": "4407",
+      "platform": "Xbox 360",
+      "code": "xbox360"
+    },
+    {
+      "id": "22574",
+      "platform": "Xbox One",
+      "code": ""
+    },
+    {
+      "id": "61751",
+      "platform": "Xbox Series X / S",
+      "code": ""
+    },
+    {
+      "id": "4950",
+      "platform": "ZX Spectrum",
+      "code": "zxspectrum"
+    },
+    {
+      "id": "4950",
+      "platform": "ZX Spectrum",
+      "code": "samcoupe"
+    }
+  ]
+}

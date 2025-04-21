@@ -2,8 +2,7 @@
  *            launchbox.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -42,11 +41,11 @@
 
 constexpr int RETRIESMAX = 4;
 
-
 LaunchBox::LaunchBox(Settings *config,
                      QSharedPointer<NetManager> manager,
-                     QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                     QString threadId,
+                     NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
 
@@ -75,8 +74,8 @@ LaunchBox::LaunchBox(Settings *config,
     if(xmlFile.open(QIODevice::ReadOnly)) {
       reader.setDevice(&xmlFile);
       if(reader.readNext() && reader.isStartDocument() &&
-          reader.readNextStartElement() &&
-          schema.value(reader.name().toString()) == LBLAUNCHBOX) {
+         reader.readNextStartElement() &&
+         schema.value(reader.name().toString()) == LBLAUNCHBOX) {
 
         printf("INFO: Preparing database... "); fflush(stdout);
         QFile::remove(config->dbPath + ".db");
@@ -675,6 +674,10 @@ LaunchBox::LaunchBox(Settings *config,
   } else {
   
     QString platform = getPlatformId(config->platform);
+    if(Platform::get().getFamily(config->platform) == "arcade" &&
+       platform == "na") {
+      platform = getPlatformId("arcade");
+    }
     if(platform == "na") {
       reqRemaining = 0;
       printf("\033[0;31mPlatform not supported by Launchbox (see file launchbox.json)...\033[0m\n");
@@ -746,6 +749,9 @@ LaunchBox::LaunchBox(Settings *config,
   limitTimer.setSingleShot(false);
   limitTimer.start();
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(TAGS);

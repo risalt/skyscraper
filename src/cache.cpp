@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -25,51 +25,84 @@
 
 #include <iostream>
 
+#include <QBuffer>
+#include <QProcess>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QDir>
 #include <QXmlStreamReader>
 #include <QXmlStreamAttributes>
 #include <QDateTime>
-#include <QDomDocument>
 #include <QRegularExpression>
-#include <QBuffer>
-#include <QProcess>
+#include <QDomDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
 
 #include "cache.h"
 #include "strtools.h"
-#include "nametools.h"
 #include "skyscraper.h"
 #include "queue.h"
+#include "nametools.h"
 
-Cache::Cache(const QString &cacheFolder)
+Cache::Cache(const QString &cacheFolder, const QString &scraper)
 {
   cacheDir = QDir(cacheFolder);
+  globalScraper = scraper;
+  
+  if(globalScraper == "cache") {
+    loadCanonicalMap("genresMap.json", &canonicalGenres);
+    loadCanonicalMap("franchisesMap.json", &canonicalFranchises);
+  }
 }
 
-bool Cache::createFolders(const QString &scraper)
+void Cache::loadCanonicalMap(const QString &json, QMap<QString, QString> *canonicalMap)
 {
-  globalScraper = scraper;
-  if(scraper != "cache") {
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/covers/" + scraper)) {
+  canonicalMap->clear();
+
+  QFile jsonFile(json);
+  if(!jsonFile.open(QIODevice::ReadOnly)) {
+    return;
+  }
+  QByteArray jsonData = jsonFile.readAll();
+
+  QJsonDocument jsonDoc(QJsonDocument::fromJson(jsonData));
+  if(jsonDoc.isNull() || jsonDoc.isEmpty()) {
+    return;
+  }
+
+  QJsonArray mappings = jsonDoc.array();
+  for(const auto &mapping: std::as_const(mappings)) {
+    QString from = mapping.toObject()["from"].toString();
+    QString to = mapping.toObject()["to"].toString();
+    if(!from.isEmpty() && !to.isEmpty()) {
+      canonicalMap->insert(from, to);
+    }
+  }
+}
+
+bool Cache::createFolders()
+{
+  if(globalScraper != "cache") {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/covers/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/screenshots/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/screenshots/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/wheels/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/wheels/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/marquees/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/marquees/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/textures/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/textures/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/videos/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/videos/" + globalScraper)) {
       return false;
     }
-    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/manuals/" + scraper)) {
+    if(!cacheDir.mkpath(cacheDir.absolutePath() + "/manuals/" + globalScraper)) {
       return false;
     }
   }
@@ -212,6 +245,9 @@ void Cache::printPriorities(QString cacheId)
   game.cacheId = cacheId;
   fillBlanks(game);
   printf("\033[1;34mCurrent resource priorities for this rom:\033[0m\n");
+  printf("Id:             '\033[1;32m%s\033[0m' (%s)\n",
+         game.id.toStdString().c_str(),
+         (game.idSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.idSrc).toStdString().c_str());
   printf("Title:          '\033[1;32m%s\033[0m' (%s)\n",
          game.title.toStdString().c_str(),
          (game.titleSrc.isEmpty()?QString("\033[1;31mmissing\033[0m"):game.titleSrc).toStdString().c_str());
@@ -314,6 +350,12 @@ void Cache::printPriorities(QString cacheId)
   } else {
     printf("\033[1;32mYES\033[0m' (%s)\n", game.vgmapsSrc.toStdString().c_str());
   }
+  printf("Sprites:         '");
+  if(game.spritesSrc.isEmpty()) {
+    printf("\033[1;31mNO\033[0m' ()\n");
+  } else {
+    printf("\033[1;32mYES\033[0m' (%s)\n", game.spritesSrc.toStdString().c_str());
+  }
   printf("Trivia:          '");
   if(game.triviaSrc.isEmpty()) {
     printf("\033[1;31mNO\033[0m' ()\n");
@@ -346,7 +388,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
   // Check sanity of command and parameters, if any
   if(!command.isEmpty()) {
     if(command == "new") {
-      if(type != "title" &&
+      if(type != "id" &&
+         type != "title" &&
          type != "platform" &&
          type != "releasedate" &&
          type != "developer" &&
@@ -361,6 +404,7 @@ void Cache::editResources(QSharedPointer<Queue> queue,
          type != "reviews" &&
          type != "artbooks" &&
          type != "vgmaps" &&
+         type != "sprites" &&
          type != "trivia" &&
          type != "chiptuneid" &&
          type != "chiptunepath" &&
@@ -373,12 +417,12 @@ void Cache::editResources(QSharedPointer<Queue> queue,
          type != "timeplayed" &&
          type != "disksize" &&
          type != "description") {
-        printf("Unknown resource type '%s', please specify any of the following: "
+        printf("Unknown resource type '%s', please specify any of the following: 'id', "
                "'title', 'platform', 'releasedate', 'developer', 'publisher', 'players', "
                "'ages', 'genres', 'franchises', 'rating', 'description', 'guides', "
                "'cheats', 'reviews', 'artbooks', 'vgmaps', 'trivia', 'chiptuneid', "
                "'chiptunepath', 'completed', 'favourite', 'played', 'lastplayed', "
-               "'firstplayed', 'timesplayed', 'timeplayed' or 'disksize'.\n",
+               "'firstplayed', 'timesplayed', 'timeplayed', 'sprites' or 'disksize'.\n",
                type.toStdString().c_str());
         return;
       }
@@ -462,6 +506,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
         std::string typeInput = "";
         if(type.isEmpty()) {
           printf("\033[1;34mWhich resource type would you like to create?\033[0m (Enter to cancel)\n");
+          printf("\033[1;33m0\033[0m) Id %s\n",
+                 QString((game.idSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m0\033[0m) Title %s\n",
                  QString((game.titleSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m1\033[0m) Platform %s\n",
@@ -494,6 +540,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
                  QString((game.artbooksSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m9\033[0m) Maps %s\n",
                  QString((game.vgmapsSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
+          printf("\033[1;33m9\033[0m) Sprites %s\n",
+                 QString((game.spritesSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m9\033[0m) Trivia %s\n",
                  QString((game.triviaSrc.isEmpty()?"(\033[1;31mmissing\033[0m)":"")).toStdString().c_str());
           printf("\033[1;33m9\033[0m) ChiptuneId %s\n",
@@ -504,7 +552,9 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           getline(std::cin, typeInput);
           printf("\n");
         } else {
-          if(type == "title") {
+          if(type == "id") {
+            typeInput = "28";
+          } else if(type == "title") {
             typeInput = "0";
           } else if(type == "platform") {
             typeInput = "1";
@@ -556,6 +606,8 @@ void Cache::editResources(QSharedPointer<Queue> queue,
             typeInput = "21";
           } else if(type == "vgmaps") {
             typeInput = "22";
+          } else if(type == "sprites") {
+            typeInput = "27";
           } else if(type == "disksize") {
             typeInput = "23";
           }
@@ -573,6 +625,10 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           if(typeInput == "0") {
             newRes.type = "title";
             printf("\033[1;34mPlease enter title:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "28") {
+            newRes.type = "id";
+            printf("\033[1;34mPlease enter an id:\033[0m (Enter to cancel)\n> ");
             getline(std::cin, valueInput);
           } else if(typeInput == "1") {
             newRes.type = "platform";
@@ -681,6 +737,10 @@ void Cache::editResources(QSharedPointer<Queue> queue,
           } else if(typeInput == "22") {
             newRes.type = "vgmaps";
             printf("\033[1;34mPlease enter a space-separated list of map file paths:\033[0m (Enter to cancel)\n> ");
+            getline(std::cin, valueInput);
+          } else if(typeInput == "27") {
+            newRes.type = "sprites";
+            printf("\033[1;34mPlease enter a space-separated list of sprite file paths:\033[0m (Enter to cancel)\n> ");
             getline(std::cin, valueInput);
           } else {
             printf("Invalid input, resource creation cancelled...\n\n");
@@ -1026,6 +1086,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
     resTypeList = missingOption.split(",");
   } else {
     if(missingOption == "all") {
+      resTypeList.append("id");
       resTypeList.append("title");
       resTypeList.append("platform");
       resTypeList.append("description");
@@ -1050,9 +1111,11 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("reviews");
       resTypeList.append("artbooks");
       resTypeList.append("vgmaps");
+      resTypeList.append("sprites");
       resTypeList.append("chiptuneid");
       resTypeList.append("chiptunepath");
     } else if(missingOption == "textual") {
+      resTypeList.append("id");
       resTypeList.append("title");
       resTypeList.append("platform");
       resTypeList.append("description");
@@ -1084,6 +1147,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       resTypeList.append("artbooks");
       resTypeList.append("cheats");
       resTypeList.append("vgmaps");
+      resTypeList.append("sprites");
       resTypeList.append("chiptuneid");
       resTypeList.append("chiptunepath");
     } else {
@@ -1091,7 +1155,8 @@ void Cache::assembleReport(const Settings &config, const QString filter)
     }
   }
   for(const auto &resType: std::as_const(resTypeList)) {
-    if(resType != "title" &&
+    if(resType != "id" &&
+       resType != "title" &&
        resType != "platform" &&
        resType != "description" &&
        resType != "trivia" &&
@@ -1114,6 +1179,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
        resType != "reviews" &&
        resType != "artbooks" &&
        resType != "vgmaps" &&
+       resType != "sprites" &&
        resType != "chiptuneid" &&
        resType != "chiptunepath" &&
        resType != "manual") {
@@ -1124,10 +1190,11 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       printf("  \033[1;32mhelp\033[0m: Shows this help message\n");
       printf("  \033[1;32mall\033[0m: Creates reports for all resource types\n");
       printf("  \033[1;32mtextual\033[0m: Creates reports for all textual resource types\n");
-      printf("  \033[1;32martwork\033[0m: Creates reports for all artwork related resource types excluding 'video', 'chiptunepath', 'chiptuneid', 'guides', 'cheats', 'reviews', 'artbooks', 'vgmaps' and 'manual'\n");
-      printf("  \033[1;32mmedia\033[0m: Creates reports for all media resource types including 'video', 'chiptunepath', 'chiptuneid', 'guides', 'cheats', 'reviews', 'artbooks', 'vgmaps' and 'manual'\n");
+      printf("  \033[1;32martwork\033[0m: Creates reports for all artwork related resource types excluding 'video', 'chiptunepath', 'chiptuneid', 'guides', 'cheats', 'reviews', 'artbooks', 'vgmaps', 'sprites' and 'manual'\n");
+      printf("  \033[1;32mmedia\033[0m: Creates reports for all media resource types including 'video', 'chiptunepath', 'chiptuneid', 'guides', 'cheats', 'reviews', 'artbooks', 'vgmaps', 'sprites' and 'manual'\n");
       printf("  \033[1;32mtype1,type2,type3,...\033[0m: Creates reports for selected types. Example: 'developer,screenshot,rating'\n");
       printf("\nAvailable resource types:\n");
+      printf("  \033[1;32mid\033[0m\n");
       printf("  \033[1;32mtitle\033[0m\n");
       printf("  \033[1;32mplatform\033[0m\n");
       printf("  \033[1;32mdescription\033[0m\n");
@@ -1152,6 +1219,7 @@ void Cache::assembleReport(const Settings &config, const QString filter)
       printf("  \033[1;32mreviews\033[0m\n");
       printf("  \033[1;32martbooks\033[0m\n");
       printf("  \033[1;32mvgmaps\033[0m\n");
+      printf("  \033[1;32msprites\033[0m\n");
       printf("  \033[1;32mchiptuneid\033[0m\n");
       printf("  \033[1;32mchiptunepath\033[0m\n");
       printf("\n");
@@ -1230,12 +1298,13 @@ void Cache::assembleReport(const Settings &config, const QString filter)
         }
       }
       reportFile.close();
-      printf("\033[1;32m Done!\033[0m\n\033[1;33m%d file(s) is/are missing the '%s' resource.\033[0m\n\n",
+      printf("\033[1;32m Done!\033[0m\n\033[1;33m%d file(s) is/are missing "
+             "the '%s' resource.\033[0m\n\n",
              missing, resType.toStdString().c_str());
     } else {
-      printf("Report file could not be opened for writing, please check permissions of folder "
-             "'%s/.skyscraper', then try again...\n",
-             QDir::homePath().toStdString().c_str());
+      printf("Report file could not be opened for writing, please check "
+             "permissions of folder '%s', then try again...\n",
+             QDir::currentPath().toStdString().c_str());
       return;
     }
   }
@@ -1256,8 +1325,8 @@ bool Cache::vacuumResources(const QString inputFolder, const QString filter,
            "extension(s) you might have added manually). Please consider making a "
            "backup of your Skyscraper cache before performing this action. The cache "
            "for this platform is listed under 'Cache folder' further up and is usually "
-           "located under '%s/.skyscraper/' unless you've set it manually.\033[0m\n\n",
-           inputFolder.toStdString().c_str(), QDir::homePath().toStdString().c_str());
+           "located under '%s/' unless you've set it manually.\033[0m\n\n",
+           inputFolder.toStdString().c_str(), QDir::currentPath().toStdString().c_str());
     printf("\033[1;34mDo you wish to continue\033[0m (y/N)? "); fflush(stdout);
     getline(std::cin, userInput);
     if(userInput != "y") {
@@ -1357,11 +1426,12 @@ bool Cache::detectScrapingErrors(const Settings &config)
 
   // Loop on filesTitleResources to check key (filename) against title (res.value)
   // updating possibleErrors and possibleErrorsCount.
+  NameTools *NameTool = new NameTools("cache");
   const auto uniqueKeys = filesTitleResources.uniqueKeys();
   for(const auto &name: std::as_const(uniqueKeys)) {
     // Normalize name:
     QSharedPointer<NetManager> manager = QSharedPointer<NetManager>(new NetManager());
-    AbstractScraper helperScraper(&Skyscraper::config, manager, "cache");
+    AbstractScraper helperScraper(&Skyscraper::config, manager, "cache", NameTool);
     QString baseName = helperScraper.getCompareTitle(QFileInfo(name));
 
     // Compare against the title calculated for each scraper:
@@ -1402,6 +1472,7 @@ bool Cache::detectScrapingErrors(const Settings &config)
     if(!reportsDir.mkpath(".")) {
       printf("Couldn't create reports folder '%s'. Please check permissions then try again...\n",
              reportsDir.absolutePath().toStdString().c_str());
+      delete NameTool;
       return false;
     }
   }
@@ -1414,11 +1485,13 @@ bool Cache::detectScrapingErrors(const Settings &config)
     reportFile.close();
   } else {
     printf("Report file could not be opened for writing, please check "
-           "permissions of folder '%s/.skyscraper', then try again...\n",
-           QDir::homePath().toStdString().c_str());
+           "permissions of folder '%s', then try again...\n",
+           QDir::currentPath().toStdString().c_str());
+    delete NameTool;
     return false;
   }
 
+  delete NameTool;
   return true;
 }
 
@@ -1426,6 +1499,7 @@ void Cache::showStats(int verbosity)
 {
   printf("Resource cache stats for selected platform:\n");
   if(verbosity == 1) {
+    int ids = 0;
     int titles = 0;
     int platforms = 0;
     int descriptions = 0;
@@ -1449,10 +1523,12 @@ void Cache::showStats(int verbosity)
     int reviews = 0;
     int artbooks = 0;
     int vgmaps = 0;
+    int sprites = 0;
     int trivias = 0;
     int chiptunes = 0;
     for(QMap<QString, ResCounts>::iterator it = resCountsMap.begin();
         it != resCountsMap.end(); ++it) {
+      ids += it.value().ids;
       titles += it.value().titles;
       platforms += it.value().platforms;
       descriptions += it.value().descriptions;
@@ -1476,9 +1552,11 @@ void Cache::showStats(int verbosity)
       reviews += it.value().reviews;
       artbooks += it.value().artbooks;
       vgmaps += it.value().vgmaps;
+      sprites += it.value().sprites;
       trivias += it.value().trivias;
       chiptunes += it.value().chiptunes;
     }
+    printf("  Ids          : %d\n", ids);
     printf("  Titles       : %d\n", titles);
     printf("  Platforms    : %d\n", platforms);
     printf("  Descriptions : %d\n", descriptions);
@@ -1495,7 +1573,7 @@ void Cache::showStats(int verbosity)
     printf("  Screenshots  : %d\n", screenshots);
     printf("  Wheels       : %d\n", wheels);
     printf("  Marquees     : %d\n", marquees);
-    printf("  textures     : %d\n", textures);
+    printf("  Textures     : %d\n", textures);
     printf("  Videos       : %d\n", videos);
     printf("  Manuals      : %d\n", manuals);
     printf("  Guides       : %d\n", guides);
@@ -1503,11 +1581,13 @@ void Cache::showStats(int verbosity)
     printf("  Reviews      : %d\n", reviews);
     printf("  Artbooks     : %d\n", artbooks);
     printf("  Maps         : %d\n", vgmaps);
+    printf("  Sprites      : %d\n", sprites);
     printf("  Chiptunes    : %d\n", chiptunes);
   } else if(verbosity > 1) {
     for(QMap<QString, ResCounts>::iterator it = resCountsMap.begin();
         it != resCountsMap.end(); ++it) {
       printf("'\033[1;32m%s\033[0m' module\n", it.key().toStdString().c_str());
+      printf("  Ids          : %d\n", it.value().ids);
       printf("  Titles       : %d\n", it.value().titles);
       printf("  Platforms    : %d\n", it.value().platforms);
       printf("  Descriptions : %d\n", it.value().descriptions);
@@ -1523,7 +1603,7 @@ void Cache::showStats(int verbosity)
       printf("  Screenshots  : %d\n", it.value().screenshots);
       printf("  Wheels       : %d\n", it.value().wheels);
       printf("  Marquees     : %d\n", it.value().marquees);
-      printf("  textures     : %d\n", it.value().textures);
+      printf("  Textures     : %d\n", it.value().textures);
       printf("  Videos       : %d\n", it.value().videos);
       printf("  Manuals      : %d\n", it.value().manuals);
       printf("  Guides       : %d\n", it.value().guides);
@@ -1531,6 +1611,7 @@ void Cache::showStats(int verbosity)
       printf("  Reviews      : %d\n", it.value().reviews);
       printf("  Artbooks     : %d\n", it.value().artbooks);
       printf("  Maps         : %d\n", it.value().vgmaps);
+      printf("  Sprites      : %d\n", it.value().sprites);
       printf("  Chiptunes    : %d\n", it.value().chiptunes);
     }
   }
@@ -1539,7 +1620,9 @@ void Cache::showStats(int verbosity)
 
 void Cache::addToResCounts(const QString source, const QString type)
 {
-  if(type == "title") {
+  if(type == "id") {
+    resCountsMap[source].ids++;
+  } else if(type == "title") {
     resCountsMap[source].titles++;
   } else if(type == "platform") {
     resCountsMap[source].platforms++;
@@ -1585,6 +1668,8 @@ void Cache::addToResCounts(const QString source, const QString type)
     resCountsMap[source].artbooks++;
   } else if(type == "vgmaps") {
     resCountsMap[source].vgmaps++;
+  } else if(type == "sprites") {
+    resCountsMap[source].sprites++;
   } else if(type == "trivia") {
     resCountsMap[source].trivias++;
   } else if(type == "chiptuneid") {
@@ -1712,7 +1797,7 @@ bool Cache::write(const bool onlyQuickId)
 void Cache::validate()
 {
   printf("Starting resource cache validation run, please wait...\n");
-
+  
   if(!QFileInfo::exists(cacheDir.absolutePath() + "/db.xml")) {
     printf("'db.xml' not found, cache cleaning cancelled...\n");
     return;
@@ -1786,6 +1871,10 @@ void Cache::validate()
 
 void Cache::verifyResources(int &resourcesDeleted)
 {
+  NameTools *NameTool = new NameTools("cache");
+
+  QString lastFileChecksumed;
+  CanonicalData lastCanonicalData;
   QMutableListIterator<Resource> it(resources);
   while(it.hasNext()) {
     bool remove = false;
@@ -1811,8 +1900,10 @@ void Cache::verifyResources(int &resourcesDeleted)
               res.type == "guides" || res.type == "vgmaps"    || res.type == "chiptuneid"  ||
               res.type == "chiptunepath"  || res.type == "canonicalname"    ||
               res.type == "canonicalfile" || res.type == "canonicalcatalog" ||
-              res.type == "canonicalmameid" ||
-              res.type == "cheats" || res.type == "artbooks"  || res.type == "reviews") {
+              res.type == "canonicalmameid" || res.type == "sprites" || res.type == "id" ||
+              res.type == "cheats" || res.type == "artbooks"  || res.type == "reviews" ||
+              (Skyscraper::config.skipChecksum && (res.type == "canonicalcrc" ||
+                res.type == "canonicalmd5" || res.type == "canonicalsha1"))) {
       if(res.value.isEmpty()) {
         printf("Empty resource detected;\n");
         remove = true;
@@ -1874,6 +1965,9 @@ void Cache::verifyResources(int &resourcesDeleted)
         } else {
           remove = true;
         }
+      } else if(rating == 0.0) {
+        printf("Rating is zero, removing;\n");
+        remove = true;
       }
     } else if(res.type == "video" || res.type == "manual" || res.type == "screenshot" ||
               res.type == "cover" || res.type == "texture" || res.type == "marquee" ||
@@ -1891,12 +1985,12 @@ void Cache::verifyResources(int &resourcesDeleted)
         printf("Invalid numeric value in custom flags;\"%s\"\n", res.value.toStdString().c_str());
         remove = true;
       } else if(res.type == "disksize") {
-        qint64 oldValue = res.value.toLongLong();
-        res.value = QString::number(NameTools::calculateGameSize(
+        QString oldValue = res.value;
+        res.value = QString::number(NameTool->calculateGameSize(
                                      getFileCacheId(res.cacheId).absoluteFilePath()));
-        if(oldValue != res.value.toLongLong() && !Skyscraper::config.pretend) {
-          printf("Game size was incorrect, corrected;\"%lld\";\"%lld\"\n",
-                 oldValue, res.value.toLongLong());
+        if(oldValue != res.value && !Skyscraper::config.pretend) {
+          printf("Game size was incorrect, corrected;\"%s\";\"%s\"\n",
+                 oldValue.toStdString().c_str(), res.value.toStdString().c_str());
           it.setValue(res);
         }
       }
@@ -1910,34 +2004,49 @@ void Cache::verifyResources(int &resourcesDeleted)
         remove = true;
       }
     } else if(res.type == "canonicalcrc") {
-      QFileInfo source = getFileCacheId(res.cacheId);
-      CanonicalData canonical = NameTools::getCanonicalData(source, true);
-      if(canonical.crc != res.value) {
-        printf("CRC does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
-             source.absoluteFilePath().toStdString().c_str(),
-             res.value.toStdString().c_str(),
-             canonical.crc.toStdString().c_str());
-        remove = true;
+      if(!Skyscraper::config.skipChecksum) {
+        QFileInfo source = getFileCacheId(res.cacheId);
+        if(lastFileChecksumed != source.absoluteFilePath()) {
+          lastFileChecksumed = source.absoluteFilePath();
+          lastCanonicalData = NameTools::calculateChecksums(source);
+        }
+        if(lastCanonicalData.crc != res.value) {
+          printf("CRC does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+                 source.absoluteFilePath().toStdString().c_str(),
+                 res.value.toStdString().c_str(),
+                 lastCanonicalData.crc.toStdString().c_str());
+          remove = true;
+        }
       }
     } else if(res.type == "canonicalsha1") {
-      QFileInfo source = getFileCacheId(res.cacheId);
-      CanonicalData canonical = NameTools::getCanonicalData(source, true);
-      if(canonical.sha1 != res.value) {
-        printf("SHA1 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
-             source.absoluteFilePath().toStdString().c_str(),
-             res.value.toStdString().c_str(),
-             canonical.sha1.toStdString().c_str());
-        remove = true;
+      if(!Skyscraper::config.skipChecksum) {
+        QFileInfo source = getFileCacheId(res.cacheId);
+        if(lastFileChecksumed != source.absoluteFilePath()) {
+          lastFileChecksumed = source.absoluteFilePath();
+          lastCanonicalData = NameTools::calculateChecksums(source);
+        }
+        if(lastCanonicalData.sha1 != res.value) {
+          printf("SHA1 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+                 source.absoluteFilePath().toStdString().c_str(),
+                 res.value.toStdString().c_str(),
+                 lastCanonicalData.sha1.toStdString().c_str());
+          remove = true;
+        }
       }
     } else if(res.type == "canonicalmd5") {
-      QFileInfo source = getFileCacheId(res.cacheId);
-      CanonicalData canonical = NameTools::getCanonicalData(source, true);
-      if(canonical.md5 != res.value) {
-        printf("MD5 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
-             source.absoluteFilePath().toStdString().c_str(),
-             res.value.toStdString().c_str(),
-             canonical.md5.toStdString().c_str());
-        remove = true;
+      if(!Skyscraper::config.skipChecksum) {
+        QFileInfo source = getFileCacheId(res.cacheId);
+        if(lastFileChecksumed != source.absoluteFilePath()) {
+          lastFileChecksumed = source.absoluteFilePath();
+          lastCanonicalData = NameTools::calculateChecksums(source);
+        }
+        if(lastCanonicalData.md5 != res.value) {
+          printf("MD5 does not match the file checksum, deleting;\"%s\";\"%s\";\"%s\"\n",
+                 source.absoluteFilePath().toStdString().c_str(),
+                 res.value.toStdString().c_str(),
+                 lastCanonicalData.md5.toStdString().c_str());
+          remove = true;
+        }
       }
     } else {
       printf("Unknown resource type, deleting;\"%s\";\"%s\"\n",
@@ -1957,6 +2066,8 @@ void Cache::verifyResources(int &resourcesDeleted)
       resourcesDeleted++;
     }
   }
+
+  delete NameTool;
 }
 
 void Cache::verifyFiles(QDirIterator &dirIt, int &filesDeleted, int &filesNoDelete, QString resType)
@@ -2069,7 +2180,7 @@ QList<Resource> Cache::getResources()
 void Cache::addResources(GameEntry &entry, const Settings &config, QString &output)
 {
   QString cacheAbsolutePath = cacheDir.absolutePath();
-  
+
   if(entry.source.isEmpty()) {
     printf("Something is wrong, resource with cache id '%s' has no source, exiting...\n",
            entry.cacheId.toStdString().c_str());
@@ -2080,6 +2191,11 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
     resource.cacheId = entry.cacheId;
     resource.source = entry.source;
     resource.timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    if(entry.id != "") {
+      resource.type = "id";
+      resource.value = entry.id;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
     if(entry.title != "") {
       resource.type = "title";
       resource.value = entry.title;
@@ -2196,12 +2312,16 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
       resource.value = entry.releaseDate;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(entry.videoData != "" && entry.videoFormat != "") {
+    if(((entry.videoData != "" && entry.videoFormat != "") ||
+        (entry.videoFile != "" && entry.videoFormat != ""))
+       && config.videos) {
       resource.type = "video";
       resource.value = "videos/" + entry.source + "/" + entry.cacheId + "." + entry.videoFormat;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(entry.manualData != "" && entry.manualFormat != "") {
+    if(((entry.manualData != "" && entry.manualFormat != "") ||
+        (entry.manualFile != "" && entry.manualFormat != ""))
+       && config.manuals) {
       resource.type = "manual";
       resource.value = "manuals/" + entry.source + "/" + entry.cacheId + "." + entry.manualFormat;
       addResource(resource, entry, cacheAbsolutePath, config, output);
@@ -2229,6 +2349,11 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
     if(entry.vgmaps != "") {
       resource.type = "vgmaps";
       resource.value = entry.vgmaps;
+      addResource(resource, entry, cacheAbsolutePath, config, output);
+    }
+    if(entry.sprites != "") {
+      resource.type = "sprites";
+      resource.value = entry.sprites;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
     if(entry.chiptuneId != "" && entry.chiptunePath != "") {
@@ -2281,27 +2406,32 @@ void Cache::addResources(GameEntry &entry, const Settings &config, QString &outp
       addResource(resource, entry, cacheAbsolutePath, config, output);
       resource.source = entry.source;
     }
-    if(!entry.coverData.isNull() && config.cacheCovers) {
+    if((!entry.coverData.isNull() || !entry.coverFile.isEmpty()) &&
+       config.cacheCovers) {
       resource.type = "cover";
       resource.value = "covers/" + entry.source + "/" + entry.cacheId;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(!entry.screenshotData.isNull() && config.cacheScreenshots) {
+    if((!entry.screenshotData.isNull() || !entry.screenshotFile.isEmpty()) &&
+       config.cacheScreenshots) {
       resource.type = "screenshot";
       resource.value = "screenshots/" + entry.source + "/"  + entry.cacheId;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(!entry.wheelData.isNull() && config.cacheWheels) {
+    if((!entry.wheelData.isNull() || !entry.wheelFile.isEmpty()) &&
+       config.cacheWheels) {
       resource.type = "wheel";
       resource.value = "wheels/" + entry.source + "/"  + entry.cacheId;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(!entry.marqueeData.isNull() && config.cacheMarquees) {
+    if((!entry.marqueeData.isNull() || !entry.marqueeFile.isEmpty()) &&
+       config.cacheMarquees) {
       resource.type = "marquee";
       resource.value = "marquees/" + entry.source + "/"  + entry.cacheId;
       addResource(resource, entry, cacheAbsolutePath, config, output);
     }
-    if(!entry.textureData.isNull() && config.cacheTextures) {
+    if((!entry.textureData.isNull() || !entry.textureFile.isEmpty()) &&
+       config.cacheTextures) {
       resource.type = "texture";
       resource.value = "textures/" + entry.source + "/" + entry.cacheId;
       addResource(resource, entry, cacheAbsolutePath, config, output);
@@ -2342,18 +2472,24 @@ void Cache::addResource(Resource &resource,
        resource.type == "marquee" ||
        resource.type == "texture") {
       QByteArray *imageData = nullptr;
+      QString *imageFile = nullptr;
       if(resource.type == "cover") {
         imageData = &entry.coverData;
+        imageFile = &entry.coverFile;
       } else if(resource.type == "screenshot") {
         imageData = &entry.screenshotData;
+        imageFile = &entry.screenshotFile;
       } else if(resource.type == "wheel") {
         imageData = &entry.wheelData;
+        imageFile = &entry.wheelFile;
       } else if(resource.type == "marquee") {
         imageData = &entry.marqueeData;
+        imageFile = &entry.marqueeFile;
       } else if(resource.type == "texture") {
         imageData = &entry.textureData;
+        imageFile = &entry.textureFile;
       }
-      if(config.cacheResize) {
+      if(config.cacheResize && imageFile->isEmpty()) {
         QImage image;
         if(imageData->size() > 0 &&
            image.loadFromData(*imageData) &&
@@ -2385,75 +2521,106 @@ void Cache::addResource(Resource &resource,
         }
       }
       if(okToAppend) {
-        QFile f(cacheFile);
-        if(f.open(QIODevice::WriteOnly)) {
-          f.write(*imageData);
-          f.close();
-        } else {
-          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
-          okToAppend = false;
+        if(imageFile->isEmpty() && imageData->size() > 0) {
+          QFile f(cacheFile);
+          if(f.open(QIODevice::WriteOnly)) {
+            f.write(*imageData);
+            f.close();
+          } else {
+            output.append("Error writing file: '" + f.fileName() +
+                          "' to cache. Please check permissions.");
+            okToAppend = false;
+          }
+        } else if(!imageFile->isEmpty() && imageData->size() == 0) {
+          // For local files we do not generate an additional file, we link the original instead
+          QFile f(*imageFile);
+          if(QFileInfo::exists(cacheFile)) {
+            QFile::remove(cacheFile);
+          }
+          if(!f.link(cacheFile)) {
+            okToAppend = false;
+          }
         }
       } else {
         // Image was faulty and could not be saved to cache so we clear
         // the QByteArray data in game entry to make sure we get a "NO"
         // in the terminal output from scraperworker.cpp.
         imageData->clear();
+        imageFile->clear();
       }
     } else if(resource.type == "video") {
-      if(entry.videoData.size() <= config.videoSizeLimit) {
-        QFile f(cacheFile);
-        if(f.open(QIODevice::WriteOnly)) {
-          f.write(entry.videoData);
-          f.close();
-          if(!config.videoConvertCommand.isEmpty()) {
-            output.append("Video conversion: ");
-            if(doVideoConvert(resource,
-                              cacheFile,
-                              cacheAbsolutePath,
-                              config,
-                              output)) {
-              output.append("\033[1;32mSuccess!\033[0m");
-            } else {
-              output.append("\033[1;31mFailed!\033[0m (set higher '--verbosity N' level for more info)");
-              f.remove();
-              okToAppend = false;
+      if(!entry.videoFile.isEmpty() && entry.videoData.size() == 0) {
+        // For local files we do not generate an additional file, we link the original instead
+        QFile f(entry.videoFile);
+        if(QFileInfo::exists(cacheFile)) {
+          QFile::remove(cacheFile);
+        }
+        if(!f.link(cacheFile)) {
+          okToAppend = false;
+        }
+      } else {
+        if(entry.videoData.size() <= config.videoSizeLimit) {
+          QFile f(cacheFile);
+          if(f.open(QIODevice::WriteOnly)) {
+            f.write(entry.videoData);
+            f.close();
+            if(!config.videoConvertCommand.isEmpty()) {
+              output.append("Video conversion: ");
+              if(doVideoConvert(resource,
+                                cacheFile,
+                                cacheAbsolutePath,
+                                config,
+                                output)) {
+                output.append("\033[1;32mSuccess!\033[0m");
+              } else {
+                output.append("\033[1;31mFailed!\033[0m (set higher '--verbosity N' level for more info)");
+                f.remove();
+                okToAppend = false;
+              }
             }
+          } else {
+            output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+            okToAppend = false;
           }
         } else {
-          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+          output.append("Video exceeds maximum size of " +
+                        QString::number(config.videoSizeLimit / 1024 / 1024) +
+                        " MB. Adjust this limit with the 'videoSizeLimit' variable in '"
+                        + QDir::currentPath() + "/config.ini.'");
           okToAppend = false;
         }
-      } else {
-        output.append("Video exceeds maximum size of " + QString::number(config.videoSizeLimit / 1024 / 1024) + " MB. Adjust this limit with the 'videoSizeLimit' variable in '" + QDir::homePath() + "/.skyscraper/config.ini.'");
-        okToAppend = false;
       }
     } else if(resource.type == "manual") {
-      if(entry.manualData.size() <= config.manualSizeLimit) {
-        QFile f(cacheFile);
-        if(f.open(QIODevice::WriteOnly)) {
-          f.write(entry.manualData);
-          f.close();
-        } else {
-          output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+      if(!entry.manualFile.isEmpty() && entry.manualData.size() == 0) {
+        // For local files we do not generate an additional file, we link the original instead
+        QFile f(entry.manualFile);
+        if(QFileInfo::exists(cacheFile)) {
+          QFile::remove(cacheFile);
+        }
+        if(!f.link(cacheFile)) {
           okToAppend = false;
         }
       } else {
-        output.append("Manual exceeds maximum size of " + QString::number(config.manualSizeLimit / 1024 / 1024) + " MB. Adjust this limit with the 'manualSizeLimit' variable in '" + QDir::homePath() + "/.skyscraper/config.ini.'");
-        okToAppend = false;
+        if(entry.manualData.size() <= config.manualSizeLimit) {
+          QFile f(cacheFile);
+          if(f.open(QIODevice::WriteOnly)) {
+            f.write(entry.manualData);
+            f.close();
+          } else {
+            output.append("Error writing file: '" + f.fileName() + "' to cache. Please check permissions.");
+            okToAppend = false;
+          }
+        } else {
+          output.append("Manual exceeds maximum size of " +
+                        QString::number(config.manualSizeLimit / 1024 / 1024) +
+                        " MB. Adjust this limit with the 'manualSizeLimit' variable in '"
+                        + QDir::currentPath() + "/config.ini.'");
+          okToAppend = false;
+        }
       }
     }
 
     if(okToAppend) {
-      if(resource.type == "cover" ||
-         resource.type == "screenshot" ||
-         resource.type == "wheel" ||
-         resource.type == "marquee" ||
-         resource.type == "texture") {
-        // Remove old style cache image if it exists
-        if(QFile::exists(cacheFile + ".png")) {
-          QFile::remove(cacheFile + ".png");
-        }
-      }
       resources.append(resource);
     } else {
       printf("\033[1;33mWarning! Couldn't add resource to cache. "
@@ -2621,7 +2788,8 @@ bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper, 
       // We consider non-meaningful the barebone fields (title and platform),
       // as well as those resources that are only provided by a single scraper,
       // unless we are scraping using that scraper precisely.
-      if(res.cacheId == cacheId && res.type != "title"
+      if(res.cacheId == cacheId && res.type != "id"
+                                && res.type != "title"
                                 && res.type != "platform"
                                 && res.type != "canonicalname"
                                 && res.type != "canonicalmameid"
@@ -2631,31 +2799,53 @@ bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper, 
                                 && res.type != "canonicalcrc"
                                 && res.type != "canonicalsha1"
                                 && res.type != "canonicalmd5") {
-        if(Skyscraper::config.scraper == "vgmaps") {
+        if(globalScraper == "vgmaps") {
           if(res.type == "vgmaps") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "vgfacts") {
+        } else if(globalScraper == "sprites") {
+          if(res.type == "sprites") {
+            return true;
+          }
+        } else if(globalScraper == "vgfacts") {
           if(res.type == "trivia") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "docsdb") {
+        } else if(globalScraper == "docsdb") {
           if(res.type == "guides"  ||
              res.type == "cheats"  ||
              res.type == "reviews" ||
              res.type == "artbooks") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "gamefaqs") {
+        } else if(globalScraper == "exodos") {
+          if(res.type == "guides"  ||
+             res.type == "cheats"  ||
+             res.type == "vgmaps" ||
+             res.type == "artbooks" ||
+             res.type == "chiptuneid" ||
+             res.type == "chiptunepath") {
+            return true;
+          }
+        } else if(globalScraper == "gamebase") {
+          if(res.type == "guides"  ||
+             res.type == "cheats"  ||
+             res.type == "vgmaps" ||
+             res.type == "artbooks" ||
+             res.type == "chiptuneid" ||
+             res.type == "chiptunepath") {
+            return true;
+          }
+        } else if(globalScraper == "gamefaqs") {
           if(res.type == "guides") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "chiptune") {
+        } else if(globalScraper == "chiptune") {
           if(res.type == "chiptuneid" ||
              res.type == "chiptunepath") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "customflags") {
+        } else if(globalScraper == "customflags") {
           if(res.type == "completed" ||
              res.type == "favourite" ||
              res.type == "played" ||
@@ -2666,7 +2856,7 @@ bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper, 
              res.type == "disksize") {
             return true;
           }
-        } else if(Skyscraper::config.scraper == "cache") {
+        } else if(globalScraper == "cache") {
           if(res.type != "completed" &&
              res.type != "favourite" &&
              res.type != "played" &&
@@ -2691,6 +2881,7 @@ bool Cache::hasMeaningfulEntries(const QString &cacheId, const QString scraper, 
              res.type != "reviews" &&
              res.type != "artbooks" &&
              res.type != "vgmaps" &&
+             res.type != "sprites" &&
              res.type != "trivia" &&
              res.type != "chiptuneid" &&
              res.type != "chiptunepath") {
@@ -2734,6 +2925,15 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     }
   }
 
+  {
+    QString type = "id";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.id = result;
+      entry.idSrc = source;
+    }
+  }
   {
     QString type = "title";
     QString result = "";
@@ -2943,6 +3143,15 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
     }
   }
   {
+    QString type = "sprites";
+    QString result = "";
+    QString source = "";
+    if(fillType(type, matchingResources, result, source)) {
+      entry.sprites = result;
+      entry.spritesSrc = source;
+    }
+  }
+  {
     QString type = "trivia";
     QString result = "";
     QString source = "";
@@ -3041,6 +3250,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
         entry.coverData = f.readAll();
+        entry.coverFile = f.fileName();
         f.close();
       }
       entry.coverSrc = source;
@@ -3054,6 +3264,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
         entry.screenshotData = f.readAll();
+        entry.screenshotFile = f.fileName();
         f.close();
       }
       entry.screenshotSrc = source;
@@ -3067,6 +3278,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
         entry.wheelData = f.readAll();
+        entry.wheelFile = f.fileName();
         f.close();
       }
       entry.wheelSrc = source;
@@ -3080,6 +3292,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
         entry.marqueeData = f.readAll();
+        entry.marqueeFile = f.fileName();
         f.close();
       }
       entry.marqueeSrc = source;
@@ -3093,6 +3306,7 @@ void Cache::fillBlanks(GameEntry &entry, const QString scraper)
       QFile f(cacheDir.absolutePath() + "/" + result);
       if(f.open(QIODevice::ReadOnly)) {
         entry.textureData = f.readAll();
+        entry.textureFile = f.fileName();
         f.close();
       }
       entry.textureSrc = source;
@@ -3169,37 +3383,58 @@ bool Cache::fillType(QString &type, QList<Resource> &matchingResources,
         return true;
       }
     }
-  } else if(type == "franchises" || type == "tags"   ||
-            type == "cheats"     || type == "guides" ||
-            type == "artbooks"   || type == "reviews") {
+  } else if(/*type == "franchises" || type == "tags" ||*/
+            type == "vgmaps"   || type == "sprites" ||
+            type == "cheats"   || type == "guides"  ||
+            type == "artbooks" || type == "reviews" ||
+            type == "trivia"   || type == "id" ) {
     // Concatenate together all the scrapers contents:
-    QStringList all;
-    QString separator = " ";
+    QStringList allCanonical;
+    QString separator = ";";
     if(type == "franchises" || type == "tags") {
       separator = ", ";
+    } else if(type == "trivia") {
+      separator = "\n\n";
+    } else if(type == "id") {
+      separator = ",";
     }
     for(const auto &resource: std::as_const(typeResources)) {
-      all.append(resource.value.split(separator));
+      if(type == "id") {
+        if(allCanonical.isEmpty()) {
+          allCanonical.append("skyscraper:" + resource.cacheId);
+        }
+        allCanonical.append(resource.source + ":" + resource.value);
+      } else {
+        allCanonical.append(resource.value.split(separator));
+      }
       source = resource.source;
     }
     if(typeResources.size() > 1) {
       source = "multiple";
     }
-    all.removeDuplicates();
-    all.sort();
-    result = all.join(separator);
+    allCanonical.removeDuplicates();
+    if(type != "trivia") {
+      allCanonical.sort();
+    }
+    result = allCanonical.join(separator);
     return true;
-  } else if(type == "trivia") {
-    // Concatenate together all the scrapers contents:
-    result = "";
+  } else if(type == "rating") {
+    float rating = 0;
+    int emptyScore = 0;
     for(const auto &resource: std::as_const(typeResources)) {
-      result.append(resource.value.trimmed() + "\n\n");
+      double score = resource.value.toFloat();
+      if(score) {
+        rating += score;
+      } else {
+        emptyScore++;
+      }
       source = resource.source;
     }
     if(typeResources.size() > 1) {
       source = "multiple";
+      rating /= (float)(typeResources.size() - emptyScore);
     }
-    result.chop(2);
+    result = QString::number(rating, 'f', 2);
     return true;
   } else {
     if(prioMap.contains(type)) {
@@ -3208,6 +3443,25 @@ bool Cache::fillType(QString &type, QList<Resource> &matchingResources,
           if(resource.source == prioMap.value(type).at(a)) {
             result = resource.value;
             source = resource.source;
+            if(type == "franchises" || type == "tags") {
+              QStringList allCanonical, all = result.split(", ");
+              for(const auto &single: std::as_const(all)) {
+                if(type == "franchises"  && canonicalFranchises.contains(single)) {
+                  if(canonicalFranchises[single] != "DELETE") {
+                    allCanonical.append(canonicalFranchises[single]);
+                  }
+                } else if(type == "tags"  && canonicalGenres.contains(single)) {
+                  if(canonicalGenres[single] != "DELETE") {
+                    allCanonical.append(canonicalGenres[single]);
+                  }
+                } else {
+                  allCanonical.append(single);
+                }
+              }
+              allCanonical.removeDuplicates();
+              allCanonical.sort();
+              result = allCanonical.join(", ");
+            }
             return true;
           }
         }

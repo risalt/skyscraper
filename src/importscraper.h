@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -33,7 +33,10 @@ class ImportScraper : public AbstractScraper
   Q_OBJECT
 
 public:
-  ImportScraper(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  ImportScraper(Settings *config,
+                QSharedPointer<NetManager> manager,
+                QString threadId,
+                NameTools *NameTool);
   void runPasses(QList<GameEntry> &gameEntries, const QFileInfo &info, const QFileInfo &originalInfo, QString &, QString &, QString) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
   QString getCompareTitle(QFileInfo info) override;
@@ -70,6 +73,7 @@ private:
   QString platformTag = "###PLATFORM###";
   QString triviaTag = "###TRIVIA###";
   QString vgmapsTag = "###VGMAPS###";
+  QString spritesTag = "###SPRITES###";
 
   QList<QFileInfo> textual;
   QList<QFileInfo> covers;

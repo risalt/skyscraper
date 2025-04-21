@@ -2,8 +2,7 @@
  *            rawg.cpp
  *
  *  Fri Mar 30 12:00:00 CEST 2018
- *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -31,12 +30,11 @@
 #include "nametools.h"
 #include "strtools.h"
 
-#if QT_VERSION >= 0x050a00
-#include <QRandomGenerator>
-#endif
-
-RawG::RawG(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
-  : AbstractScraper(config, manager, threadId)
+RawG::RawG(Settings *config,
+           QSharedPointer<NetManager> manager,
+           QString threadId,
+           NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   QString platformDb;
 
@@ -56,6 +54,9 @@ RawG::RawG(Settings *config, QSharedPointer<NetManager> manager, QString threadI
   baseUrl = "https://api.rawg.io/api/games";
   urlPost = "?key=" + config->userCreds;
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(DEVELOPER);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(AGES);

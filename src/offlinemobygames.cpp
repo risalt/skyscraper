@@ -2,8 +2,7 @@
  *            offlinemobygames.cpp
  *
  *  Fri Mar 30 12:00:00 CEST 2018
- *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -25,20 +24,18 @@
 
 #include <QFile>
 #include <QJsonArray>
+#include <QRandomGenerator>
 
 #include "offlinemobygames.h"
 #include "skyscraper.h"
 #include "nametools.h"
 #include "strtools.h"
 
-#if QT_VERSION >= 0x050a00
-#include <QRandomGenerator>
-#endif
-
 OfflineMobyGames::OfflineMobyGames(Settings *config,
                                    QSharedPointer<NetManager> manager,
-                                   QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                                   QString threadId,
+                                   NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   QString platformDb;
   offlineScraper = true;
@@ -49,7 +46,12 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
   limitTimer.start();
 
   loadConfig("mobygames.json", "platform_name", "platform_id");
+
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
     reqRemaining = 0;
@@ -129,16 +131,28 @@ OfflineMobyGames::OfflineMobyGames(Settings *config,
   baseUrl = "https://api.mobygames.com";
   searchUrlPre = "https://api.mobygames.com/v1/games";
 
+  // Can be offline:
+  fetchOrder.append(ID);
+  // Can be offline:
+  fetchOrder.append(TITLE);
+  // Can be offline:
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
-  fetchOrder.append(RELEASEDATE); // could be offline
-  fetchOrder.append(TAGS);        // could be offline
+  // Can be offline:
+  fetchOrder.append(RELEASEDATE);
+  // Can be offline:
+  fetchOrder.append(TAGS);
   fetchOrder.append(PLAYERS);
-  fetchOrder.append(DESCRIPTION); // could be offline
+  // Can be offline:
+  fetchOrder.append(DESCRIPTION);
   fetchOrder.append(AGES);
-  fetchOrder.append(RATING);      // could be offline
-  fetchOrder.append(COVER);       // sometimes could be offline
-  fetchOrder.append(SCREENSHOT);  // sometimes could be offline
+  // Can be offline:
+  fetchOrder.append(RATING);
+  // Sometimes can be offline:
+  fetchOrder.append(COVER);
+  // Sometimes can be offline:
+  fetchOrder.append(SCREENSHOT);
   fetchOrder.append(TEXTURE);
   fetchOrder.append(MARQUEE);
   fetchOrder.append(WHEEL);
@@ -181,8 +195,9 @@ void OfflineMobyGames::getSearchResults(QList<GameEntry> &gameEntries,
 
 void OfflineMobyGames::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  if(sharedBlobs.contains("offlineonly")) {
-    printf("Offline mode activated: reduced set of data will be retrieved from disk database.\n");
+  if(sharedBlobs.contains("offlineonly") || config->userCreds.isEmpty()) {
+    printf("Offline mode activated: reduced set of data will be retrieved "
+           "from disk database.\n");
     offlineOnly = true;
   } else {
     printf("Waiting to get game data...\n");
@@ -378,46 +393,57 @@ void OfflineMobyGames::getRating(GameEntry &game)
 
 void OfflineMobyGames::getCover(GameEntry &game)
 {
-  if(offlineOnly || jsonMedia.isEmpty()) {
-    return;
-  }
-
   QString coverUrl = "";
-  bool foundFrontCover= false;
 
-  for(const auto &region: std::as_const(regionPrios)) {
-    QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
-    while(!jsonCoverGroups.isEmpty()) {
-      bool foundRegion = false;
-      QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
-      while(!jsonCountries.isEmpty()) {
-        if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
-          foundRegion = true;
+  if(offlineOnly || jsonMedia.isEmpty()) {
+    QJsonObject cover = jsonObj["sample_cover"].toObject();
+    if(!cover.isEmpty()) {
+      QJsonArray jsonPlatforms = cover["platforms"].toArray();
+      while(!jsonPlatforms.isEmpty()) {
+        QString jsonPlatform = jsonPlatforms.first().toString();
+        if(platformMatch(jsonPlatform, config->platform)) {
+          coverUrl = cover["image"].toString();
           break;
         }
-        jsonCountries.removeFirst();
+        jsonPlatforms.removeFirst();
       }
-      if(!foundRegion) {
+    }
+  } else {
+    bool foundFrontCover= false;
+    for(const auto &region: std::as_const(regionPrios)) {
+      QJsonArray jsonCoverGroups = jsonMedia.object()["cover_groups"].toArray();
+      while(!jsonCoverGroups.isEmpty()) {
+        bool foundRegion = false;
+        QJsonArray jsonCountries = jsonCoverGroups.first().toObject()["countries"].toArray();
+        while(!jsonCountries.isEmpty()) {
+          if(getRegionShort(jsonCountries.first().toString().simplified()) == region) {
+            foundRegion = true;
+            break;
+          }
+          jsonCountries.removeFirst();
+        }
+        if(!foundRegion) {
+          jsonCoverGroups.removeFirst();
+          continue;
+        }
+        QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
+        while(!jsonCovers.isEmpty()) {
+          QJsonObject jsonCover = jsonCovers.first().toObject();
+          if(jsonCover["scan_of"].toString().toLower().simplified().contains("front cover")) {
+            coverUrl = jsonCover["image"].toString();
+            foundFrontCover= true;
+            break;
+          }
+          jsonCovers.removeFirst();
+        }
+        if(foundFrontCover) {
+          break;
+        }
         jsonCoverGroups.removeFirst();
-        continue;
-      }
-      QJsonArray jsonCovers = jsonCoverGroups.first().toObject()["covers"].toArray();
-      while(!jsonCovers.isEmpty()) {
-        QJsonObject jsonCover = jsonCovers.first().toObject();
-        if(jsonCover["scan_of"].toString().toLower().simplified().contains("front cover")) {
-          coverUrl = jsonCover["image"].toString();
-          foundFrontCover= true;
-          break;
-        }
-        jsonCovers.removeFirst();
       }
       if(foundFrontCover) {
         break;
       }
-      jsonCoverGroups.removeFirst();
-    }
-    if(foundFrontCover) {
-      break;
     }
   }
 
@@ -689,22 +715,20 @@ void OfflineMobyGames::getWheel(GameEntry &game)
 
 void OfflineMobyGames::getScreenshot(GameEntry &game)
 {
+  QJsonArray jsonScreenshots;
+
   if(offlineOnly || jsonScreens.isEmpty()) {
-    return;
+    jsonScreenshots = jsonObj["sample_screenshots"].toArray();
+  } else {
+    jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
   }
 
-  QJsonArray jsonScreenshots = jsonScreens.object()["screenshots"].toArray();
-
-  int chosen = 1;
-  if(jsonScreenshots.count() < 2) {
+  int chosen = 0;
+  if(jsonScreenshots.isEmpty()) {
     return;
   } else if(jsonScreenshots.count() > 2) {
     // First 2 are almost always not ingame, so skip those if we have 3 or more
-#if QT_VERSION >= 0x050a00
     chosen = (QRandomGenerator::global()->generate() % (jsonScreenshots.count() - 2)) + 2;
-#else
-    chosen = (qrand() % (jsonScreenshots.count() - 2)) + 2;
-#endif
   }
   printf("Retrieving screenshot data...\n");
   netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));

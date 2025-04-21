@@ -3,7 +3,7 @@
  *
  *  Mon Dec 17 08:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord & Martin Gerhardy
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -30,8 +30,9 @@
 
 ESGameList::ESGameList(Settings *config,
                        QSharedPointer<NetManager> manager,
-                       QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                       QString threadId,
+                       NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   baseUrl = config->gameListFolder + (config->gameListFolder.right(1) != "/"?"/":"");
   QString gameListXml = baseUrl + "gamelist.xml";

@@ -11,7 +11,7 @@ The main changes have been:
 ## New Scrapers
 * GiantBomb: A hybrid frontend that downloads part of the information from [GiantBomb](https://www.giantbomb.com) in an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
 * Chiptune: A specialized scraper that matches my soundtrack collection stored in my [Navidrome](https://github.com/navidrome/navidrome) SQLite database to my game collection.
-* OfflineMobyGames: A hybrid frontend that uses an offline cache to improve throughtput while respecting the strict limits implemented by their admins.
+* OfflineMobyGames: A hybrid frontend that uses an offline cache to improve throughtput while respecting the strict limits implemented by their admins. Improved to maximize offline available data when no API key is defined (MobyGames has closed the door to limited, free API scraping).
 * OfflineTGDB: A hybrid frontend that uses a local database to improve throughput while respecting the strict limits implemented by their admins.
 * Customflags: A specialized scraper that detects special files in my collection to deduce the concepts: Game Size, Completed, Favourite, Played, First Played, Last Played, Total Times Played, Time Played.
 * Launchbox: A very effective scraper based on the fantastic and accessible [LaunchBox](https://gamesdb.launchbox-app.com/) database.
@@ -21,18 +21,27 @@ The main changes have been:
 * GameFAQs: An offline scraper that uses a JSON+guides dump of the [GameFAQs](https://gamefaqs.gamespot.com/) website to include videogame guides and walkthroughs in the collection. GameFAQs does not approve of external scraping, so the dumps need to be obtained from somewhere else.
 * MAMEHistory: An offline scraper that uses the XML dump of the [Arcade History](https://www.arcade-history.com/) website to include descriptions and overviews for MAME short-names.
 * DocsDB: An offline scraper that uses a simple CSV file and folder structure to refer to local documents to be loaded as guides, reviews, cheats or artbook resources.
+* EveryGame: An online scraper that extracts a broad range of resources from a mix of API and web scraping of the [EveryGameGoing](https://www.everygamegoing.com/) site.
+* VGGeek: An online scraper that extracts text and image data from the [VideoGameGeek](https://videogamegeek.com/) site.
+* Spriters: A specialized hybrid scraper that uses a Python script and an offline index to retrieve sprites and maps from the web.
+* GameBase: An offline scraper that uses community-generated platform-specific bundles of Access databases plus a collection of multimedia and document resources. The bundles can be found scattered in the [Internet Archive](https://www.archive.org/) as well as specific websites such as [BU22](https://www.bu22.com/). I got the idea for this new scraper and the script to convert Access databases to SQLite from the [Gemba repo](https://github.com/Gemba/skyscraper/).
+* eXoDOS: An offline, PC-DOS-specialized scraper that integrates the curated PC-DOS gaming package from [eXoDOS](https://www.retro-exo.com/exodos.html).
 
 ## Fix Broken Scrapers
-* Notably OpenRetro, WorldOfSpectrum and TGDB, but also fixes and improvements to IGDB, MobyGames, ArcadeDB and, of course the King Screenscraper.
+* Notably OpenRetro, WorldOfSpectrum and TGDB, but also fixes and improvements to IGDB, MobyGames, ArcadeDB and, of course the King: Screenscraper.
 
 And of course:
 * The checksum tecnique has been re-implemented as an on-demand function that can be used in all scrapers now: ScreenScraper uses pure checksum search, all the other scrapers use an external database (canonical) to determine the proper search names for the games, instead of relying solely on the filename. The canonical database can be generated using Skyscraper itself, feeding it the TOSEC, Redump and No-Intro dat files, use an online Lutris database, or the MAME xml hash files. Checksums are stored in the cache database as cross-scraper resources, to avoid rehashing the same file multiple times.
-* Implement a negative match database functionality that caches negative searches per platform, online scraper and optionally by file, with a configurable expiration date.
-* Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files. All the scraper code/platform ids mappings are now in the configuration files.
-* Support additional resources (music, manuals, usage data, trivia, maps, guides, user flags, game size, cheats, reviews, artbooks) and the logic to scrape them and add them to the frontends.
+* Implement a negative match database functionality that caches negative searches per platform, online scraper and optionally by file, with a configurable expiration date. It also stores low matches, to review the accuracy of the matching algorythm.
+* Updated configuration files to support new platforms (plenty) and error cleansing of the json configuration files. All the scraper code/platform ids mappings are now in the configuration JSON files.
+* Support additional resources (database ids, usage data, user flags, game size, music, manuals, trivia, maps, guides, cheats, reviews, artbooks, sprites) and the logic to scrape them and add them to the frontends.
+* Some resources have an special logic when fed into the frontends: instead of a source priority rule, a smart selection/collation is used with: descriptions (longest), ids, sprites, cheats, trivia, maps, guides, reviews, artbooks (collate) and rating (average).
+* Allow scraping of missing resources for already scraped games (in case the database has been updated with additional information) (getMissingResources).
+* Allow scraping only one image per resource type across scrapers (similar behaviour as with videos and manuals) (singleImagePerType).
 * Validation of the cache now tries to fix (and cleanses if it cannot) the textual resource contents of the database.
 * --startat and --endat now are compatible with recursive directories.
 * Take advantage of MAME short names for the compatible scrapers.
+* Fallback to "arcade" configuration files for Arcade-type platforms if no platform specific configuration exists.
 * Improve data conformance checks and corrections to ensure homogeneized resources across scrapers.
 * Alternative name support for the compatible scrapers (most of them).
 * Implement Latin characters simplification as a search variant in most scrapers.
@@ -42,10 +51,19 @@ And of course:
 * Incremental scraping, for when new resources need to be added to already scraped games.
 * Improve the API keys and password management.
 * Generation of dummy thumbnails with text when no real thumbnail is available in the cache database.
-* Some changes to minimize the false positives from the scrapers.
+* Optional mapping of tags and franchises so that the words used across scrapers can point to the desired standardized word or even be deleted.
+* Improve special characters management through Unicode.
+* Some changes to minimize the false positives and false negatives from the scrapers.
 * New cache tools to manage big databases such as mine (several tens of thousands of entries) and spot inconsistencies and false positive matches.
+* Implement a command-line option (--list) to print valid sets of scrapers and platforms, typically to be used in scripts.
+* Offline scrapers with multimedia data (GameBase and eXoDOS) no longer copy resources into the cache, but just symlink them.
+* Add option to not copy image resources when generating the frontend output, but just symlink from the cache (same as symlink option for videos and manuals). Does not allow manipulation of the images when generating the output, obviously (symlinkImages).
+* Differentiate between "platform" and "collection" in the frontend (platform comes from the scraper and is not necessarily normalized, collection is the platform code and text from the configuration files).
+* Fix logic in Netcomm to determine if HTTP requests should be DELETE, POST, GET or potentially other operations.
+* Clean old Qt code not reasonably needed anymore, preparing for Qt 6, and activate QStringBuilder to improve string management performance (alledgely).
+* Copyright updates on the relevant files to acknowledge the contributors.
 * ...Changes that I need that probably no other one out there will need :)
-* Breaking changes: The unpack functionality has been removed (although the checksum generation does unpack the files if needed). The checksum matching logic has been heavily modified. Some parameters have been migrated to flags, or have had the name unified across scrapers/frontends. Some resources (reviews, cheats, guides, artbooks and trivia) are now collated across scrapers when generating the frontend output.
+* Breaking changes: The unpack functionality has been removed (although the checksum generation does unpack the files if needed). The checksum matching logic has been heavily modified. Some parameters have been migrated to flags, or have had the name unified across scrapers/frontends.
  
 
 ## Original Readme:

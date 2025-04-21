@@ -2,8 +2,7 @@
  *            launchbox.h
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -33,11 +32,8 @@
 #include <QStringList>
 #include <QMultiMap>
 #include <QEventLoop>
-#include <QJsonObject>
-#include <QJsonDocument>
 
 #include "abstractscraper.h"
-#include "gameentry.h"
 
 constexpr int LBNULL = 0;
 constexpr int LBGAME = 1;
@@ -63,13 +59,15 @@ constexpr int LBTYPE = 20;
 constexpr int LBLAUNCHBOX = 21;
 constexpr int LBMAMEFILE = 22;
 
-
 class LaunchBox : public AbstractScraper
 {
   Q_OBJECT
 
 public:
-  LaunchBox(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  LaunchBox(Settings *config,
+            QSharedPointer<NetManager> manager,
+            QString threadId,
+            NameTools *NameTool);
   ~LaunchBox();
 
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
@@ -99,8 +97,6 @@ private:
   QTimer limitTimer;
   QEventLoop limiter;
 
-  QJsonDocument jsonDoc;
-  QJsonObject jsonObj;
   QMap<int, GameEntry> launchBoxDb;
   QMultiMap<QString, QPair<int, QString>> searchNameToId;
   QMultiMap<QString, QPair<int, QString>> searchNameToIdTitle;

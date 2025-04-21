@@ -5,71 +5,7 @@
       "query": "Arcade"
     },
     {
-      "code": "cave",
-      "query": "Arcade"
-    },
-    {
-      "code": "cps1",
-      "query": "Arcade"
-    },
-    {
-      "code": "cps2",
-      "query": "Arcade"
-    },
-    {
-      "code": "cps3",
-      "query": "Arcade"
-    },
-    {
       "code": "daphne",
-      "query": "Arcade"
-    },
-    {
-      "code": "dataeast",
-      "query": "Arcade"
-    },
-    {
-      "code": "igs",
-      "query": "Arcade"
-    },
-    {
-      "code": "irem",
-      "query": "Arcade"
-    },
-    {
-      "code": "jaleco",
-      "query": "Arcade"
-    },
-    {
-      "code": "kaneko",
-      "query": "Arcade"
-    },
-    {
-      "code": "konami",
-      "query": "Arcade"
-    },
-    {
-      "code": "midway",
-      "query": "Arcade"
-    },
-    {
-      "code": "nichibutsu",
-      "query": "Arcade"
-    },
-    {
-      "code": "nmk",
-      "query": "Arcade"
-    },
-    {
-      "code": "psikyo",
-      "query": "Arcade"
-    },
-    {
-      "code": "seta",
-      "query": "Arcade"
-    },
-    {
-      "code": "toaplan",
       "query": "Arcade"
     },
     {
@@ -321,6 +257,10 @@
       "query": "SNK Neo Geo Pocket Color"
     },
     {
+      "code": "odyssey",
+      "query": "Magnavox Odyssey"
+    },
+    {
       "code": "openbor",
       "query": "OpenBOR"
     },
@@ -353,6 +293,10 @@
       "query": "NEC PC-FX"
     },
     {
+      "code": "pet",
+      "query": "Commodore PET"
+    },
+    {
       "code": "pico8",
       "query": "PICO-8"
     },
@@ -367,6 +311,10 @@
     {
       "code": "ps3",
       "query": "Sony Playstation 3"
+    },
+    {
+      "code": "ps4",
+      "query": "Sony Playstation 4"
     },
     {
       "code": "psp",
@@ -401,16 +349,28 @@
       "query": "Sega 32X"
     },
     {
+      "code": "segaclassics",
+      "query": "Sega ST-V"
+    },
+    {
       "code": "segasystemx",
       "query": "Sega Model 1' OR platform='Sega Model 2' OR platform='Sega Model 3' OR platform='Sega System 16' OR platform='Sega System 32"
     },
     {
       "code": "sg-1000",
-      "query": "Sega SG-1000"
+      "query": "Sega SG-1000' OR platform='Sega SC-3000"
     },
     {
       "code": "snes",
       "query": "Super Nintendo Entertainment System"
+    },
+    {
+      "code": "sonyznx",
+      "query": "ZiNc"
+    },
+    {
+      "code": "spectravideo",
+      "query": "Spectravideo"
     },
     {
       "code": "supergrafx",
@@ -491,10 +451,6 @@
     {
       "code": "xbox360",
       "query": "Microsoft Xbox 360"
-    },
-    {
-      "code": "zmachine",
-      "query": "ZiNc"
     },
     {
       "code": "zx81",

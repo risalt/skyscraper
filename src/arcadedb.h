@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -36,7 +36,10 @@ class ArcadeDB : public AbstractScraper
   Q_OBJECT
 
 public:
-  ArcadeDB(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  ArcadeDB(Settings *config,
+           QSharedPointer<NetManager> manager,
+           QString threadId,
+           NameTools *NameTool);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
@@ -61,7 +64,6 @@ protected:
 private:
   QJsonDocument jsonDoc;
   QJsonObject jsonObj;
-  QString internalName;
 
 };
 

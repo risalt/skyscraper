@@ -2,8 +2,7 @@
  *            customflags.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -32,12 +31,15 @@
 #include <QDateTime>
 
 
-CustomFlags::CustomFlags(Settings *config, QSharedPointer<NetManager> manager,
-                         QString threadId)
-  : AbstractScraper(config, manager, threadId)
+CustomFlags::CustomFlags(Settings *config,
+                         QSharedPointer<NetManager> manager,
+                         QString threadId,
+                         NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
-  fetchOrder.append(CUSTOMFLAGS);
   offlineScraper = true;
+
+  fetchOrder.append(CUSTOMFLAGS);
 }
 
 QStringList CustomFlags::getSearchNames(const QFileInfo &info)
@@ -61,13 +63,13 @@ void CustomFlags::getGameData(GameEntry & game, QStringList &sharedBlobs, GameEn
 
 void CustomFlags::getCustomFlags(GameEntry & game)
 {
-  NameTools::get().cache->fillBlanks(game, "generic");
+  NameTools::cache->fillBlanks(game, "generic");
   // Refresh is not enough, as it will not delete a resource that cannot be scraped anymore:
-  NameTools::get().cache->removeResources(game.cacheId, config->scraper);
+  NameTools::cache->removeResources(game.cacheId, config->scraper);
   game.canonical = CanonicalData();
   if(!game.diskSize) {
     // Calculating game size
-    game.diskSize = NameTools::calculateGameSize(game.absoluteFilePath);
+    game.diskSize = NameTool->calculateGameSize(game.absoluteFilePath);
   }
   game.completed = QFileInfo::exists(game.path + ".completed") ? true : false;
   game.favourite = QFileInfo::exists(game.path + ".favourite") ? true : false;

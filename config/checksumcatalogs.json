@@ -7422,51 +7422,51 @@
   },
   {
     "name": "Commodore PET - Books",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Catalogs",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Compilations - Applications",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Compilations - Games",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Firmware - Drives",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Firmware - Kernal",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Games - [D64]",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Games - [PRG]",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Magazines - Pocket PET (IT)",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Magazines - TORPET, The",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Manuals - Hardware",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore PET - Operating Systems",
-    "code": "cpet"
+    "code": "pet"
   },
   {
     "name": "Commodore VIC20 - Applications - Source",
@@ -11070,11 +11070,11 @@
   },
   {
     "name": "Magnavox Odyssey - Manuals - Hardware",
-    "code": "videopac"
+    "code": "odyssey"
   },
   {
     "name": "Magnavox Odyssey - Manuals - Software",
-    "code": "videopac"
+    "code": "odyssey"
   },
   {
     "name": "Magnavox Odyssey2 - Applications",
@@ -12618,7 +12618,7 @@
   },
   {
     "name": "NEC - PC-6001 [T-En] Collection",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC - PC-8001 [T-En] Collection",
@@ -12702,27 +12702,27 @@
   },
   {
     "name": "NEC PC-6001 - Demos",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-6001 - Firmware",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-6001 - Games - [CAS]",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-6001 - Games - [P6]",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-6001 - Games - [ROM]",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-6001 - Games - [WAV]",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-8001 - Applications",
@@ -16886,23 +16886,23 @@
   },
   {
     "name": "Sony - PlayStation 4 (PSN) (Avatars)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony - PlayStation 4 (PSN) (Content) (Merged)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony - PlayStation 4 (PSN) (Content) (Split)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony - PlayStation 4 (PSN) (Updates) (Merged)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony - PlayStation 4 (PSN) (Updates) (Split)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony - PlayStation 5 (PSN) (Merged)",
@@ -17158,19 +17158,19 @@
   },
   {
     "name": "Sony PlayStation 4 - Catalogs",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony PlayStation 4 - Commercials - Games",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony PlayStation 4 - Commercials - Hardware",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony PlayStation 4 - Magazines - Playmania (ES)",
-    "code": ""
+    "code": "ps4"
   },
   {
     "name": "Sony PlayStation Portable - Applications - [ISO]",
@@ -17363,6 +17363,22 @@
   {
     "name": "Spectravideo SVI-318 & SVI-328 - Various - [CAS]",
     "code": "msx"
+  },
+  {
+    "name": "Spectravideo SVI-318 & SVI-328 - Games - [BIN]",
+    "code": "spectravideo"
+  },
+  {
+    "name": "Spectravideo SVI-318 & SVI-328 - Games - [CAS]",
+    "code": "spectravideo"
+  },
+  {
+    "name": "Spectravideo SVI-318 & SVI-328 - Various - [BIN]",
+    "code": "spectravideo"
+  },
+  {
+    "name": "Spectravideo SVI-318 & SVI-328 - Various - [CAS]",
+    "code": "spectravideo"
   },
   {
     "name": "TRQ Video Computer H-21 - Games",
@@ -19946,7 +19962,7 @@
   },
   {
     "name": "Atari XE Game System cartridges",
-    "code": ""
+    "code": "atari800"
   },
   {
     "name": "Bally Professional Arcade cartridges",
@@ -20222,23 +20238,23 @@
   },
   {
     "name": "Commodore PET cassettes",
-    "code": ""
+    "code": "pet"
   },
   {
     "name": "Commodore PET diskettes",
-    "code": ""
+    "code": "pet"
   },
   {
     "name": "Commodore PET Function ROMs",
-    "code": ""
+    "code": "pet"
   },
   {
     "name": "Commodore PET hard disks",
-    "code": ""
+    "code": "pet"
   },
   {
     "name": "Commodore PET quickload",
-    "code": ""
+    "code": "pet"
   },
   {
     "name": "Commodore Plus/4 / C16 / C116 cassettes",
@@ -21126,7 +21142,7 @@
   },
   {
     "name": "NEC PC-6001 cartridges",
-    "code": ""
+    "code": "pc60"
   },
   {
     "name": "NEC PC-8001 (N-BASIC) disk images",
@@ -21794,15 +21810,15 @@
   },
   {
     "name": "Spectravision SVI-318 cartridges",
-    "code": ""
+    "code": "spectravideo"
   },
   {
     "name": "Spectravision SVI-318 cassettes",
-    "code": ""
+    "code": "spectravideo"
   },
   {
     "name": "Spectravision SVI-318/328 disk images",
-    "code": ""
+    "code": "spectravideo"
   },
   {
     "name": "Squale cartridges",

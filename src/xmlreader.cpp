@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -43,7 +43,12 @@ bool XmlReader::setFile(QString filename)
 
   QFile f(filename);
   if(f.open(QIODevice::ReadOnly)) {
-    if(setContent(f.readAll(), false)) {
+#if QT_VERSION < 0x060800
+        if (setContent(f.readAll(), false)) {
+#else
+        if (QDomDocument::ParseResult p = QDomDocument::setContent(f.readAll());
+            p) {
+#endif
       result = true;
     }
     f.close();
@@ -98,6 +103,7 @@ void XmlReader::addEntries(const QDomNodeList &nodes, QList<GameEntry> &gameEntr
     entry.reviews = nodes.at(a).firstChildElement("reviews").text();
     entry.artbooks = nodes.at(a).firstChildElement("artbooks").text();
     entry.vgmaps = nodes.at(a).firstChildElement("vgmaps").text();
+    entry.sprites = nodes.at(a).firstChildElement("sprites").text();
     entry.chiptuneId = nodes.at(a).firstChildElement("chiptuneid").text();
     entry.chiptunePath = nodes.at(a).firstChildElement("chiptunepath").text();
     entry.eSFavorite = nodes.at(a).firstChildElement("favorite").text();

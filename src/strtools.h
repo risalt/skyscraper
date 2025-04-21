@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -49,7 +49,7 @@ public:
   static QString getMd5Sum(const QByteArray &data);
   static QString sanitizeName(const QString &str, bool removeBrackets=false);
   static int distanceBetweenStrings(const QString &first, const QString &second,
-                                    bool simplify = true);
+                                    bool simplify = false);
   static QString onlyNumbers(const QString &str);
   static bool readCSVRow(QTextStream &in, QStringList *row);
   static QString simplifyLetters(const QString &str);

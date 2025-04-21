@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -35,8 +35,9 @@
 
 WorldOfSpectrum::WorldOfSpectrum(Settings *config,
                                  QSharedPointer<NetManager> manager,
-                                 QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                                 QString threadId,
+                                 NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   baseUrl = "https://worldofspectrum.net";
 
@@ -80,9 +81,12 @@ WorldOfSpectrum::WorldOfSpectrum(Settings *config,
   descriptionPre.append("\">");
   descriptionPost = "</FONT>"; */
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(TAGS);
   fetchOrder.append(PUBLISHER);
-  // fetchOrder.append(DEVELOPER);
+  fetchOrder.append(DEVELOPER);
   fetchOrder.append(PLAYERS);
   fetchOrder.append(COVER);
   fetchOrder.append(SCREENSHOT);
@@ -125,6 +129,9 @@ void WorldOfSpectrum::getSearchResults(QList<GameEntry> &gameEntries,
       nomNom(nom);
     }
     game.url = data.left(data.indexOf(urlPost.toUtf8()));
+    game.id = game.url;
+    game.id.chop(1);
+    game.id = game.id.mid(game.id.lastIndexOf('/') + 1);
 
     // Digest until title
     for(const auto &nom: std::as_const(titlePre)) {

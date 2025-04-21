@@ -2,8 +2,7 @@
  *            offlinetgdb.h
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -42,7 +41,10 @@ class OfflineTGDB : public AbstractScraper
   Q_OBJECT
 
 public:
-  OfflineTGDB(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  OfflineTGDB(Settings *config,
+              QSharedPointer<NetManager> manager,
+              QString threadId,
+              NameTools *NameTool);
   ~OfflineTGDB();
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 

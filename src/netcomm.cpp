@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -61,7 +61,7 @@ void NetComm::request(QString query, QString postData, QList<QPair<QString, QStr
   }
 
   if(operation.isEmpty()) {
-    if(postData.isEmpty()) {
+    if(postData.isNull()) {
       reply = manager->getRequest(request);
     } else {
       reply = manager->postRequest(request, postData.toUtf8());

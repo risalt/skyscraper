@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -40,12 +40,17 @@ constexpr int MINTEXTURESIZE = 16384;
 
 ScreenScraper::ScreenScraper(Settings *config,
                              QSharedPointer<NetManager> manager,
-                             QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                             QString threadId,
+                             NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   loadConfig("screenscraper.json", "name", "id");
 
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by ScreenScraper or it hasn't "
@@ -61,6 +66,9 @@ ScreenScraper::ScreenScraper(Settings *config,
 
   baseUrl = "http://www.screenscraper.fr";
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
   fetchOrder.append(PLAYERS);
@@ -84,9 +92,9 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
 {
   QString gameUrl = "https://www.screenscraper.fr/api2/jeuInfos.php?devid=muldjord&devpassword=" +
                     config->apiKey + "&softname=skyscraper" VERSION +
-                    (config->user.isEmpty()?"":"&ssid=" + config->user) +
-                    (config->password.isEmpty()?"":"&sspassword=" + config->password) +
-                    (platformId.isEmpty()?"":"&systemeid=" + platformId) + "&output=json&" +
+                    (config->user.isEmpty()?QString(""):"&ssid=" + config->user) +
+                    (config->password.isEmpty()?QString(""):"&sspassword=" + config->password) +
+                    (platformId.isEmpty()?QString(""):"&systemeid=" + platformId) + "&output=json&" +
                     searchName;
 
   searchError = false;
@@ -138,8 +146,8 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
              "requests from unregistered and inactive users. Sign up for an account at "
              "https://www.screenscraper.fr and contribute to gain more threads. Then use the "
              "credentials with Skyscraper using the '-u user:pass' command line option or by "
-             "setting 'userCreds=\"user:pass\"' in '%s/.skyscraper/config.ini'.\033[0m\n\n",
-             QDir::homePath().toStdString().c_str());
+             "setting 'userCreds=\"user:pass\"' in '%s/config.ini'.\033[0m\n\n",
+             QDir::currentPath().toStdString().c_str());
       if(retries == RETRIESMAX - 1) {
         reqRemaining = 0;
         searchError = true;
@@ -203,10 +211,10 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
       if(jsonErrorFile.open(QIODevice::WriteOnly)) {
         if(data.length() > 64) {
           jsonErrorFile.write(data);
-          printf("The erroneous answer was written to '%s/.skyscraper/screenscraper_error.json'. "
+          printf("The erroneous answer was written to '%s/screenscraper_error.json'. "
                  "If this file contains game data, please consider filing a bug report at "
                  "'https://github.com/detain/skyscraper/issues' and attach that file.\n",
-                 QDir::homePath().toStdString().c_str());
+                 QDir::currentPath().toStdString().c_str());
         }
         jsonErrorFile.close();
       }
@@ -273,12 +281,15 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
   }
 
   game.url = gameUrl;
+  game.id = jsonObj["id"].toString();
   game.platform = jsonObj["systeme"].toObject()["text"].toString();
 
   if(!canonical.md5.isEmpty() || !canonical.sha1.isEmpty()) {
     canonical.name = game.title;
     game.canonical = canonical;
   }
+
+  game.miscData = QJsonDocument(jsonObj).toJson(QJsonDocument::Compact);
 
   // Only check if platform is empty, it's always correct when using ScreenScraper
   if(!game.platform.isEmpty()) {
@@ -299,6 +310,8 @@ void ScreenScraper::getSearchResults(QList<GameEntry> &gameEntries,
 
 void ScreenScraper::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  jsonObj = QJsonDocument::fromJson(game.miscData).object();
+
   fetchGameResources(game, sharedBlobs, cache);
 }
 
@@ -400,9 +413,11 @@ void ScreenScraper::getCover(GameEntry &game)
   QString url = "";
   if(Platform::get().getFamily(config->platform) == "arcade" &&
      config->platform != "gameandwatch") {
-    url = getJsonText(jsonObj["medias"].toArray(), REGION, QStringList({"flyer"}));
+    url = getJsonText(jsonObj["medias"].toArray(), REGION,
+                      QStringList({"flyer"}));
   } else {
-    url = getJsonText(jsonObj["medias"].toArray(), REGION, QStringList({"box-2D", "box-2d", "flyer", "box-texture"}));
+    url = getJsonText(jsonObj["medias"].toArray(), REGION,
+                      QStringList({"box-2D", "box-2d", "flyer", "box-texture"}));
   }
   if(!url.isEmpty()) {
     bool moveOn = true;
@@ -427,7 +442,8 @@ void ScreenScraper::getCover(GameEntry &game)
 
 void ScreenScraper::getScreenshot(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QStringList({"ss"}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
+                            QStringList({"ss"}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
@@ -451,7 +467,8 @@ void ScreenScraper::getScreenshot(GameEntry &game)
 
 void ScreenScraper::getWheel(GameEntry &game)
 {
-  QString url = getJsonText(jsonObj["medias"].toArray(), REGION, QStringList({"sstitle"/*, "wheel", "wheel-hd"*/}));
+  QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
+                            QStringList({"sstitle"/*, "wheel", "wheel-hd"*/}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
@@ -476,8 +493,8 @@ void ScreenScraper::getWheel(GameEntry &game)
 void ScreenScraper::getMarquee(GameEntry &game)
 {
   QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
-                            QStringList({"fanart-hd", "fanart"/*, "support-2D", "support-2d",
-                                         "support-texture", "marquee", "screenmarquee"*/}));
+                            QStringList({"fanart-hd", "fanart", "support-2D", "support-2d",
+                                         "support-texture"/*, "marquee", "screenmarquee"*/}));
   if(!url.isEmpty()) {
     bool moveOn = true;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
@@ -501,7 +518,7 @@ void ScreenScraper::getMarquee(GameEntry &game)
 
 void ScreenScraper::getTexture(GameEntry &game) {
   QString url = getJsonText(jsonObj["medias"].toArray(), REGION,
-      QStringList({"box-2D-back", "box-2d-back", "support-2D", "support-2d", "support-texture"}));
+                            QStringList({"box-2D-back", "box-2d-back"}));
   if(!url.isEmpty()) {
     bool moveOn = false;
     for(int retries = 0; retries < RETRIESMAX; ++retries) {
@@ -593,7 +610,7 @@ QStringList ScreenScraper::getSearchNames(const QFileInfo &info)
   QStringList searchNames;
 
   if(config->useChecksum) {
-    canonical = NameTools::getCanonicalData(info, true);
+    canonical = NameTool->getCanonicalData(info, true);
     if(!canonical.md5.isEmpty() || !canonical.sha1.isEmpty()) {
       searchNames.append("crc=" + canonical.crc +
                          "&md5=" + canonical.md5 +
@@ -601,7 +618,7 @@ QStringList ScreenScraper::getSearchNames(const QFileInfo &info)
                          "&romtaille=" + QString::number(canonical.size));
     }
   } else if(Platform::get().getFamily(config->platform) == "arcade") {
-    searchNames.append("romnom=" + QUrl::toPercentEncoding(info.baseName(), "()"));
+    searchNames.append(QString("romnom=") + QUrl::toPercentEncoding(info.baseName(), "()"));
   } else {
     QStringList searchNamesRaw = AbstractScraper::getSearchNames(info);
     if(info.isSymbolicLink() && info.suffix() == "mame") {
@@ -611,7 +628,7 @@ QStringList ScreenScraper::getSearchNames(const QFileInfo &info)
     QListIterator<QString> listNames(searchNamesRaw);
     while(listNames.hasNext()) {
       // printf("%s\n", listNames.next().toStdString().c_str());
-      searchNames.append("romnom=" + QUrl::toPercentEncoding(listNames.next(), "()"));
+      searchNames.append(QString("romnom=") + QUrl::toPercentEncoding(listNames.next(), "()"));
     }
   }
 

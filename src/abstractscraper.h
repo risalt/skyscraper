@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -30,6 +30,7 @@
 #include "netmanager.h"
 #include "gameentry.h"
 #include "settings.h"
+#include "nametools.h"
 
 #include <QImage>
 #include <QString>
@@ -47,7 +48,8 @@ class AbstractScraper : public QObject
 public:
   AbstractScraper(Settings *config,
                   QSharedPointer<NetManager> manager,
-                  QString threadId);
+                  QString threadId,
+                  NameTools *NameTool);
   virtual ~AbstractScraper();
 
   // Fill in the game skeleton with the data from the scraper service.
@@ -82,7 +84,7 @@ public:
 
   // Adds the last active term searched to the negative cache,
   // as the results were not successful.
-  void addLastSearchToNegativeCache(const QString &file = "");
+  void addLastSearchToNegativeCache(const QString &file = "", const QString &lowMatch = "");
 
   int reqRemaining = -1;
   int reqRemainingKO = -1;
@@ -102,6 +104,7 @@ protected:
 
   void loadConfig(const QString &configPath, const QString &code, const QString &name);
 
+  virtual void getId(GameEntry &game);
   virtual void getTitle(GameEntry &game);
   virtual void getPlatform(GameEntry &game);
   virtual void getDescription(GameEntry &game);
@@ -113,11 +116,11 @@ protected:
   virtual void getFranchises(GameEntry &game);
   virtual void getRating(GameEntry &game);
   virtual void getReleaseDate(GameEntry &game);
-  virtual void getCover(GameEntry &game);
-  virtual void getScreenshot(GameEntry &game);
-  virtual void getWheel(GameEntry &game);
-  virtual void getMarquee(GameEntry &game);
-  virtual void getTexture(GameEntry &game);
+  virtual void getCover(GameEntry &game);      // Box Front, Flyer, Poster
+  virtual void getScreenshot(GameEntry &game); // Gameplay screenshot
+  virtual void getWheel(GameEntry &game);      // Titlescreen screenshot
+  virtual void getMarquee(GameEntry &game);    // Artwork, Inlay (mb), Media (lb,wos,vgg,ss,gi,gb,ev)
+  virtual void getTexture(GameEntry &game);    // Box Back, Media (mb), Cabinet (ar)
   virtual void getVideo(GameEntry &game);
   virtual void getManual(GameEntry &game);
   virtual void getGuides(GameEntry &game);
@@ -125,6 +128,7 @@ protected:
   virtual void getReviews(GameEntry &game);
   virtual void getArtbooks(GameEntry &game);
   virtual void getVGMaps(GameEntry &game);
+  virtual void getSprites(GameEntry &game);
   virtual void getTrivia(GameEntry &game);
   virtual void getChiptune(GameEntry &game);
   virtual void getCustomFlags(GameEntry &game);
@@ -204,6 +208,8 @@ protected:
   QString artbooksPost;
   QStringList vgmapsPre;
   QString vgmapsPost;
+  QStringList spritesPre;
+  QString spritesPost;
   QStringList triviaPre;
   QString triviaPost;
 
@@ -212,9 +218,11 @@ protected:
 
   NetComm *netComm;
   QEventLoop q; // Event loop for use when waiting for data from NetComm.
+  NameTools *NameTool;
 
 private:
   bool negDbReady = false;
+  QString globalPastTitle;
   QSqlDatabase negDb;
   QString dbNegCache = "negativecache.db";
   QString lastSearchName;

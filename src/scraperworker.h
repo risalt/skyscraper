@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -30,11 +30,8 @@
 #include "settings.h"
 #include "cache.h"
 #include "queue.h"
+#include "nametools.h"
 #include "netmanager.h"
-
-#include <QImage>
-#include <QDir>
-#include <QThread>
 
 class ScraperWorker : public QObject
 {
@@ -73,6 +70,7 @@ private:
   AbstractScraper *scraper;
 
   Settings config;
+  NameTools *NameTool;
 
   QSharedPointer<Cache> cache;
   QSharedPointer<NetManager> manager;

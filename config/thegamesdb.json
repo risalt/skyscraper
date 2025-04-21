@@ -131,6 +131,11 @@
       "code": "c64"
     },
     {
+      "id": "5008",
+      "name": "Commodore PET/CBM",
+      "code": "pet"
+    },
+    {
       "id": 4952,
       "name": "Dragon 32/64",
       "code": "dragon32"
@@ -199,6 +204,11 @@
       "id": 37,
       "name": "Mac OS",
       "code": "macintosh"
+    },
+    {
+      "id": 4961,
+      "name": "Magnavox Odyssey 1",
+      "code": "odyssey"
     },
     {
       "id": 4927,
@@ -456,6 +466,11 @@
       "code": "ps3"
     },
     {
+      "id": 4919,
+      "name": "Sony Playstation 4",
+      "code": "ps4"
+    },
+    {
       "id": 13,
       "name": "Sony Playstation Portable",
       "code": "psp"
@@ -524,111 +539,6 @@
       "id": 23,
       "name": "Arcade",
       "code": "atomiswave"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "cave"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "cps1"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "cps2"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "cps3"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "dataeast"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "igs"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "irem"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "jaleco"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "kaneko"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "konami"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "midway"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "namco"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "naomi"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "naomi2"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "nichibutsu"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "nmk"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "psikyo"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "segasystemx"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "seta"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "taito"
-    },
-    {
-      "id": 23,
-      "name": "Arcade",
-      "code": "toaplan"
     }
   ]
 }

@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -37,7 +37,10 @@ class OpenRetro : public AbstractScraper
   Q_OBJECT
 
 public:
-  OpenRetro(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  OpenRetro(Settings *config,
+            QSharedPointer<NetManager> manager,
+            QString threadId,
+            NameTools *NameTool);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 

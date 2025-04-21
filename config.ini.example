@@ -1,5 +1,5 @@
 ; --------------------------------------------------------------------
-; Skyscraper by Lars Muldjord (https://github.com/detain/skyscraper)
+; Skyscraper (initially by Lars Muldjord) (https://github.com/risalt/skyscraper)
 ; --------------------------------------------------------------------
 
 ; This is an example config file for use with Skyscraper. Use it as a template for creating
@@ -40,38 +40,63 @@
 ;cacheMarquees="true"
 ;cacheTextures="true"
 ;importFolder="/home/pi/.skyscraper/import"
-;unpack="false"
-;frontend="emulationstation"
 ;emulator=""
 ;launch=""
-;videos="false"
-;videoSizeLimit="42"
 ;videoConvertCommand="ffmpeg -i %i -y -pix_fmt yuv420p -t 00:00:10 -c:v libx264 -crf 23 -c:a aac -b:a 64k -vf scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,setsar=1 %o"
-;videoConvertExtension="mp4"
-;symlink="false"
-;brackets="true"
-;maxLength="10000"
-;threads="2"
 ;pretend="false"
-;unattend="false"
 ;unattendSkip="false"
 ;interactive="false"
 ;forceFilename="false"
 ;verbosity="1"
-;skipped="false"
 ;maxFails="30"
 ;lang="en"
 ;region="wor"
-;langPrios="en,de,es"
 ;regionPrios="eu,us,ss,uk,wor,jp"
-;minMatch="0"
 ;artworkXml="artwork.xml"
 ;relativePaths="false"
 ;addExtensions="*.zst"
-;hints="false"
-;subdirs="true"
 ;spaceCheck="true"
-;scummIni="/full/path/to/scummvm.ini"
+keepSubtitle="false"
+waitIfConcurrent="true"
+gameListFolder="/opt/pegasus/roms"
+unpack="false"
+frontend="pegasus"
+videos="true"
+manuals="true"
+videoSizeLimit="26"
+manualSizeLimit="51"
+symlink="true"
+;symlinkImages="false"
+videoConvertExtension="mp4"
+brackets="false"
+maxLength="32700"
+threads="2"
+; By default, overwrite existing game lists. To skip existing entries, use "--flags unattendskip" in the command line
+unattend="true"
+getMissingResources="false"
+;onlyMissing="false"
+skipped="true"
+skipExistingCovers="true"
+skipExistingMarquees="true"
+skipExistingScreenshots="true"
+skipExistingVideos="true"
+skipExistingManuals="true"
+skipExistingWheels="true"
+skipExistingTextures="true"
+langPrios="en,es,fr,it,de,ja"
+hints="false"
+subdirs="false"
+scummIni="scummvm.ini"
+fuzzySearch="2"
+minMatch="80"
+guidesPath="..."
+mapsPath="..."
+docsPath="..."
+spritesPath="..."
+gamebasePath="..."
+exodosPath="..."
+negCacheDaysExpiration="365"
+;singleImagePerType="false"
 
 ; The following is an example of configs that only affect the 'snes' platform.
 ;[snes]
@@ -171,47 +196,6 @@
 ;[import]
 ;cacheRefresh="true"
 
-[main]
-keepSubtitle="false"
-waitIfConcurrent="true"
-gameListFolder="/opt/pegasus/roms"
-;gameListBackup="false"
-;unpack="true"
-unpack="false"
-frontend="pegasus"
-videos="true"
-manuals="true"
-videoSizeLimit="26"
-manualSizeLimit="51"
-symlink="true"
-;videoConvertCommand="ffmpeg -i %i -y -pix_fmt yuv420p -t 00:00:10 -c:v libx264 -crf 23 -c:a aac -b:a 64k -vf scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,setsar=1 %o"
-videoConvertExtension="mp4"
-brackets="false"
-maxLength="32700"
-threads="2"
-; By default, overwrite existing game lists. To skip existing entries, use "--flags unattendskip" in the command line
-unattend="true"
-getMissingResources="false"
-;onlyMissing="false"
-skipped="true"
-skipExistingCovers="true"
-skipExistingMarquees="true"
-skipExistingScreenshots="true"
-skipExistingVideos="true"
-skipExistingManuals="true"
-skipExistingWheels="true"
-skipExistingTextures="true"
-langPrios="en,es,fr,it,de,ja"
-hints="false"
-subdirs="false"
-scummIni="scummvm.ini"
-fuzzySearch="2"
-minMatch="80"
-guidesPath="..."
-mapsPath="..."
-docsPath="..."
-negCacheDaysExpiration="365"
-
 [arcadedb]
 ;getMissingResources="true"
 
@@ -227,6 +211,7 @@ dbPath="mobygamesdb"
 minMatch="0"
 
 [launchbox]
+ignoreNegativeCache="true"
 dbPath="launchboxdb/Metadata.xml"
 ;getMissingResources="true"
 minMatch="0"
@@ -241,8 +226,10 @@ threads="4"
 userCreds="xxx:xxx"
 
 [giantbomb]
+ignoreNegativeCache="true"
 userCreds="xxx:xxx:xxx"
 dbPath="giantbombdb"
+singleImagePerType="true"
 getMissingResources="false"
 minMatch="0"
 threads="4"
@@ -255,13 +242,16 @@ videoPreferNormalized="true"
 minMatch="65"
 
 [chiptune]
+ignoreNegativeCache="true"
 threads="4"
 minMatch="0"
 chiptunes="true"
 cacheRefresh="true"
-dbPath=".../navidrome.db"
+dbPath="..."
+dbServer=".../navidrome.db"
 
 [gamefaqs]
+ignoreNegativeCache="true"
 dbPath="gamefaqsdb"
 threads="4"
 minMatch="0"
@@ -269,21 +259,32 @@ guides="true"
 ;cacheRefresh="true"
 
 [vgfacts]
+ignoreNegativeCache="true"
 dbPath="vgfactsdb"
 threads="4"
 minMatch="0"
 
 [vgmaps]
+ignoreNegativeCache="true"
 minMatch="0"
 ;cacheRefresh="true"
 maps="true"
 threads="4"
 dbPath="..."
 
+[spriters]
+ignoreNegativeCache="true"
+minMatch="0"
+sprites="true"
+threads="1"
+dbPath="..."
+
 [customflags]
+ignoreNegativeCache="true"
 cacheRefresh="true"
 
 [offlinetgdb]
+ignoreNegativeCache="true"
 minMatch="0"
 dbServer="localhost"
 dbName="tgdb"
@@ -292,6 +293,7 @@ dbPassword="xxx"
 threads="4"
 
 [docsdb]
+ignoreNegativeCache="true"
 minMatch="0"
 cheats="true"
 reviews="true"
@@ -303,9 +305,52 @@ dbPath="..."
 threads="4"
 
 [mamehistory]
+ignoreNegativeCache="true"
+minMatch="0"
+;cacheRefresh="true"
+dbPath="mamedb"
+threads="4"
+
+[gamebase]
+ignoreNegativeCache="true"
 minMatch="0"
 ;cacheRefresh="true"
 threads="2"
+maps="true"
+cheats="true"
+reviews="true"
+artbooks="true"
+guides="true"
+chiptunes="true"
+dbServer=".../navidrome.db"
+
+[exodos]
+ignoreNegativeCache="true"
+minMatch="0"
+;cacheRefresh="true"
+threads="4"
+maps="true"
+cheats="true"
+reviews="true"
+artbooks="true"
+guides="true"
+chiptunes="true"
+dbServer=".../navidrome.db"
+
+[everygame]
+ignoreNegativeCache="true"
+minMatch="0"
+cheats="true"
+reviews="true"
+guides="true"
+dbPath="everygamedb"
+threads="1"
+
+[vggeek]
+;onlyMissing="true"
+dbPath="vggeekcache"
+singleImagePerType="true"
+threads="1"
 
 [thegamesdb]
 ; The key allows 3000 requests per month and IP address
@@ -317,12 +362,14 @@ threads="1"
 cacheRefresh="true"
 
 [import]
+ignoreNegativeCache="true"
 cacheRefresh="true"
 
 ; Frontends
 [xmlexport]
 guides="true"
 maps="true"
+sprites="true"
 cheats="true"
 reviews="true"
 artbooks="true"
@@ -336,6 +383,7 @@ dbUser="xxx"
 dbPassword="xxx"
 guides="true"
 maps="true"
+sprites="true"
 cheats="true"
 reviews="true"
 artbooks="true"
@@ -343,14 +391,19 @@ chiptunes="true"
 
 [pegasus]
 ; Not needed anymore usually:
-skipExistingCovers="false"
-skipExistingMarquees="false"
-skipExistingScreenshots="false"
-skipExistingVideos="false"
-skipExistingManuals="false"
-skipExistingWheels="false"
-skipExistingTextures="false"
+;skipExistingCovers="false"
+;skipExistingMarquees="false"
+;skipExistingScreenshots="false"
+;skipExistingVideos="false"
+;skipExistingManuals="false"
+;skipExistingWheels="false"
+;skipExistingTextures="false"
 
 ; Platform specific settings:
 ;[snes]
-; ...
+;addExtensions=""
+;inputFolder="..."
+;excludePattern=""
+;unpack="false"
+;subdirs="true"
+;launch="... '{file.path}'"

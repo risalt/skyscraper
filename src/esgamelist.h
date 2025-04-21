@@ -3,7 +3,7 @@
  *
  *  Mon Dec 17 08:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord & Martin Gerhardy
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -26,14 +26,18 @@
 #ifndef ESGAMELIST_H
 #define ESGAMELIST_H
 
-#include "abstractscraper.h"
 #include <QDomDocument>
+
+#include "abstractscraper.h"
 
 class ESGameList: public AbstractScraper {
 Q_OBJECT
 
 public:
-  ESGameList(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  ESGameList(Settings *config,
+             QSharedPointer<NetManager> manager,
+             QString threadId,
+             NameTools *NameTool);
   QStringList getSearchNames(const QFileInfo &info) override;
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 

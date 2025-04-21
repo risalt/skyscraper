@@ -2,8 +2,7 @@
  *            offlinetgdb.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -36,11 +35,11 @@
 #include "nametools.h"
 #include "platform.h"
 
-
 OfflineTGDB::OfflineTGDB(Settings *config,
                          QSharedPointer<NetManager> manager,
-                         QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                         QString threadId,
+                         NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
 
@@ -69,6 +68,10 @@ OfflineTGDB::OfflineTGDB(Settings *config,
 
   loadMaps();
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by TheGamesDB or it hasn't "
@@ -173,6 +176,9 @@ OfflineTGDB::OfflineTGDB(Settings *config,
            gamesIds.size());
   }
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(TAGS);

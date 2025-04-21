@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -31,6 +31,7 @@
 #include <iostream>
 #include <QDir>
 #include <QDate>
+#include <QDebug>
 #include <QFileInfo>
 #include <QRegularExpression>
 

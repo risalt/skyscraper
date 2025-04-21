@@ -19,8 +19,13 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
     <source>docsdb</source>
     <source>mamehistory</source>
+    <source>vggeek</source>
+    <source>spriters</source>
+    <source>vgmaps</source>
   </order>
   <order type="platform">
     <source>import</source>
@@ -40,8 +45,13 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
     <source>docsdb</source>
     <source>mamehistory</source>
+    <source>vggeek</source>
+    <source>spriters</source>
+    <source>vgmaps</source>
   </order>
   <order type="releasedate">
     <source>import</source>
@@ -60,6 +70,9 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="developer">
     <source>import</source>
@@ -75,7 +88,10 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
     <source>vgfacts</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="publisher">
     <source>import</source>
@@ -93,7 +109,10 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
- </order>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
+  </order>
   <order type="players">
     <source>import</source>
     <source>esgamelist</source>
@@ -109,6 +128,8 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>vggeek</source>
 </order>
   <order type="ages">
     <source>import</source>
@@ -123,6 +144,9 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="tags">
     <source>import</source>
@@ -141,6 +165,9 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="franchises">
     <source>import</source>
@@ -151,6 +178,7 @@
     <source>igdb</source>
     <source>giantbomb</source>
     <source>gamefaqs</source>
+    <source>vggeek</source>
   </order>
   <order type="rating">
     <source>import</source>
@@ -163,6 +191,9 @@
     <source>igdb</source>
     <source>rawg</source>
     <source>gamefaqs</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="description">
     <source>import</source>
@@ -180,7 +211,10 @@
     <source>gamefaqs</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
     <source>mamehistory</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="cover">
     <source>import</source>
@@ -197,7 +231,10 @@
     <source>giantbomb</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
- </order>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
+  </order>
   <order type="screenshot">
     <source>import</source>
     <source>esgamelist</source>
@@ -213,7 +250,10 @@
     <source>giantbomb</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
- </order>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
+  </order>
   <order type="wheel">
     <source>import</source>
     <source>esgamelist</source>
@@ -228,7 +268,9 @@
     <source>giantbomb</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
-</order>
+    <source>everygame</source>
+    <source>vggeek</source>
+  </order>
   <order type="marquee">
     <source>import</source>
     <source>esgamelist</source>
@@ -245,6 +287,9 @@
     <source>rawg</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="texture">
     <source>import</source>
@@ -259,6 +304,9 @@
     <source>screenscraper</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>gamebase</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
   <order type="video">
     <source>import</source>
@@ -271,6 +319,8 @@
     <source>giantbomb</source>
     <source>offlinetgdb</source>
     <source>thegamesdb</source>
+    <source>everygame</source>
+    <source>vggeek</source>
   </order>
    <order type="manual">
     <source>import</source>
@@ -280,7 +330,9 @@
     <source>worldofspectrum</source>
     <source>arcadedb</source>
     <source>mobygames</source>
+    <source>gamebase</source>
     <source>offlinemobygames</source>
+    <source>everygame</source>
   </order>
   <order type="trivia">
     <source>vgfacts</source>
@@ -289,21 +341,29 @@
   <order type="guides">
     <source>gamefaqs</source>
     <source>docsdb</source>
+    <source>everygame</source>
+    <source>gamebase</source>
   </order>
   <order type="reviews">
     <source>docsdb</source>
+    <source>everygame</source>
   </order>
   <order type="cheats">
     <source>docsdb</source>
+    <source>everygame</source>
+    <source>gamebase</source>
   </order>
   <order type="artbooks">
     <source>docsdb</source>
+    <source>gamebase</source>
   </order>
   <order type="chiptuneid">
     <source>chiptune</source>
+    <source>gamebase</source>
   </order>
   <order type="chiptunepath">
     <source>chiptune</source>
+    <source>gamebase</source>
   </order>
   <order type="completed">
     <source>customflags</source>
@@ -325,5 +385,12 @@
   </order>
   <order type="timePlayed">
     <source>customflags</source>
+  </order>
+  <order type="sprites">
+    <source>spriters</source>
+  </order>
+  <order type="vgmaps">
+    <source>vgmaps</source>
+    <source>gamebase</source>
   </order>
 </priorities>

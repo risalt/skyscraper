@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -25,7 +25,6 @@
 
 #include "abstractscraper.h"
 #include "platform.h"
-#include "nametools.h"
 #include "strtools.h"
 
 #include <unistd.h>
@@ -43,52 +42,56 @@
 
 AbstractScraper::AbstractScraper(Settings *config,
                                  QSharedPointer<NetManager> manager,
-                                 QString threadId)
-  : config(config), threadId(threadId)
+                                 QString threadId,
+                                 NameTools *NameTool)
+  : config(config), threadId(threadId), NameTool(NameTool)
 {
   offlineScraper = false;
   if(threadId != "cache") {
     netComm = new NetComm(manager);
     connect(netComm, &NetComm::dataReady, &q, &QEventLoop::quit);
-    negDb = QSqlDatabase::addDatabase("QSQLITE", "negcache" + threadId);
-    negDb.setDatabaseName(dbNegCache);
-    if(!negDb.open()) {
-      printf("ERROR: Could not open/create the negative cache database %s. "
-             "Proceeding without it.\n",
-             dbNegCache.toStdString().c_str());
-      qDebug() << negDb.lastError();
-    } else {
-      QSqlQuery query(negDb);
-      query.setForwardOnly(true);
-      query.prepare("SELECT COUNT(*) FROM negativecache WHERE platform='"
-                    + config->platform + "' AND scraper='" + config->scraper
-                    + "' AND date>" + QString::number(config->negCacheExpiration));
-      if(!query.exec()) {
-        // Create the table:
-        query.finish();
-        query.prepare("CREATE TABLE negativecache ("
-                       "platform TEXT not NULL, scraper TEXT not NULL, file TEXT not NULL, "
-                       "failedname TEXT not NULL, date INTEGER not NULL)");
+    if(!config->ignoreNegCache) {
+      negDb = QSqlDatabase::addDatabase("QSQLITE", "negcache" + threadId);
+      negDb.setDatabaseName(dbNegCache);
+      if(!negDb.open()) {
+        printf("ERROR: Could not open/create the negative cache database %s. "
+               "Proceeding without it.\n",
+               dbNegCache.toStdString().c_str());
+        qDebug() << negDb.lastError();
+      } else {
+        QSqlQuery query(negDb);
+        query.setForwardOnly(true);
+        query.prepare("SELECT COUNT(*) FROM negativecache WHERE platform='"
+                      + config->platform + "' AND scraper='" + config->scraper
+                      + "' AND date>" + QString::number(config->negCacheExpiration));
         if(!query.exec()) {
-          qDebug() << query.lastError();
-          printf("ERROR: Error creating the negative database table.\n");
-        } else {
+          // Create the table:
           query.finish();
-          query.prepare("CREATE INDEX easyaccess ON negativecache(platform, scraper, file)");
+          query.prepare("CREATE TABLE negativecache ("
+                         "platform TEXT not NULL, scraper TEXT not NULL, "
+                         "file TEXT not NULL, failedname TEXT not NULL, "
+                         "lowmatch TEXT, date INTEGER not NULL)");
           if(!query.exec()) {
             qDebug() << query.lastError();
-            printf("ERROR: Error creating the negative database index.\n");
+            printf("ERROR: Error creating the negative database table.\n");
           } else {
-            negDbReady = true;
+            query.finish();
+            query.prepare("CREATE INDEX easyaccess ON negativecache(platform, scraper, file)");
+            if(!query.exec()) {
+              qDebug() << query.lastError();
+              printf("ERROR: Error creating the negative database index.\n");
+            } else {
+              negDbReady = true;
+            }
           }
+        } else {
+          query.next();
+          printf("INFO: %d entries have been read from the negative cache.\n",
+                 query.value(0).toInt());
+          negDbReady = true;
         }
-      } else {
-        query.next();
-        printf("INFO: %d entries have been read from the negative cache.\n",
-               query.value(0).toInt());
-        negDbReady = true;
+        query.finish();
       }
-      query.finish();
     }
   }
 }
@@ -97,9 +100,11 @@ AbstractScraper::~AbstractScraper()
 {
   if(threadId != "cache") {
     delete netComm;
-    negDb.close();
-    negDb = QSqlDatabase();
-    QSqlDatabase::removeDatabase("negcache" + threadId);
+    if(!config->ignoreNegCache) {
+      negDb.close();
+      negDb = QSqlDatabase();
+      QSqlDatabase::removeDatabase("negcache" + threadId);
+    }
   }
 }
 
@@ -153,6 +158,11 @@ void AbstractScraper::fetchGameResources(GameEntry &game, QStringList &sharedBlo
 {
   for(int a = 0; a < fetchOrder.length(); ++a) {
     switch(fetchOrder.at(a)) {
+    case ID:
+      if((!cache) || (cache && cache->id.isEmpty())) {
+        getId(game);
+      }
+      break;
     case TITLE:
       if((!cache) || (cache && cache->title.isEmpty())) {
         getTitle(game);
@@ -214,35 +224,40 @@ void AbstractScraper::fetchGameResources(GameEntry &game, QStringList &sharedBlo
       }
       break;
     case COVER:
-      if(config->cacheCovers) {
+      if((config->cacheCovers) &&
+         (!config->singleImagePerType || !sharedBlobs.contains("cover"))) {
         if((!cache) || (cache && cache->coverData.isNull())) {
           getCover(game);
         }
       }
       break;
     case SCREENSHOT:
-      if(config->cacheScreenshots) {
+      if((config->cacheScreenshots) &&
+         (!config->singleImagePerType || !sharedBlobs.contains("screenshot"))) {
         if((!cache) || (cache && cache->screenshotData.isNull())) {
           getScreenshot(game);
         }
       }
       break;
     case WHEEL:
-      if(config->cacheWheels) {
+      if((config->cacheWheels) &&
+         (!config->singleImagePerType || !sharedBlobs.contains("wheel"))) {
         if((!cache) || (cache && cache->wheelData.isNull())) {
           getWheel(game);
         }
       }
       break;
     case MARQUEE:
-      if(config->cacheMarquees) {
+      if((config->cacheMarquees) &&
+         (!config->singleImagePerType || !sharedBlobs.contains("marquee"))) {
         if((!cache) || (cache && cache->marqueeData.isNull())) {
           getMarquee(game);
         }
       }
       break;
     case TEXTURE:
-      if(config->cacheTextures) {
+      if((config->cacheTextures) &&
+         (!config->singleImagePerType || !sharedBlobs.contains("texture"))) {
         if((!cache) || (cache && cache->textureData.isNull())) {
           getTexture(game);
         }
@@ -301,6 +316,13 @@ void AbstractScraper::fetchGameResources(GameEntry &game, QStringList &sharedBlo
       if(config->maps) {
         if((!cache) || (cache && cache->vgmaps.isEmpty())) {
           getVGMaps(game);
+        }
+      }
+      break;
+    case SPRITES:
+      if(config->sprites) {
+        if((!cache) || (cache && cache->sprites.isEmpty())) {
+          getSprites(game);
         }
       }
       break;
@@ -510,7 +532,16 @@ void AbstractScraper::getScreenshot(GameEntry &game)
     return;
   }
   // Check that we have enough screenshots
-  int screens = data.count(screenshotCounter.toUtf8());
+  int screens = 1;
+  if(screenshotCounter.isEmpty()) {
+    for(const auto &nom: std::as_const(screenshotPre)) {
+      if(!checkNom(nom)) {
+        return;
+      }
+    }
+  } else {
+    screens = data.count(screenshotCounter.toUtf8());
+  }
   if(screens >= 1) {
     for(int a = 0; a < screens - (screens / 2); a++) {
       for(const auto &nom: std::as_const(screenshotPre)) {
@@ -686,11 +717,19 @@ void AbstractScraper::getVGMaps(GameEntry &)
 {
 }
 
+void AbstractScraper::getSprites(GameEntry &)
+{
+}
+
 void AbstractScraper::getTrivia(GameEntry &)
 {
 }
 
 void AbstractScraper::getCustomFlags(GameEntry &)
+{
+}
+
+void AbstractScraper::getId(GameEntry &)
 {
 }
 
@@ -775,16 +814,21 @@ QString AbstractScraper::applyNameMappings(const QString &fileName)
 // in order against the scraping service until a match is found.
 QStringList AbstractScraper::getSearchNames(const QFileInfo &info)
 {
-  QString baseName = applyNameMappings(info.completeBaseName());
-
   QStringList searchNames;
-  if(offlineScraper) {
-    searchNames << baseName;
+
+  if(!globalPastTitle.isEmpty()) {
+    searchNames << globalPastTitle;
   } else {
-    NameTools::generateSearchNames(baseName, searchNames, searchNames, false);
+    QString baseName = applyNameMappings(info.completeBaseName());
+    if(offlineScraper) {
+      searchNames << baseName;
+    } else {
+      NameTools::generateSearchNames(baseName, searchNames, searchNames, false);
+    }
   }
+
   if(config->verbosity >= 2) {
-    qDebug() << "Search Names for:" << baseName << ":" << searchNames;
+    qDebug() << "Search Names for:" << info.completeBaseName() << ":" << searchNames;
   }
 
   return searchNames;
@@ -836,7 +880,7 @@ template <typename T> bool AbstractScraper::getSearchResultsOffline(
       while(keysIterator.hasNext()) {
         QString name = keysIterator.next();
         if(StrTools::onlyNumbers(name) == StrTools::onlyNumbers(sanitizedName)) {
-          int distance = StrTools::distanceBetweenStrings(sanitizedName, name, false);
+          int distance = StrTools::distanceBetweenStrings(sanitizedName, name);
           if(distance <= maxDistance) {
             printf("LB FuzzySearch: Found %s = %s (distance %d)!\n", sanitizedName.toStdString().c_str(),
                    name.toStdString().c_str(), distance);
@@ -972,6 +1016,7 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
                                 const QFileInfo &originalInfo, QString &output,
                                 QString &debug, QString pastTitle)
 {
+  lastSearchName = "";
   // Reset region priorities to original list from Settings
   regionPrios = config->regionPrios;
   // Autodetect region and append to region priorities
@@ -1055,10 +1100,14 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
 
   QStringList searchNames;
   if(config->searchName.isEmpty()) {
-    if(pastTitle.isEmpty() || config->rescan) {
+    if(pastTitle.isEmpty() || config->rescan ||
+       (config->scraper == "arcadedb") || (config->scraper == "mamehistory") ||
+       (config->scraper == "customflags")) {
       searchNames = getSearchNames(info);
     } else {
-      searchNames.append(pastTitle);
+      globalPastTitle = pastTitle;
+      searchNames = getSearchNames(info);
+      globalPastTitle = "";
     }
   } else {
     // Add the string provided by "--query"
@@ -1069,7 +1118,7 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
     return;
   } else {
     // Apply negative cache suppresions:
-    if(negDbReady && !offlineScraper) {
+    if(negDbReady && !offlineScraper && !config->ignoreNegCache) {
       QMutableListIterator<QString> it(searchNames);
       while(it.hasNext()) {
         QString current = it.next();
@@ -1109,16 +1158,15 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
     getSearchResults(gameEntries, lastSearchName, config->platform);
     debug.append("Tried with: '" + lastSearchName + "'\n");
     debug.append("Platform: " + config->platform + "\n");
-    // Some online scrapers' search engines are broken and always returns results,
+    // Some online scrapers' search engines are broken and always return results,
     // no matter the query... Adding them as exceptions here we try all the search names,
     // even if more than one returns results.
     // This trick of accumulating all the the passes even if a positive result was found
-    // CANNOT be used with: ScreenScraper, ESGameList, CustomFlags, ArcadeDB, DocsDB
-    // or ImportScraper.
-    if(!gameEntries.isEmpty() &&
-       config->scraper != "worldofspectrum") { //&& config->scraper != "rawg") {
+    // CANNOT be used with: ESGameList, CustomFlags or ImportScraper.
+    if(!gameEntries.isEmpty() && config->scraper != "worldofspectrum") {
+       //&& config->scraper != "rawg") { ???
       break;
-    } else {
+    } else if(gameEntries.isEmpty()) {
       // Add to negative cache as universal "no-match" (except if there was an error
       // querying the scraper):
       addLastSearchToNegativeCache();
@@ -1128,16 +1176,17 @@ void AbstractScraper::runPasses(QList<GameEntry> &gameEntries, const QFileInfo &
 
 // Adds the last active search term used to the negative cache. If file is not empty,
 // the negative cache is conditional to the indicated file. Otherwise it is universal.
-void AbstractScraper::addLastSearchToNegativeCache(const QString &file)
+void AbstractScraper::addLastSearchToNegativeCache(const QString &file, const QString &lowMatch)
 {
-  if(negDbReady && !offlineScraper && !searchError) {
+  if(!lastSearchName.isEmpty() && negDbReady && !offlineScraper && !searchError && !config->ignoreNegCache) {
     QSqlQuery query(negDb);
-    query.prepare("INSERT INTO negativecache (platform, scraper, file, failedname, date)"
-                  " VALUES (:platform, :scraper, :file, :failedname, :date)");
+    query.prepare("INSERT INTO negativecache (platform, scraper, file, failedname, lowmatch, date)"
+                  " VALUES (:platform, :scraper, :file, :failedname, :lowmatch, :date)");
     query.bindValue(":platform", config->platform);
     query.bindValue(":scraper", config->scraper);
     query.bindValue(":file", file);
     query.bindValue(":failedname", lastSearchName);
+    query.bindValue(":lowmatch", lowMatch);
     query.bindValue(":date", QDateTime::currentMSecsSinceEpoch() / 1000);
     if(!query.exec()) {
       printf("ERROR: Could not add failed match to negative cache database.\n");
@@ -1222,14 +1271,16 @@ void AbstractScraper::loadConfig(const QString &configPath,
   platformToId.clear();
 
   QFile configFile(configPath);
-  if(!configFile.open(QIODevice::ReadOnly))
+  if(!configFile.open(QIODevice::ReadOnly)) {
     return;
+  }
 
   QByteArray saveData = configFile.readAll();
   QJsonDocument json(QJsonDocument::fromJson(saveData));
 
-  if(json.isNull() || json.isEmpty())
+  if(json.isNull() || json.isEmpty()) {
     return;
+  }
 
   QJsonArray platformsArray = json["platforms"].toArray();
   for(int platformIndex = 0; platformIndex < platformsArray.size(); ++platformIndex) {

@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -35,7 +35,10 @@ class WorldOfSpectrum : public AbstractScraper
   Q_OBJECT
 
 public:
-  WorldOfSpectrum(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  WorldOfSpectrum(Settings *config,
+                  QSharedPointer<NetManager> manager,
+                  QString threadId,
+                  NameTools *NameTool);
 
 protected:
   void getSearchResults(QList<GameEntry> &gameEntries,

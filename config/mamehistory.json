@@ -133,6 +133,10 @@
       "platform": "amiga;Commodore Amiga 3000 System disks"
     },
     {
+      "code": "amiga_amix",
+      "platform": ";Commodore AMIX disks"
+    },
+    {
       "code": "amiga_apps",
       "platform": "amiga;Commodore Amiga Application disks"
     },
@@ -473,6 +477,10 @@
       "platform": "loopy;Casio Loopy cartridges"
     },
     {
+      "code": "cassvisn_cart",
+      "platform": ";Epoch Cassette Vision cartridges"
+    },
+    {
       "code": "cbm2_cart",
       "platform": "c64;Commodore CBM-II cartridges"
     },
@@ -491,6 +499,10 @@
     {
       "code": "cc40_cart",
       "platform": ";CC-40 cartridges"
+    },
+    {
+      "code": "amiga_cd",
+      "platform": "amigacd32;Commodore AmigaCD images"
     },
     {
       "code": "cd32",
@@ -1517,6 +1529,10 @@
       "platform": "msx2;MSX Turbo-R disk images"
     },
     {
+      "code": "msxr_cart",
+      "platform": "msx2;MSX Turbo-R cartridges"
+    },
+    {
       "code": "mt65_cass",
       "platform": ";Microtan 65 cassettes"
     },
@@ -1750,7 +1766,7 @@
     },
     {
       "code": "pc6001_cart",
-      "platform": "pc88;NEC PC-6001 cartridges"
+      "platform": "pc60;NEC PC-6001 cartridges"
     },
     {
       "code": "pc8001_flop",
@@ -1846,23 +1862,23 @@
     },
     {
       "code": "pet_cass",
-      "platform": "cpet;Commodore PET cassettes"
+      "platform": "pet;Commodore PET cassettes"
     },
     {
       "code": "pet_flop",
-      "platform": "cpet;Commodore PET diskettes"
+      "platform": "pet;Commodore PET diskettes"
     },
     {
       "code": "pet_hdd",
-      "platform": "cpet;Commodore PET hard disks"
+      "platform": "pet;Commodore PET hard disks"
     },
     {
       "code": "pet_quik",
-      "platform": "cpet;Commodore PET quickload"
+      "platform": "pet;Commodore PET quickload"
     },
     {
       "code": "pet_rom",
-      "platform": "cpet;Commodore PET Function ROMs"
+      "platform": "pet;Commodore PET Function ROMs"
     },
     {
       "code": "phc25_cass",
@@ -2114,11 +2130,11 @@
     },
     {
       "code": "sc3000_cart",
-      "platform": "sg1000;Sega Computer 3000 cartridges"
+      "platform": "sg-1000;Sega Computer 3000 cartridges"
     },
     {
       "code": "sc3000_cass",
-      "platform": "sg1000;Sega Computer 3000 cassettes"
+      "platform": "sg-1000;Sega Computer 3000 cassettes"
     },
     {
       "code": "scv",
@@ -2138,11 +2154,11 @@
     },
     {
       "code": "sf7000",
-      "platform": "sg1000;Sega Super Control Station SF-7000 disk images"
+      "platform": "sg-1000;Sega Super Control Station SF-7000 disk images"
     },
     {
       "code": "sg1000",
-      "platform": "sg1000;Sega SG-1000 and SG-1000 MarkII cartridges"
+      "platform": "sg-1000;Sega SG-1000 and SG-1000 MarkII cartridges"
     },
     {
       "code": "sgi_mips",
@@ -2322,7 +2338,7 @@
     },
     {
       "code": "superpet_flop",
-      "platform": "cpet;Commodore SuperPET / MMF 9000 diskettes"
+      "platform": "pet;Commodore SuperPET / MMF 9000 diskettes"
     },
     {
       "code": "supracan",
@@ -2334,15 +2350,15 @@
     },
     {
       "code": "svi318_cart",
-      "platform": ";Spectravision SVI-318 cartridges"
+      "platform": "spectravideo;Spectravision SVI-318 cartridges"
     },
     {
       "code": "svi318_cass",
-      "platform": ";Spectravision SVI-318 cassettes"
+      "platform": "spectravideo;Spectravision SVI-318 cassettes"
     },
     {
       "code": "svi318_flop",
-      "platform": ";Spectravision SVI-318/328 disk images"
+      "platform": "spectravideo;Spectravision SVI-318/328 disk images"
     },
     {
       "code": "svision",
@@ -2746,51 +2762,51 @@
     },
     {
       "code": "abc1600_hdd",
-      "platform": "Luxor ABC 1600 hard disks"
+      "platform": ";Luxor ABC 1600 hard disks"
     },
     {
       "code": "abc806_flop",
-      "platform": "Luxor ABC 806 diskettes"
+      "platform": ";Luxor ABC 806 diskettes"
     },
     {
       "code": "abc80_rom",
-      "platform": "Luxor ABC 80 memory card ROMs"
+      "platform": ";Luxor ABC 80 memory card ROMs"
     },
     {
       "code": "abc830_flop",
-      "platform": "Luxor ABC 830 diskettes"
+      "platform": ";Luxor ABC 830 diskettes"
     },
     {
       "code": "abc832_flop",
-      "platform": "Luxor ABC 832 diskettes"
+      "platform": ";Luxor ABC 832 diskettes"
     },
     {
       "code": "abc838_flop",
-      "platform": "Luxor ABC 838 diskettes"
+      "platform": ";Luxor ABC 838 diskettes"
     },
     {
       "code": "altos586",
-      "platform": "Altos 586 floppies"
+      "platform": ";Altos 586 floppies"
     },
     {
       "code": "bingobear",
-      "platform": "Bingo Bear modules"
+      "platform": ";Bingo Bear modules"
     },
     {
       "code": "bmjr_cass",
-      "platform": "Hitachi Basic Master Jr. cassettes"
+      "platform": ";Hitachi Basic Master Jr. cassettes"
     },
     {
       "code": "bml3_cass",
-      "platform": "Hitachi Basic Master Level 3 cassettes"
+      "platform": ";Hitachi Basic Master Level 3 cassettes"
     },
     {
       "code": "brother_pn",
-      "platform": "Brother PowerNote disks"
+      "platform": ";Brother PowerNote disks"
     },
     {
       "code": "carbeena",
-      "platform": "Car Beena cartridge"
+      "platform": ";Car Beena cartridge"
     },
     {
       "code": "coleco_homebrew",
@@ -2798,47 +2814,47 @@
     },
     {
       "code": "conchess",
-      "platform": "Conchess library modules"
+      "platform": ";Conchess library modules"
     },
     {
       "code": "ctvboy",
-      "platform": "Gakken Compact Vision TV Boy cartridges"
+      "platform": ";Gakken Compact Vision TV Boy cartridges"
     },
     {
       "code": "cubieboard4",
-      "platform": "Cubieboard4 software"
+      "platform": ";Cubieboard4 software"
     },
     {
       "code": "cz1_cart",
-      "platform": "Casio CZ-1 ROM cartridges"
+      "platform": ";Casio CZ-1 ROM cartridges"
     },
     {
       "code": "ekara_cart",
-      "platform": "Takara e-kara / Popira / Jumping Popira / Taiko de Popira / Dance Dance Revolution Family Mat cartridges"
+      "platform": ";Takara e-kara / Popira / Jumping Popira / Taiko de Popira / Dance Dance Revolution Family Mat cartridges"
     },
     {
       "code": "fp1100_cass",
-      "platform": "Casio FP-1100 cassettes"
+      "platform": ";Casio FP-1100 cassettes"
     },
     {
       "code": "h88_cass",
-      "platform": "Heath H88 cassettes"
+      "platform": ";Heath H88 cassettes"
     },
     {
       "code": "hikara",
-      "platform": "Takara Tomy Hi-kara cartridges"
+      "platform": ";Takara Tomy Hi-kara cartridges"
     },
     {
       "code": "jaminator",
-      "platform": "Jaminator cartridges"
+      "platform": ";Jaminator cartridges"
     },
     {
       "code": "k28",
-      "platform": "K-2-8 (model 7-232) modules"
+      "platform": ";K-2-8 (model 7-232) modules"
     },
     {
       "code": "kisssite_cd",
-      "platform": "Tomy Kiss-Site CD-ROMs"
+      "platform": ";Tomy Kiss-Site CD-ROMs"
     },
     {
       "code": "mac_cdrom",
@@ -2866,19 +2882,35 @@
     },
     {
       "code": "psion_ssd",
-      "platform": "Psion Solid State Disks"
+      "platform": ";Psion Solid State Disks"
     },
     {
       "code": "roland_tnsc2",
-      "platform": "Roland TN-SC2 Music Style Cards"
+      "platform": ";Roland TN-SC2 Music Style Cards"
     },
     {
       "code": "segaai",
-      "platform": "Sega AI Software"
+      "platform": ";Sega AI Software"
     },
     {
       "code": "videoart",
-      "platform": "LJN VideoArt cartridges"
+      "platform": ";LJN VideoArt cartridges"
+    },
+    {
+      "code": "super_tv_pc_cart",
+      "platform": ";Epoch Super TV-PC cartridges"
+    },
+    {
+      "code": "challenge_gear_cart",
+      "platform": "lcdhandheld;Benesse Challenge Gear cartridges"
+    },
+    {
+      "code": "ramstar",
+      "platform": ";Ram Star multi-game cartridges"
+    },
+    {
+      "code": "pixter_cart",
+      "platform": "lcdhandheld;Mattel Pixter cartridges"
     }
   ]
 }

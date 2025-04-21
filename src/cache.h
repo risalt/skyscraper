@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -47,6 +47,7 @@ struct Resource {
 };
 
 struct ResCounts {
+  int ids;
   int titles;
   int platforms;
   int descriptions;
@@ -71,14 +72,15 @@ struct ResCounts {
   int reviews;
   int artbooks;
   int vgmaps;
+  int sprites;
   int chiptunes;
 };
 
 class Cache
 {
 public:
-  Cache(const QString &cacheFolder);
-  bool createFolders(const QString &scraper);
+  Cache(const QString &cacheFolder, const QString &scraper);
+  bool createFolders();
   bool read();
   void printPriorities(QString cacheId);
   void editResources(QSharedPointer<Queue> queue,
@@ -106,17 +108,6 @@ public:
   QList<Resource> getResources();
 
  private:
-  QDir cacheDir;
-  QMutex cacheMutex;
-  QMutex quickIdMutex;
-
-  QMap<QString, QStringList > prioMap;
-
-  QMap<QString, ResCounts> resCountsMap;
-
-  QList<Resource> resources;
-  QMap<QString, QPair<qint64, QString> > quickIds; // filePath, timestamp + cacheId for quick lookup
-
   QList<QFileInfo> getFileInfos(const QString &inputFolder, const QString &filter, const bool subdirs = true);
   QStringList getCacheIdList(const QList<QFileInfo> &fileInfos);
   QFileInfo getFileCacheId(const QString &cacheId);
@@ -134,8 +125,23 @@ public:
                       const Settings &config,
                       QString &output);
   bool hasAlpha(const QImage &image);
+  void loadCanonicalMap(const QString &json, QMap<QString, QString> *canonicalMap);
+
+  QDir cacheDir;
+  QMutex cacheMutex;
+  QMutex quickIdMutex;
+
+  QMap<QString, QStringList > prioMap;
+  QMap<QString, ResCounts> resCountsMap;
+  QList<Resource> resources;
+  QMap<QString, QPair<qint64, QString> > quickIds; // filePath, timestamp + cacheId for quick lookup
+
+  QMap<QString, QString> canonicalGenres;
+  QMap<QString, QString> canonicalFranchises;
+
   int resAtLoad = 0;
   QString globalScraper = "";
+
 };
 
 #endif // CACHE_H

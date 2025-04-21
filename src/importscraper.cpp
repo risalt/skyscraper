@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -30,8 +30,9 @@
 
 ImportScraper::ImportScraper(Settings *config,
                              QSharedPointer<NetManager> manager,
-                             QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                             QString threadId,
+                             NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   fetchOrder.append(TITLE);
   fetchOrder.append(DEVELOPER);
@@ -57,6 +58,7 @@ ImportScraper::ImportScraper(Settings *config,
   fetchOrder.append(PLATFORM);
   fetchOrder.append(TRIVIA);
   fetchOrder.append(VGMAPS);
+  fetchOrder.append(SPRITES);
 
   covers = QDir(config->importFolder + "/covers", "*.*",
                 QDir::Name, QDir::Files | QDir::NoDotAndDotDot).entryInfoList();
@@ -297,6 +299,7 @@ bool ImportScraper::loadDefinitions()
       checkForTag(platformPre, platformPost, platformTag, line);
       checkForTag(triviaPre, triviaPost, triviaTag, line);
       checkForTag(vgmapsPre, vgmapsPost, vgmapsTag, line);
+      checkForTag(spritesPre, spritesPost, spritesTag, line);
     }
     defFile.close();
     return true;

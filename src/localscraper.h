@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -33,7 +33,10 @@ class LocalScraper : public AbstractScraper
   Q_OBJECT
 
 public:
-  LocalScraper(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  LocalScraper(Settings *config,
+               QSharedPointer<NetManager> manager,
+               QString threadId,
+               NameTools *NameTool);
   void runPasses(QList<GameEntry> &, const QFileInfo &, const QFileInfo &, QString &, QString &, QString) override;
   void getGameData(GameEntry &, QStringList &, GameEntry *) override;
 

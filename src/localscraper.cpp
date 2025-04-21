@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -27,8 +27,9 @@
 
 LocalScraper::LocalScraper(Settings *config,
                            QSharedPointer<NetManager> manager,
-                           QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                           QString threadId,
+                           NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
 }
 

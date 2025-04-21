@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -352,8 +352,8 @@ QString StrTools::conformReleaseDate(QString str)
     str = QDate::fromString(str, "yyyyMMdd").toString("yyyyMMdd");
   }
   QDate finalDate = QDate::fromString(str, "yyyyMMdd");
-  if(finalDate < QDate::fromString("19711231", "yyyyMMdd") ||
-     finalDate > QDate::currentDate().addMonths(6) || !finalDate.isValid()) {
+  if(finalDate < QDate::fromString("19720101", "yyyyMMdd") ||
+     finalDate > QDate::currentDate().addMonths(12) || !finalDate.isValid()) {
     if(Skyscraper::config.scraper != "cache") {
       printf("\nWARNING: Incorrect date '%s'. Ignoring.\n", str.toStdString().c_str());
     }
@@ -366,11 +366,7 @@ QString StrTools::conformReleaseDate(QString str)
 QString StrTools::conformTags(const QString &str)
 {
   QString tags = "";
-#if QT_VERSION >= 0x050e00
   QStringList tagList = str.split(',', Qt::SkipEmptyParts);
-#else
-  QStringList tagList = str.split(',', QString::SkipEmptyParts);
-#endif
   for(auto &tag: tagList) {
     tag = tag.simplified();
     tag = tag.left(1).toUpper() + tag.mid(1, tag.length() - 1);
@@ -433,6 +429,7 @@ QString StrTools::sanitizeName(const QString &str, bool removeBrackets)
                .remove(QChar(0x00BF))
                .remove(QChar('!'))
                .remove(QChar(0x2013))
+               .remove(QChar(0x200B))
                .replace("&", "and");
   sanitizedName = sanitizedName.toLower();
   if(removeBrackets) {
@@ -548,9 +545,19 @@ bool StrTools::readCSVRow(QTextStream &in, QStringList *row)
   return true;
 }
 
+// To use as a test:
+// "ŠŒŽšœžŸ¥µÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿ¿¡ª€(囚人へのペル・エム・フル, Shūjin e no Peru emu furu)"
 QString StrTools::simplifyLetters(const QString &str)
 {
-  QString simplified = str.normalized(QString::NormalizationForm_KD);
-  //simplified.remove(QRegExp("[^a-zA-Z\\s]"));
+  QString simplified, normalized = str.normalized(QString::NormalizationForm_KD,
+                                                  QChar::currentUnicodeVersion());
+  for (int i=0, j=normalized.length(); i<j; i++) {
+     // strip diacritic marks
+     if (normalized.at(i).category() != QChar::Mark_NonSpacing &&
+         normalized.at(i).category() != QChar::Mark_SpacingCombining &&
+         normalized.at(i).category() != QChar::Mark_Enclosing) {
+       simplified.append(normalized.at(i));
+     }
+  }
   return simplified;
 }

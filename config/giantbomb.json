@@ -164,7 +164,7 @@
          "name": "dragon32"
       },{
          "id": 62,
-         "name": "Commodore PET/CBM"
+         "name": "pet"
       },{
          "id": 63,
          "name": "TRS-80"
@@ -191,7 +191,7 @@
          "name": "iPod"
       },{
          "id": 74,
-         "name": "Odyssey"
+         "name": "odyssey"
       },{
          "id": 75,
          "name": "pcfx"
@@ -224,82 +224,7 @@
          "name": "atomiswave"
       },{
          "id": 84,
-         "name": "cave"
-      },{
-         "id": 84,
-         "name": "cps1"
-      },{
-         "id": 84,
-         "name": "cps2"
-      },{
-         "id": 84,
-         "name": "cps3"
-      },{
-         "id": 84,
-         "name": "dataeast"
-      },{
-         "id": 84,
-         "name": "igs"
-      },{
-         "id": 84,
-         "name": "irem"
-      },{
-         "id": 84,
-         "name": "jaleco"
-      },{
-         "id": 84,
-         "name": "kaneko"
-      },{
-         "id": 84,
-         "name": "konami"
-      },{
-         "id": 84,
-         "name": "midway"
-      },{
-         "id": 84,
-         "name": "namco"
-      },{
-         "id": 84,
-         "name": "naomi"
-      },{
-         "id": 84,
-         "name": "naomi2"
-      },{
-         "id": 84,
-         "name": "nichibutsu"
-      },{
-         "id": 84,
-         "name": "nmk"
-      },{
-         "id": 84,
-         "name": "psikyo"
-      },{
-         "id": 84,
-         "name": "segasystemx"
-      },{
-         "id": 84,
-         "name": "seta"
-      },{
-         "id": 84,
-         "name": "taito"
-      },{
-         "id": 84,
-         "name": "toaplan"
-      },{
-         "id": 84,
          "name": "arcade"
-      },{
-         "id": 84,
-         "name": "fba"
-      },{
-         "id": 84,
-         "name": "mame-advmame"
-      },{
-         "id": 84,
-         "name": "mame-libretro"
-      },{
-         "id": 84,
-         "name": "mame-mame4all"
       },{
          "id": 85,
          "name": "NUON"
@@ -401,7 +326,7 @@
          "name": "fm7"
       },{
          "id": 115,
-         "name": "NEC PC-6001"
+         "name": "pc60"
       },{
          "id": 116,
          "name": "PlayStation Network (PSP)"

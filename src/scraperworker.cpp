@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -33,11 +33,15 @@
 #include "settings.h"
 #include "compositor.h"
 #include "openretro.h"
+#include "vggeek.h"
+#include "exodos.h"
+#include "gamebase.h"
 #include "offlinetgdb.h"
 #include "thegamesdb.h"
 #include "launchbox.h"
 #include "chiptune.h"
 #include "vgmaps.h"
+#include "spriters.h"
 #include "customflags.h"
 #include "worldofspectrum.h"
 #include "screenscraper.h"
@@ -47,6 +51,7 @@
 #include "gamefaqs.h"
 #include "vgfacts.h"
 #include "docsdb.h"
+#include "everygame.h"
 #include "mobygames.h"
 #include "offlinemobygames.h"
 #include "localscraper.h"
@@ -65,10 +70,12 @@ ScraperWorker::ScraperWorker(QSharedPointer<Queue> queue,
                              QString threadId)
   : config(config), cache(cache), manager(manager), queue(queue), threadId(threadId)
 {
+  NameTool = new NameTools(threadId);
 }
 
 ScraperWorker::~ScraperWorker()
 {
+  delete NameTool;
 }
 
 // Instantiates the actual scraper and processes files from the list of files.
@@ -76,7 +83,8 @@ ScraperWorker::~ScraperWorker()
 void ScraperWorker::run()
 {
   if(!Platform::get().getScrapers(config.platform).contains(config.scraper) &&
-     !config.generateLbDb && !config.useChecksum)
+     !config.generateLbDb && (!config.useChecksum || (config.useChecksum &&
+       config.scraper != "mamehistory" && config.scraper != "arcadedb")))
   {
     printf("ERROR: The scraper selected does not support this platform. Exiting.\n");
     emit allDone(true);
@@ -84,51 +92,61 @@ void ScraperWorker::run()
   }
 
   if(config.scraper == "openretro") {
-    scraper = new OpenRetro(&config, manager, threadId);
+    scraper = new OpenRetro(&config, manager, threadId, NameTool);
+  } else if(config.scraper == "vggeek") {
+    scraper = new VGGeek(&config, manager, threadId, NameTool);
+  } else if(config.scraper == "exodos") {
+    scraper = new ExoDos(&config, manager, threadId, NameTool);
+  } else if(config.scraper == "gamebase") {
+    scraper = new GameBase(&config, manager, threadId, NameTool);
   } else if(config.scraper == "thegamesdb") {
-    scraper = new TheGamesDb(&config, manager, threadId);
+    scraper = new TheGamesDb(&config, manager, threadId, NameTool);
   } else if(config.scraper == "offlinetgdb") {
-    scraper = new OfflineTGDB(&config, manager, threadId);
+    scraper = new OfflineTGDB(&config, manager, threadId, NameTool);
   } else if(config.scraper == "launchbox") {
-    scraper = new LaunchBox(&config, manager, threadId);
+    scraper = new LaunchBox(&config, manager, threadId, NameTool);
   } else if(config.scraper == "chiptune") {
-    scraper = new Chiptune(&config, manager, threadId);
+    scraper = new Chiptune(&config, manager, threadId, NameTool);
   } else if(config.scraper == "vgmaps") {
-    scraper = new VGMaps(&config, manager, threadId);
+    scraper = new VGMaps(&config, manager, threadId, NameTool);
+  } else if(config.scraper == "spriters") {
+    scraper = new Spriters(&config, manager, threadId, NameTool);
   } else if(config.scraper == "customflags") {
-    scraper = new CustomFlags(&config, manager, threadId);
+    scraper = new CustomFlags(&config, manager, threadId, NameTool);
   } else if(config.scraper == "arcadedb") {
-    scraper = new ArcadeDB(&config, manager, threadId);
+    scraper = new ArcadeDB(&config, manager, threadId, NameTool);
   } else if(config.scraper == "mamehistory") {
-    scraper = new MAMEHistory(&config, manager, threadId);
+    scraper = new MAMEHistory(&config, manager, threadId, NameTool);
   } else if(config.scraper == "screenscraper") {
-    scraper = new ScreenScraper(&config, manager, threadId);
+    scraper = new ScreenScraper(&config, manager, threadId, NameTool);
   } else if(config.scraper == "igdb") {
-    scraper = new Igdb(&config, manager, threadId);
+    scraper = new Igdb(&config, manager, threadId, NameTool);
   } else if(config.scraper == "giantbomb") {
-    scraper = new GiantBomb(&config, manager, threadId);
+    scraper = new GiantBomb(&config, manager, threadId, NameTool);
   } else if(config.scraper == "gamefaqs") {
-    scraper = new GameFaqs(&config, manager, threadId);
+    scraper = new GameFaqs(&config, manager, threadId, NameTool);
   } else if(config.scraper == "vgfacts") {
-    scraper = new VGFacts(&config, manager, threadId);
+    scraper = new VGFacts(&config, manager, threadId, NameTool);
   } else if(config.scraper == "docsdb") {
-    scraper = new DocsDB(&config, manager, threadId);
+    scraper = new DocsDB(&config, manager, threadId, NameTool);
+  } else if(config.scraper == "everygame") {
+    scraper = new EveryGame(&config, manager, threadId, NameTool);
   } else if(config.scraper == "rawg") {
-    scraper = new RawG(&config, manager, threadId);
+    scraper = new RawG(&config, manager, threadId, NameTool);
   } else if(config.scraper == "mobygames") {
-    scraper = new MobyGames(&config, manager, threadId);
+    scraper = new MobyGames(&config, manager, threadId, NameTool);
   } else if(config.scraper == "offlinemobygames") {
-    scraper = new OfflineMobyGames(&config, manager, threadId);
+    scraper = new OfflineMobyGames(&config, manager, threadId, NameTool);
   } else if(config.scraper == "worldofspectrum") {
-    scraper = new WorldOfSpectrum(&config, manager, threadId);
+    scraper = new WorldOfSpectrum(&config, manager, threadId, NameTool);
   } else if(config.scraper == "esgamelist") {
-    scraper = new ESGameList(&config, manager, threadId);
+    scraper = new ESGameList(&config, manager, threadId, NameTool);
   } else if(config.scraper == "cache") {
-    scraper = new LocalScraper(&config, manager, threadId);
+    scraper = new LocalScraper(&config, manager, threadId, NameTool);
   } else if(config.scraper == "import") {
-    scraper = new ImportScraper(&config, manager, threadId);
+    scraper = new ImportScraper(&config, manager, threadId, NameTool);
   } else {
-    scraper = new AbstractScraper(&config, manager, threadId);
+    scraper = new AbstractScraper(&config, manager, threadId, NameTool);
   }
 
   QString error = "\033[1;33m(T" + threadId + ")\033[0m ";
@@ -161,12 +179,16 @@ void ScraperWorker::run()
     }
 
     // Create the game entry we use for the rest of the process
-    GameEntry game;
+    GameEntry game, game2;
     GameEntry cachedGame;
 
     // Create list for potential game entries that will come from the scraping source
-    QList<GameEntry> gameEntries;
+    QList<GameEntry> gameEntries, gameEntries2;
 
+    if(!config.rescan) {
+      game2.found = false;
+      game2.searchMatch = 0;
+    }
     bool fromCache = false;
     bool potentialUpdates = false;
     bool hasMeaningfulOwnEntries = false;
@@ -220,15 +242,16 @@ void ScraperWorker::run()
 
     CanonicalData canonicalData;
     QFileInfo searchInfo = info;
-    QString compareTitle;
+    QString compareTitle, compareTitle2;
     // We delay the calculation of checksums until it is decided that it is a refresh or an update:
     if(action == "refresh" || action == "update") {
-      if(config.useChecksum && config.scraper != "screenscraper") {
-        canonicalData = NameTools::getCanonicalData(info);
+      if((config.rescan || config.useChecksum) && config.scraper != "screenscraper") {
+        canonicalData = NameTool->getCanonicalData(info);
         if(config.scraper == "arcadedb" || config.scraper == "mamehistory") {
-          if(canonicalData.mameid.isEmpty()) {
+          if(canonicalData.mameid.isEmpty() && !config.rescan) {
             game.found = false;
-            game.title = info.baseName();
+            game.title = StrTools::stripBrackets(info.completeBaseName());
+            game.platform = Platform::get().getAliases(config.platform).at(1);
             output.append("\033[1;33m---- Game '" + info.completeBaseName() +
                           "' not found in the checksum MAME database, skipping... :( ----\033[0m\n\n");
             game.resetMedia();
@@ -238,14 +261,15 @@ void ScraperWorker::run()
             } else {
               continue;
             }
-          } else {
+          } else if(!canonicalData.mameid.isEmpty()) {
             searchInfo = QFileInfo(canonicalData.mameid + ".zip");
             game.canonical = canonicalData;
           }
         } else {
-          if(canonicalData.name.isEmpty()) {
+          if(canonicalData.name.isEmpty() && !config.rescan) {
             game.found = false;
-            game.title = info.baseName();
+            game.title = StrTools::stripBrackets(info.completeBaseName());
+            game.platform = Platform::get().getAliases(config.platform).at(1);
             output.append("\033[1;33m---- Game '" + info.completeBaseName() +
                           "' not found in the checksum database, skipping... :( ----\033[0m\n\n");
             game.resetMedia();
@@ -255,13 +279,14 @@ void ScraperWorker::run()
             } else {
               continue;
             }
-          } else {
+          } else if(!canonicalData.name.isEmpty()) {
             searchInfo = QFileInfo(canonicalData.name + "." + info.suffix());
             game.canonical = canonicalData;
           }
         }
       }
       compareTitle = scraper->getCompareTitle(searchInfo);
+      compareTitle2 = scraper->getCompareTitle(info);
     }
 
     if(action == "nothing") {
@@ -279,10 +304,10 @@ void ScraperWorker::run()
       cachedGame.cacheId = cacheId;
       cache->fillBlanks(cachedGame);
       if(cachedGame.title.isEmpty()) {
-        cachedGame.title = compareTitle;
+        cachedGame.title = StrTools::stripBrackets(info.completeBaseName());
       }
       if(cachedGame.platform.isEmpty()) {
-        cachedGame.platform = config.platform;
+        cachedGame.platform = Platform::get().getAliases(config.platform).at(1);
       }
       gameEntries.append(cachedGame);
     } else if(action == "update") {
@@ -294,6 +319,20 @@ void ScraperWorker::run()
         cachedGame.platform = config.platform;
       }
       scraper->runPasses(gameEntries, searchInfo, info, output, debug, cachedGame.title);
+      if(config.rescan) {
+        if(compareTitle != compareTitle2) {
+          scraper->runPasses(gameEntries2, info, info, output, debug, cachedGame.title);
+        } else if(config.scraper == "screenscraper") {
+          config.useChecksum = true;
+          scraper->runPasses(gameEntries2, info, info, output, debug, cachedGame.title);
+          config.useChecksum = false;
+        }
+        if(gameEntries.isEmpty() && !gameEntries2.isEmpty()) {
+          gameEntries.swap(gameEntries2);
+          searchInfo = info;
+          compareTitle = compareTitle2;
+        }
+      }
       potentialUpdates = true;
     } else if(action == "refresh") {
       scraper->runPasses(gameEntries, searchInfo, info, output, debug);
@@ -314,8 +353,9 @@ void ScraperWorker::run()
       }
     }
 
-    int lowestDistance = 10000; // No game name will be longer than this
-    int stringSize = 0;
+    // No game name will be longer than this:
+    int lowestDistance = 10000, lowestDistance2 = 10000;
+    int stringSize = 0, stringSize2 = 0;
     if(gameEntries.isEmpty()) {
       if(config.brackets) {
         // fix for issue #47
@@ -324,14 +364,24 @@ void ScraperWorker::run()
         game.title = compareTitle;
       }
       game.found = false;
+      game2.found = false;
     } else {
       game = getBestEntry(gameEntries, compareTitle, lowestDistance, stringSize);
-      if(config.interactive && !fromCache) {
+      if(gameEntries2.isEmpty()) {
+        game2.found = false;
+      } else {
+        game2 = getBestEntry(gameEntries2, compareTitle2, lowestDistance2, stringSize2);
+      }
+      if(config.interactive && !fromCache && !config.rescan) {
         game = getEntryFromUser(gameEntries, game, compareTitle, lowestDistance);
       }
       if(config.verbosity > 2) {
         qDebug() << "Selected entry:" << game << "for" << compareTitle <<
                     "with distance" << lowestDistance;
+        if(!gameEntries2.isEmpty()) {
+          qDebug() << "Selected entry (2):" << game2 << "for" << compareTitle2 <<
+                      "with distance" << lowestDistance2;
+        }
       }
     }
     // Fill it with additional needed data
@@ -349,13 +399,27 @@ void ScraperWorker::run()
     game.sqrNotes = NameTools::getUniqueNotes(game.sqrNotes, '[');
     game.parNotes = NameTools::getUniqueNotes(game.parNotes, '(');
 
+    if(game2.found) {
+      game2.path = info.absoluteFilePath();
+      game2.baseName = info.completeBaseName();
+      game2.absoluteFilePath = info.absoluteFilePath();
+      game2.cacheId = cacheId;
+      game2.canonical = canonicalData;
+      game2.sqrNotes = NameTools::getSqrNotes(game2.title);
+      game2.parNotes = NameTools::getParNotes(game2.title);
+      game2.sqrNotes.append(NameTools::getSqrNotes(info.completeBaseName()));
+      game2.parNotes.append(NameTools::getParNotes(info.completeBaseName()));
+      game2.sqrNotes = NameTools::getUniqueNotes(game2.sqrNotes, '[');
+      game2.parNotes = NameTools::getUniqueNotes(game2.parNotes, '(');
+    }
+
     if(cachedGame.emptyShell) {
       output.append("\033[1;33m---- Game '" + info.completeBaseName() +
                     "' not found in cache :( ----\033[0m\n\n");
     }
 
-    if(game.found == false) {
-      if(!gameEntries.isEmpty()) {
+    if(!game.found && !game2.found) {
+      if(!config.rescan) {
         scraper->addLastSearchToNegativeCache(info.absoluteFilePath());
       }
       output.append("\033[1;33m---- Game '" + info.completeBaseName() +
@@ -370,6 +434,12 @@ void ScraperWorker::run()
         if(!forceEnd)
           forceEnd = limitReached(output);
       }
+      if(game.title.isEmpty()) {
+        game.title = StrTools::stripBrackets(info.completeBaseName());
+      }
+      if(game.platform.isEmpty()) {
+        game.platform = Platform::get().getAliases(config.platform).at(1);
+      }
       game.resetMedia();
       emit entryReady(game, output, debug, lowMatch);
       if(forceEnd) {
@@ -377,22 +447,45 @@ void ScraperWorker::run()
       } else {
         continue;
       }
+    } else if(!game.found && game2.found) {
+      game = game2;
+      compareTitle = compareTitle2;
+      lowestDistance = lowestDistance2;
+      stringSize = stringSize2;
     }
-    int searchMatch = getSearchMatch(game.title, compareTitle, lowestDistance, stringSize);
+
+    game.searchMatch = getSearchMatch(game.title, compareTitle, lowestDistance, stringSize);
+    if(game2.found) {
+      game2.searchMatch = getSearchMatch(game2.title, compareTitle2, lowestDistance2, stringSize2);
+    }
     if(config.verbosity > 2) {
-      qDebug() << "Search match:" << searchMatch << "for" << compareTitle <<
+      qDebug() << "Search match:" << game.searchMatch << "for" << compareTitle <<
                   "and" << game.title << "Threshold" << config.minMatch;
+      if(game2.found) {
+        qDebug() << "Search match (2):" << game2.searchMatch << "for" << compareTitle2 <<
+                    "and" << game2.title << "Threshold" << config.minMatch;
+      }
     }
-    game.searchMatch = searchMatch;
-    if(searchMatch < config.minMatch) {
+    if(game.searchMatch < config.minMatch && game2.searchMatch < config.minMatch) {
       output.append("\033[1;33m---- File '" + info.completeBaseName() +
                     "' match (" + game.title + ") is too low :| ----\033[0m\n\n");
       lowMatch.append(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ";" + 
                       config.platform + ";" + config.scraper + ";" + game.title + ";" +
-                      info.completeBaseName() + ";" + QString::number(searchMatch) + ";" + 
+                      info.completeBaseName() + ";" + QString::number(game.searchMatch) + ";" + 
                       info.canonicalFilePath() + "\n");
+      if(game2.found) {
+        output.append("\033[1;33m---- File '" + info.completeBaseName() +
+                      "' match (" + game2.title + ") is too low :| ----\033[0m\n\n");
+        lowMatch.append(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ";" + 
+                        config.platform + ";" + config.scraper + ";" + game2.title + ";" +
+                        info.completeBaseName() + ";" + QString::number(game2.searchMatch) + ";" + 
+                        info.canonicalFilePath() + "\n");
+      }
       game.found = false;
-      scraper->addLastSearchToNegativeCache(info.absoluteFilePath());
+      game2.found = false;
+      if(!config.rescan) {
+        scraper->addLastSearchToNegativeCache(info.absoluteFilePath(), game.title);
+      }
       if(config.rescan) {
         if(cache->removeResources(cacheId, config.scraper)) {
           output.append("\033[1;34m---- WARNING: Game '" + info.completeBaseName() +
@@ -403,6 +496,12 @@ void ScraperWorker::run()
         if(!forceEnd)
           forceEnd = limitReached(output);
       }
+      if(game.title.isEmpty()) {
+        game.title = StrTools::stripBrackets(info.completeBaseName());
+      }
+      if(game.platform.isEmpty()) {
+        game.platform = Platform::get().getAliases(config.platform).at(1);
+      }
       game.resetMedia();
       emit entryReady(game, output, debug, lowMatch);
       if(forceEnd) {
@@ -410,51 +509,67 @@ void ScraperWorker::run()
       } else {
         continue;
       }
+    } else if (game.searchMatch < config.minMatch && game2.searchMatch >= config.minMatch) {
+      game = game2;
+      compareTitle = compareTitle2;
     }
 
     output.append("\033[1;34m---- Game '" + info.completeBaseName() +
                   "' found! :) ----\033[0m\n");
 
-    if(fromCache && config.rescan &&
-       (cachedGame.title != game.title || cachedGame.platform != game.platform)) {
-      output.append("\033[1;34m---- WARNING: Game '" + info.completeBaseName() +
-                    "' stored in cache does not match the scraper database!" +
-                    " Repeating the scraping process... ----\033[0m\n");
-      fromCache = false;
-      cachedGame.resetMedia();
-      cache->removeResources(cacheId, config.scraper);
+    if(fromCache && config.rescan) {
+      if(game.found && cachedGame.title == game.title && cachedGame.platform == game.platform) {
+        game2.found = false;
+      } else if(game2.found && cachedGame.title == game2.title && cachedGame.platform == game2.platform) {
+        game = game2;
+        compareTitle = compareTitle2;
+      } else {
+        fromCache = false;
+        cachedGame.resetMedia();
+        cache->removeResources(cacheId, config.scraper);
+        if(game.searchMatch < game2.searchMatch) {
+          game = game2;
+          compareTitle = compareTitle2;
+        }
+        output.append("\033[1;34m---- WARNING: Game '" + info.completeBaseName() +
+                      "' stored in cache (" + cachedGame.title + "/" + cachedGame.platform +
+                      ") does not match the scraper database (" + game.title + "/" +
+                      game.platform + ")!" + " Repeating the scraping process... ----\033[0m\n");
+      }
     }
 
     QStringList sharedBlobs = {};
-    if(cache->hasEntriesOfType(cacheId, "video")) {
-      sharedBlobs << "video";
-    }
-    if(cache->hasEntriesOfType(cacheId, "manual")) {
-      sharedBlobs << "manual";
-    }
-    if(cache->hasEntriesOfType(cacheId, "cover")) {
-      sharedBlobs << "cover";
-    }
-    if(cache->hasEntriesOfType(cacheId, "marquee")) {
-      sharedBlobs << "marquee";
-    }
-    if(cache->hasEntriesOfType(cacheId, "texture")) {
-      sharedBlobs << "texture";
-    }
-    if(cache->hasEntriesOfType(cacheId, "screenshot")) {
-      sharedBlobs << "screenshot";
-    }
-    if(cache->hasEntriesOfType(cacheId, "wheel")) {
-      sharedBlobs << "wheel";
-    }
-    if(cache->hasMeaningfulEntries(cacheId, config.scraper, true)) {
-      sharedBlobs << "offlineonly";
-    }
-    if(!fromCache) {
-      scraper->getGameData(game, sharedBlobs);
-    }
-    else if(config.getMissingResources) {
-      scraper->getGameData(game, sharedBlobs, &cachedGame);
+    if(config.scraper != "cache") {
+      if(cache->hasEntriesOfType(cacheId, "video")) {
+        sharedBlobs << "video";
+      }
+      if(cache->hasEntriesOfType(cacheId, "manual")) {
+        sharedBlobs << "manual";
+      }
+      if(cache->hasEntriesOfType(cacheId, "cover")) {
+        sharedBlobs << "cover";
+      }
+      if(cache->hasEntriesOfType(cacheId, "marquee")) {
+        sharedBlobs << "marquee";
+      }
+      if(cache->hasEntriesOfType(cacheId, "texture")) {
+        sharedBlobs << "texture";
+      }
+      if(cache->hasEntriesOfType(cacheId, "screenshot")) {
+        sharedBlobs << "screenshot";
+      }
+      if(cache->hasEntriesOfType(cacheId, "wheel")) {
+        sharedBlobs << "wheel";
+      }
+      if(cache->hasMeaningfulEntries(cacheId, config.scraper, true)) {
+        sharedBlobs << "offlineonly";
+      }
+      if(!fromCache) {
+        scraper->getGameData(game, sharedBlobs);
+      }
+      else if(config.getMissingResources) {
+        scraper->getGameData(game, sharedBlobs, &cachedGame);
+      }
     }
 
     if(!config.pretend && config.scraper == "cache") {
@@ -467,8 +582,7 @@ void ScraperWorker::run()
          QFile::exists(game.videoFile)) {
         QString videoDst = config.videosFolder + "/" + info.completeBaseName() +
                            "." + game.videoFormat;
-        if(config.skipExistingVideos && QFile::exists(videoDst)) {
-        } else {
+        if(!config.skipExistingVideos || !QFile::exists(videoDst)) {
           if(QFile::exists(videoDst)) {
             QFile::remove(videoDst);
           }
@@ -527,13 +641,14 @@ void ScraperWorker::run()
       } else {
         game.source = config.scraper;
       }
+
       cache->addResources(game, config, cacheOutput);
     }
 
     // We're done saving the raw data at this point, so feel free to manipulate
     // game resources to better suit game list creation from here on out.
 
-    // Strip any brackets from the title as they will be readded when assembling gamelist
+    // Strip any brackets from the title as they will be read when assembling gamelist
     game.title = StrTools::stripBrackets(game.title);
 
     // Move 'The' or ', The' depending on the config. This does not affect game list sorting.
@@ -556,6 +671,7 @@ void ScraperWorker::run()
     game.reviews = StrTools::xmlUnescape(game.reviews);
     game.artbooks = StrTools::xmlUnescape(game.artbooks);
     game.vgmaps = StrTools::xmlUnescape(game.vgmaps);
+    game.sprites = StrTools::xmlUnescape(game.sprites);
     game.description = StrTools::xmlUnescape(game.description);
     game.trivia = StrTools::xmlUnescape(game.trivia);
     game.releaseDate = StrTools::xmlUnescape(game.releaseDate);
@@ -578,7 +694,7 @@ void ScraperWorker::run()
     output.append("Scraper:        " + config.scraper + "\n");
     if(config.scraper != "cache" && config.scraper != "import") {
       output.append("From cache:     " + QString((fromCache?"YES (refresh from source with '--cache refresh')":"NO")) + "\n");
-      output.append("Search match:   " + QString::number(searchMatch) + " %\n");
+      output.append("Search match:   " + QString::number(game.searchMatch) + " %\n");
       output.append("Compare title:  '\033[1;32m" + compareTitle + "\033[0m'\n");
       output.append("Result title:   '\033[1;32m" + game.title + "\033[0m' (" + game.titleSrc + ")\n");
     } else {
@@ -593,8 +709,8 @@ void ScraperWorker::run()
         game.title = StrTools::xmlUnescape(StrTools::stripBrackets(info.completeBaseName()));
       }
       if(config.brackets) {
-        game.title.append(StrTools::xmlUnescape((game.parNotes != ""?" " + game.parNotes:"") +
-                                                (game.sqrNotes != ""?" " + game.sqrNotes:"")));
+        game.title.append(StrTools::xmlUnescape((game.parNotes != ""?" " + game.parNotes:QString("")) +
+                                                (game.sqrNotes != ""?" " + game.sqrNotes:QString(""))));
       }
     }
     output.append("Platform:       '\033[1;32m" + game.platform + "\033[0m' (" + game.platformSrc + ")\n");
@@ -604,6 +720,7 @@ void ScraperWorker::run()
     } else {
       output.append(QDate::fromString(game.releaseDate, "yyyyMMdd").toString("yyyy-MM-dd") + "\033[0m' (" + game.releaseDateSrc + ")\n");
     }
+    output.append("Id:             '\033[1;32m" + game.id + "\033[0m' (" + game.idSrc + ")\n");
     output.append("Developer:      '\033[1;32m" + game.developer + "\033[0m' (" + game.developerSrc + ")\n");
     output.append("Publisher:      '\033[1;32m" + game.publisher + "\033[0m' (" + game.publisherSrc + ")\n");
     output.append("Players:        '\033[1;32m" + game.players + "\033[0m' (" + game.playersSrc + ")\n");
@@ -616,11 +733,12 @@ void ScraperWorker::run()
     output.append("Reviews:        '\033[1;32m" + game.reviews + "\033[0m' (" + game.reviewsSrc + ")\n");
     output.append("Artbooks:       '\033[1;32m" + game.artbooks + "\033[0m' (" + game.artbooksSrc + ")\n");
     output.append("Maps:           '\033[1;32m" + game.vgmaps + "\033[0m' (" + game.vgmapsSrc + ")\n");
-    output.append("Cover:          " + QString((game.coverData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheCovers || config.scraper == "cache"?"":" (uncached)")) + " (" + game.coverSrc + ")\n");
-    output.append("Screenshot:     " + QString((game.screenshotData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheScreenshots || config.scraper == "cache"?"":" (uncached)")) + " (" + game.screenshotSrc + ")\n");
-    output.append("Wheel:          " + QString((game.wheelData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheWheels || config.scraper == "cache"?"":" (uncached)")) + " (" + game.wheelSrc + ")\n");
-    output.append("Marquee:        " + QString((game.marqueeData.isNull()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheMarquees || config.scraper == "cache"?"":" (uncached)")) + " (" + game.marqueeSrc + ")\n");
-    output.append("Texture:        " + QString((game.textureData.isNull() ? "\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheTextures || config.scraper == "cache"?"":" (uncached)")) + " (" + game.textureSrc + ")\n");
+    output.append("Sprites:        '\033[1;32m" + game.sprites + "\033[0m' (" + game.spritesSrc + ")\n");
+    output.append("Cover:          " + QString(((game.coverData.isNull() && game.coverFile.isEmpty())?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheCovers || config.scraper == "cache"?"":" (uncached)")) + " (" + game.coverSrc + ")\n");
+    output.append("Screenshot:     " + QString(((game.screenshotData.isNull() && game.coverFile.isEmpty())?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheScreenshots || config.scraper == "cache"?"":" (uncached)")) + " (" + game.screenshotSrc + ")\n");
+    output.append("Wheel:          " + QString(((game.wheelData.isNull() && game.wheelFile.isEmpty())?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheWheels || config.scraper == "cache"?"":" (uncached)")) + " (" + game.wheelSrc + ")\n");
+    output.append("Marquee:        " + QString(((game.marqueeData.isNull() && game.marqueeFile.isEmpty())?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheMarquees || config.scraper == "cache"?"":" (uncached)")) + " (" + game.marqueeSrc + ")\n");
+    output.append("Texture:        " + QString(((game.textureData.isNull() && game.textureFile.isEmpty())? "\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((config.cacheTextures || config.scraper == "cache"?"":" (uncached)")) + " (" + game.textureSrc + ")\n");
     if(config.videos) {
       output.append("Video:          " + QString((game.videoFormat.isEmpty()?"\033[1;31mNO":"\033[1;32mYES")) + "\033[0m" + QString((game.videoData.size() <= config.videoSizeLimit?"":" (size exceeded, uncached)")) + " (" + game.videoSrc + ")\n");
     }
@@ -684,14 +802,27 @@ int ScraperWorker::getSearchMatch(const QString &title, const QString &compareTi
   } else {
     searchMatch = (int)(100.0 / compareLength * (compareLength - (double)lowestDistance));
   }
+
+  // RMA: Modified as the original was not acceptable, bringed too many false positives
   // Special case where result is actually correct, but gets low match because of the
   // prepending of, for instance, "Disney's [title]" where the fileName is just "[title]".
   // Accept these if searchMatch is 'similar enough' (above 50)
   if(searchMatch < config.minMatch) {
-    if(title.toLower().indexOf(compareTitle.toLower()) != -1 && searchMatch >= 50) {
-      searchMatch = 100;
+    int excludePreffix = title.toLower().indexOf(compareTitle.toLower(),
+                                                 title.indexOf(' ') + 1);
+    if(title.toLower().mid(excludePreffix) == compareTitle.toLower() &&
+       searchMatch >= 60) {
+      searchMatch = 90;
+    } else {
+      excludePreffix = compareTitle.toLower().indexOf(title.toLower(),
+                                                      compareTitle.indexOf(' ') + 1);
+      if(compareTitle.toLower().mid(excludePreffix) == title.toLower() &&
+         searchMatch >= 60) {
+        searchMatch = 90;
+      }
     }
   }
+
   return searchMatch;
 }
 
@@ -706,6 +837,7 @@ GameEntry ScraperWorker::getBestEntry(const QList<GameEntry> &gameEntries,
   if(config.scraper == "cache"          || config.scraper == "import"         ||
      config.scraper == "esgamelist"     || config.scraper == "customflags"    ||
      config.scraper == "arcadedb"       || config.scraper == "mamehistory"    ||
+     config.scraper == "exodos"         ||
      (config.scraper == "openretro"     && gameEntries.first().url.isEmpty()) ||
      (config.scraper == "screenscraper" && 
       (Platform::get().getFamily(config.platform) == "arcade" ||
@@ -750,12 +882,16 @@ GameEntry ScraperWorker::getBestEntry(const QList<GameEntry> &gameEntries,
 
   int mostSimilar = 0;
   QString compareTitleLC = StrTools::simplifyLetters(NameTools::convertToIntegerNumeral(compareTitle).toLower());
-  QString compareTitleLCNoArticle = NameTools::removeArticle(compareTitleLC);
+  // Remove some typical keywords that are sometimes omitted (such as "Disney's"):
+  compareTitleLC.remove("disney's").remove("disneys");
+  QString compareTitleLCNoArticle = NameTools::removeArticle(compareTitleLC.simplified());
   QString compareTitleLCNoArticleNoEdition = NameTools::removeEdition(compareTitleLCNoArticle);
   // Run through the potentials and find the best match
   for(int a = 0; a < potentials.length(); ++a) {
     QString entryTitleLC = StrTools::simplifyLetters(NameTools::convertToIntegerNumeral(potentials.at(a).title).toLower());
-    QString entryTitleLCNoArticle = NameTools::removeArticle(entryTitleLC);
+    // Remove some typical keywords that are sometimes omitted (such as "Disney's"):
+    entryTitleLC.remove("disney's").remove("disneys");
+    QString entryTitleLCNoArticle = NameTools::removeArticle(entryTitleLC.simplified());
     QString entryTitleLCNoArticleNoEdition = NameTools::removeEdition(entryTitleLCNoArticle);
 
     // If we have a perfect hit, always use this result
@@ -834,11 +970,18 @@ GameEntry ScraperWorker::getBestEntry(const QList<GameEntry> &gameEntries,
       }
     }
 
+    QString compareTitleSanitized =
+          StrTools::simplifyLetters(
+                StrTools::sanitizeName(
+                      StrTools::xmlUnescape(compareTitleLCNoArticleNoEdition)));
+    QString entryTitleSanitized =
+          StrTools::simplifyLetters(
+                StrTools::sanitizeName(
+                      StrTools::xmlUnescape(entryTitleLCNoArticleNoEdition)));
     int currentDistance = StrTools::distanceBetweenStrings(
-          StrTools::xmlUnescape(compareTitleLCNoArticleNoEdition),
-          StrTools::xmlUnescape(entryTitleLCNoArticleNoEdition));
-    int currentSize = std::max(compareTitleLCNoArticleNoEdition.size(),
-                               entryTitleLCNoArticleNoEdition.size());
+          compareTitleSanitized, entryTitleSanitized);
+    int currentSize = std::max(compareTitleSanitized.size(),
+                               entryTitleSanitized.size());
     if(currentDistance < lowestDistance) {
       lowestDistance = currentDistance;
       stringSize = currentSize;
@@ -858,8 +1001,14 @@ GameEntry ScraperWorker::getBestEntry(const QList<GameEntry> &gameEntries,
         QString entryTitleLCNoArticleNoEditionNoSub =
            NameTools::removeSubtitle(entryTitleLCNoArticleNoEdition, entryHasSubtitle);
         if((entryHasSubtitle && !compareHasSubtitle) || (!entryHasSubtitle && compareHasSubtitle)) {
-          QString compare = StrTools::xmlUnescape(compareTitleLCNoArticleNoEditionNoSub);
-          QString entry = StrTools::xmlUnescape(entryTitleLCNoArticleNoEditionNoSub);
+          QString compare =
+                StrTools::simplifyLetters(
+                      StrTools::sanitizeName(
+                            StrTools::xmlUnescape(compareTitleLCNoArticleNoEditionNoSub)));
+          QString entry =
+                StrTools::simplifyLetters(
+                      StrTools::sanitizeName(
+                            StrTools::xmlUnescape(entryTitleLCNoArticleNoEditionNoSub)));
           currentDistance = 1 + StrTools::distanceBetweenStrings(compare, entry);
           currentSize = std::max(compare.size(), entry.size());
         }

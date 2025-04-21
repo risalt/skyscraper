@@ -2,8 +2,7 @@
  *            xmlexport.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -81,7 +80,8 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     else {
       finalOutput.append("    <name>" + StrTools::xmlEscape(entry.title) + "</name>\n");
     }
-    finalOutput.append("    <platform>" + StrTools::xmlEscape(Platform::get().getAliases(config->platform).at(1)) + "</platform>\n");
+    finalOutput.append("    <collection>" + StrTools::xmlEscape(Platform::get().getAliases(config->platform).at(1)) + "</collection>\n");
+    finalOutput.append("    <platform>" + StrTools::xmlEscape(entry.platform) + "</platform>\n");
     if(!QFileInfo(entryPath).exists()) {
       finalOutput.append("    <added />\n");
     } else {
@@ -135,7 +135,13 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     if(entry.chiptuneId.isEmpty()) {
       finalOutput.append("    <audiourl />\n");
     } else {
-      finalOutput.append("    <audiourl>http://media.localnet.priv:4533/share/" + StrTools::xmlEscape(entry.chiptuneId) + "</audiourl>\n");
+      if(entry.chiptuneIdSrc == "gamebase") {
+        finalOutput.append("    <audiourl>http://media.localnet.priv:4532/share/" + StrTools::xmlEscape(entry.chiptuneId) + "</audiourl>\n");
+      } else if(entry.chiptuneIdSrc == "chiptune") {
+        finalOutput.append("    <audiourl>http://media.localnet.priv:4533/share/" + StrTools::xmlEscape(entry.chiptuneId) + "</audiourl>\n");
+      } else if(entry.chiptuneIdSrc == "exodos") {
+        finalOutput.append("    <audiourl>http://media.localnet.priv:4531/share/" + StrTools::xmlEscape(entry.chiptuneId) + "</audiourl>\n");
+      }
     }
     if(entry.chiptunePath.isEmpty()) {
       finalOutput.append("    <audiofile />\n");
@@ -147,7 +153,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       QStringList guides = {};
       if(!entry.guides.isEmpty()) {
-        guides = entry.guides.split(" ");
+        guides = entry.guides.split(";");
         guides.sort();
       }
       QString guidesLinks;
@@ -158,7 +164,9 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           pos++;
         }
         guidesLinks.replace(config->guidesPath, "/uploads/guides")
-                   .replace(config->docsPath, "/uploads/docsdb");
+                   .replace(config->docsPath, "/uploads/docsdb")
+                   .replace(config->gamebasePath, "/uploads/gamebasedb")
+                   .replace(config->exodosPath, "/uploads/exodos");
       }
       finalOutput.append("    <guides>" + StrTools::xmlEscape(guidesLinks) + "</guides>\n");
     }
@@ -167,7 +175,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       QStringList cheats = {};
       if(!entry.cheats.isEmpty()) {
-        cheats = entry.cheats.split(" ");
+        cheats = entry.cheats.split(";");
         cheats.sort();
       }
       QString cheatsLinks;
@@ -177,7 +185,9 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           cheatsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
           pos++;
         }
-        cheatsLinks.replace(config->docsPath, "/uploads/docsdb");
+        cheatsLinks.replace(config->docsPath, "/uploads/docsdb")
+                   .replace(config->gamebasePath, "/uploads/gamebasedb")
+                   .replace(config->exodosPath, "/uploads/exodos");
       }
       finalOutput.append("    <cheats>" + StrTools::xmlEscape(cheatsLinks) + "</cheats>\n");
     }
@@ -186,7 +196,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       QStringList reviews = {};
       if(!entry.reviews.isEmpty()) {
-        reviews = entry.reviews.split(" ");
+        reviews = entry.reviews.split(";");
         reviews.sort();
       }
       QString reviewsLinks;
@@ -205,7 +215,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       QStringList artbooks = {};
       if(!entry.artbooks.isEmpty()) {
-        artbooks = entry.artbooks.split(" ");
+        artbooks = entry.artbooks.split(";");
         artbooks.sort();
       }
       QString artbooksLinks;
@@ -215,7 +225,9 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           artbooksLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
           pos++;
         }
-        artbooksLinks.replace(config->docsPath, "/uploads/docsdb");
+        artbooksLinks.replace(config->docsPath, "/uploads/docsdb")
+                     .replace(config->gamebasePath, "/uploads/gamebasedb")
+                     .replace(config->exodosPath, "/uploads/exodos");
       }
       finalOutput.append("    <artbooks>" + StrTools::xmlEscape(artbooksLinks) + "</artbooks>\n");
     }
@@ -224,7 +236,7 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
     } else {
       QStringList vgmaps = {};
       if(!entry.vgmaps.isEmpty()) {
-        vgmaps = entry.vgmaps.split(" ");
+        vgmaps = entry.vgmaps.split(";");
       }
       QString vgmapsLinks;
       if(!vgmaps.isEmpty()) {
@@ -235,9 +247,34 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
           mapPlatform = map.baseName();
           vgmapsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + mapPlatform + "</a> ";
         }
-        vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps");
+        vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps")
+                   .replace(config->gamebasePath, "/uploads/gamebasedb")
+                   .replace(config->exodosPath, "/uploads/exodos");
       }
       finalOutput.append("    <vgmaps>" + StrTools::xmlEscape(vgmapsLinks) + "</vgmaps>\n");
+    }
+    if(entry.sprites.isEmpty()) {
+      finalOutput.append("    <sprites />\n");
+    } else {
+      QStringList sprites = {};
+      if(!entry.sprites.isEmpty()) {
+        sprites = entry.sprites.split(";");
+      }
+      QString spritesLinks;
+      if(!sprites.isEmpty()) {
+        for(auto link: std::as_const(sprites)) {
+          if(link.endsWith('/')) {
+            link.chop(1);
+          }
+          QFileInfo sprite(link);
+          QString spritePlatform = sprite.absolutePath();
+          sprite.setFile(spritePlatform);
+          spritePlatform = sprite.baseName().toUpper();
+          spritesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + spritePlatform + "</a> ";
+        }
+        spritesLinks.replace(config->spritesPath, "/uploads/sprites");
+      }
+      finalOutput.append("    <sprites>" + StrTools::xmlEscape(spritesLinks) + "</sprites>\n");
     }
     if(entry.rating.isEmpty()) {
       finalOutput.append("    <rating />\n");
@@ -342,6 +379,13 @@ void XmlExport::assembleList(QString &finalOutput, QList<GameEntry> &gameEntries
       QDateTime dateEpoch;
       dateEpoch.setSecsSinceEpoch(entry.lastPlayed);
       finalOutput.append("    <lastPlayed>" + dateEpoch.toString(Qt::ISODate) + "</lastPlayed>\n");
+    }
+    QString id = entry.id;
+    if(id.isEmpty()) {
+      finalOutput.append("    <id />\n");
+    } else {
+      id.replace(",", ", ");
+      finalOutput.append("    <id>" + StrTools::xmlEscape(id) + "</id>\n");
     }
     finalOutput.append("  </" + entryType + ">\n");
   }

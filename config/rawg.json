@@ -205,6 +205,12 @@
       "code": "ps3"
     },
     {
+      "id": 18,
+      "name": "PlayStation 4",
+      "slug": "playstation4",
+      "code": "ps4"
+    },
+    {
       "id": 17,
       "name": "PSP",
       "slug": "psp",

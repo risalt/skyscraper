@@ -3,7 +3,8 @@
  *
  *  Sun Aug 26 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ Github
+ *  Copyright 2025 Gemba @ Github
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -31,8 +32,11 @@
 #include "strtools.h"
 #include "nametools.h"
 
-Igdb::Igdb(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
-  : AbstractScraper(config, manager, threadId)
+Igdb::Igdb(Settings *config,
+           QSharedPointer<NetManager> manager,
+           QString threadId,
+           NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   QPair<QString, QString> clientIdHeader;
   clientIdHeader.first = "Client-ID";
@@ -57,6 +61,9 @@ Igdb::Igdb(Settings *config, QSharedPointer<NetManager> manager, QString threadI
 
   searchUrlPre = "https://api.igdb.com/v4";
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(RATING);
   fetchOrder.append(PUBLISHER);
@@ -254,31 +261,82 @@ void Igdb::getFranchises(GameEntry &game)
 void Igdb::getAges(GameEntry &game)
 {
   int agesEnum = jsonObj["age_ratings"].toArray().first().toObject()["rating"].toInt();
-  if(agesEnum == 1) {
-    game.ages = "3";
-  } else if(agesEnum == 2) {
-    game.ages = "7";
-  } else if(agesEnum == 3) {
-    game.ages = "12";
-  } else if(agesEnum == 4) {
-    game.ages = "16";
-  } else if(agesEnum == 5) {
-    game.ages = "18";
-  } else if(agesEnum == 6) {
-    // Rating pending
-  } else if(agesEnum == 7) {
-    game.ages = "EC";
-  } else if(agesEnum == 8) {
-    game.ages = "E";
-  } else if(agesEnum == 9) {
-    game.ages = "E10";
-  } else if(agesEnum == 10) {
-    game.ages = "T";
-  } else if(agesEnum == 11) {
-    game.ages = "M";
-  } else if(agesEnum == 12) {
-    game.ages = "AO";
+
+  switch(agesEnum) {
+    case 1: // Three
+      game.ages = "3";
+      break;
+    case 2:  // Seven
+    case 28: // IND L
+    case 34: // ACB G
+      game.ages = "7";
+      break;
+    case 3:  // Twelve
+    case 14: // CERO B
+    case 20: // USK 12
+    case 24: // GRAC Twelve
+    case 30: // IND Twelve
+      game.ages = "12";
+      break;
+    case 4:  // Sixteen
+    case 21: // USK 16
+    case 32: // IND Sixteen
+    case 36: // ACB M
+    case 37: // ACB MA15
+      game.ages = "16";
+      break;
+    case 7: // EC
+      game.ages = "EC";
+      break;
+    case 8:  // E
+    case 13: // CERO A
+    case 18: // USK 0
+    case 23: // GRAC All
+      game.ages = "E";
+      break;
+    case 9:  // E10
+    case 29: // IND Ten
+      game.ages = "E10";
+      break;
+    case 10: // T
+      game.ages = "T";
+      break;
+    case 11: // M
+      game.ages = "M";
+      break;
+    case 5:  // Eighteen
+    case 12: // AO
+    case 17: // CERO Z
+    case 22: // USK 18
+    case 33: // IND Eighteen
+    case 38: // ACB R18
+    case 39: // ACB RC
+      game.ages = "AO";
+      break;
+    case 15: // CERO C
+    case 25: // GRAC Fifteen
+    case 35: // ACB PG
+      game.ages = "15";
+      break;
+    case 16: // CERO D
+      game.ages = "17";
+      break;
+    case 19: // USK 6
+      game.ages = "6";
+      break;
+    case 26: // GRAC Eighteen
+      // https://en.wikipedia.org/wiki/Game_Rating_and_Administration_Committee#Former_rating
+      game.ages = "19";
+      break;
+    case 31: // IND Fourteen
+      game.ages = "14";
+      break;
+    case 6:  // RP
+    case 27: // GRAC Testing
+    default:
+      break;
   }
+
   game.ages = StrTools::conformAges(game.ages);
 }
 

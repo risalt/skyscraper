@@ -3,7 +3,7 @@
  *
  *  Fri Aug 12 2022
  *  Copyright 2022 Joe Huss
- *  detain@interserver.net
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.

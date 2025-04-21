@@ -2,8 +2,7 @@
  *            docsdb.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -28,7 +27,6 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QListIterator>
-#include <QXmlStreamReader>
 
 #include "docsdb.h"
 #include "skyscraper.h"
@@ -36,8 +34,11 @@
 #include "nametools.h"
 #include "platform.h"
 
-DocsDB::DocsDB(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
-  : AbstractScraper(config, manager, threadId)
+DocsDB::DocsDB(Settings *config,
+               QSharedPointer<NetManager> manager,
+               QString threadId,
+               NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
 
@@ -74,6 +75,8 @@ DocsDB::DocsDB(Settings *config, QSharedPointer<NetManager> manager, QString thr
   printf(" DONE.\nINFO: Read %d %s from the local database.\n",
          numDocs, Skyscraper::docType.toStdString().c_str());
 
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(GUIDES);
   fetchOrder.append(REVIEWS);
   fetchOrder.append(ARTBOOKS);
@@ -92,8 +95,8 @@ int DocsDB::addToMaps(QFile *file,
     rowFields = row.split('"');
     if(rowFields.size() == 2) {
       numEntries++;
-      const auto mapTitleUrl = qMakePair(rowFields.at(1),
-                                         config->dbPath + "/" + rowFields.at(0));
+      QString url = config->dbPath + "/" + rowFields.at(0);
+      const auto mapTitleUrl = qMakePair(rowFields.at(1), url);
       QStringList safeVariations, unsafeVariations;
       NameTools::generateSearchNames(rowFields.at(1), safeVariations, unsafeVariations, true);
       for(const auto &name: std::as_const(safeVariations)) {
@@ -135,13 +138,13 @@ void DocsDB::getSearchResults(QList<GameEntry> &gameEntries, QString searchName,
     }
     if(!game.title.isEmpty() && !urlList.isEmpty()) {
       if(Skyscraper::docType.contains("cheats")) {
-        game.cheats = urlList.join(" ");
+        game.cheats = urlList.join(";");
       } else if(Skyscraper::docType.contains("reviews")) {
-        game.reviews = urlList.join(" ");
+        game.reviews = urlList.join(";");
       } else if(Skyscraper::docType.contains("guides")) {
-        game.guides = urlList.join(" ");
+        game.guides = urlList.join(";");
       } else if(Skyscraper::docType.contains("artbooks")) {
-        game.artbooks = urlList.join(" ");
+        game.artbooks = urlList.join(";");
       }
       gameEntries.append(game);
     }

@@ -2,8 +2,7 @@
  *            vgmaps.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -28,7 +27,6 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QListIterator>
-#include <QXmlStreamReader>
 
 #include "vgmaps.h"
 #include "skyscraper.h"
@@ -36,13 +34,16 @@
 #include "nametools.h"
 #include "platform.h"
 
-VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString threadId)
-  : AbstractScraper(config, manager, threadId)
+VGMaps::VGMaps(Settings *config,
+               QSharedPointer<NetManager> manager,
+               QString threadId,
+               NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
 
   // Extract mapping Game->(Platform+Link) from the csv file:
-  printf("INFO: Reading the videogame maps file... "); fflush(stdout);
+  printf("INFO: Reading the videogame maps index file... "); fflush(stdout);
   QString vgmapsFileName = config->dbPath + "/vgmaps.csv";
   QFile vgmapsFile(vgmapsFileName);
   if(!vgmapsFile.open(QFile::ReadOnly | QFile::Text)) {
@@ -60,8 +61,8 @@ VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString thr
         entries++;
         for(int pos=1; pos < vgmapsRow.size(); pos++) {
           if(vgmapsRow.at(pos).endsWith(".html")) {
-            const auto mapTitleUrl = qMakePair(gameName,
-                                               config->dbPath + "/" + vgmapsRow.at(pos));
+            QString url = config->dbPath + "/" + vgmapsRow.at(pos);
+            const auto mapTitleUrl = qMakePair(gameName, url);
             QStringList safeVariations, unsafeVariations;
             NameTools::generateSearchNames(gameName, safeVariations, unsafeVariations, true);
             for(const auto &name: std::as_const(safeVariations)) {
@@ -87,8 +88,10 @@ VGMaps::VGMaps(Settings *config, QSharedPointer<NetManager> manager, QString thr
       }
     }
   }
-  printf(" DONE.\nINFO: Read %d game header entries from MobyGames local database.\n", entries);
+  printf(" DONE.\nINFO: Read %d game header entries from videogame maps local database.\n", entries);
 
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(VGMAPS);
 }
 
@@ -108,7 +111,7 @@ void VGMaps::getSearchResults(QList<GameEntry> &gameEntries,
       }
     }
     if(!game.title.isEmpty() && !urlList.isEmpty()) {
-      game.vgmaps = urlList.join(" ");
+      game.vgmaps = urlList.join(";");
       gameEntries.append(game);
     }
   }

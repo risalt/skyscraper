@@ -2,8 +2,7 @@
  *            giantbomb.cpp
  *
  *  Sun Aug 26 12:00:00 CEST 2018
- *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -46,9 +45,10 @@ constexpr int RETRIESMAX = 4;
 constexpr int APICOOLDOWN = 21;
 
 GiantBomb::GiantBomb(Settings *config,
-           QSharedPointer<NetManager> manager,
-           QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                     QSharedPointer<NetManager> manager,
+                     QString threadId,
+                     NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   offlineScraper = true;
   loadConfig("giantbomb.json", "name", "id");
@@ -82,6 +82,10 @@ GiantBomb::GiantBomb(Settings *config,
   urlPost = "api_key=" + config->apiKey + "&format=json";
 
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by GiantBomb or it hasn't yet been "
@@ -249,6 +253,9 @@ GiantBomb::GiantBomb(Settings *config,
     printf(" DONE\n");
   }
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
@@ -302,7 +309,7 @@ bool GiantBomb::requestGb (const QString &url, QDateTime *lastRequest)
       // API rate exceeded
       printf("\n\033[1;31mWARNING: GiantBomb API rate limit hit: Waiting for up "
              "to an hour before retrying...\033[0m\n");
-      QProcess::execute("bash", { QDir::homePath() + "/.skyscraper/wait_gb.sh" });
+      QProcess::execute("bash", { QDir::currentPath() + "/wait_gb.sh" });
       QThread::sleep(60);
       return requestGb(url, lastRequest);
     } else if(queryStatus == 101) {
@@ -389,6 +396,9 @@ void GiantBomb::getSearchResults(QList<GameEntry> &gameEntries,
       GameEntry game;
       game.title = gameDetail.first;
       game.url = gameDetail.second;
+      game.id = game.url;
+      game.id = game.id.mid(0, game.id.indexOf('?') - 1);
+      game.id = game.id.mid(game.id.lastIndexOf('/') + 1);
       game.platform = Platform::get().getAliases(config->platform).at(1);
       gameEntries.append(game);
     }
@@ -397,8 +407,6 @@ void GiantBomb::getSearchResults(QList<GameEntry> &gameEntries,
 
 void GiantBomb::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
-  existingMedia = sharedBlobs;
-  
   printf("Waiting to get game data..."); fflush(stdout);
   if(requestGb(game.url, &lastGameRequest)) {
     printf(" DONE\n");
@@ -674,21 +682,19 @@ void GiantBomb::getDescription(GameEntry &game)
 void GiantBomb::getCover(GameEntry &game)
 {
   // COVER -> images->image->original (tags = *Box Art*)
-  if(!existingMedia.contains("cover")) {
-    QJsonValue jsonValue = jsonObj["image"].toObject()["original_url"];
-    if(jsonValue == QJsonValue::Undefined) {
-      return;
-    }
-    QString coverUrl = jsonValue.toString();
+  QJsonValue jsonValue = jsonObj["image"].toObject()["original_url"];
+  if(jsonValue == QJsonValue::Undefined) {
+    return;
+  }
+  QString coverUrl = jsonValue.toString();
 
-    if(!coverUrl.isEmpty()) {
-      netComm->request(coverUrl);
-      q.exec();
-      QImage image;
-      if(netComm->getError() == QNetworkReply::NoError &&
-         image.loadFromData(netComm->getData())) {
-        game.coverData = netComm->getData();
-      }
+  if(!coverUrl.isEmpty()) {
+    netComm->request(coverUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.coverData = netComm->getData();
     }
   }
 }
@@ -696,59 +702,57 @@ void GiantBomb::getCover(GameEntry &game)
 void GiantBomb::getMarquee(GameEntry &game)
 {
   // MARQUEE -> images->image->original (tags = *Media*)
-  if(!existingMedia.contains("marquee")) {
-    QString imageUrl;
-    QJsonArray jsonArray = jsonObj["images"].toArray();
-    if(!jsonArray.isEmpty()) {
-      for(const auto &jsonImage: std::as_const(jsonArray)) {
-        if(jsonImage.toObject()["tags"].toString().contains("Media", Qt::CaseInsensitive) ||
-           (jsonImage.toObject()["tags"].toString().contains("Art", Qt::CaseInsensitive) &&
-            !jsonImage.toObject()["tags"].toString().contains("Box Art", Qt::CaseInsensitive))) {
-          imageUrl = jsonImage.toObject()["original"].toString();
-          if(imageUrl.isEmpty()) {
-            imageUrl = jsonImage.toObject()["original_url"].toString();
-          }
-          if(!imageUrl.isEmpty()) {
-            break;
-          }
+  QString imageUrl;
+  QJsonArray jsonArray = jsonObj["images"].toArray();
+  if(!jsonArray.isEmpty()) {
+    for(const auto &jsonImage: std::as_const(jsonArray)) {
+      if(jsonImage.toObject()["tags"].toString().contains("Media", Qt::CaseInsensitive) ||
+         (jsonImage.toObject()["tags"].toString().contains("Art", Qt::CaseInsensitive) &&
+          !jsonImage.toObject()["tags"].toString().contains("Box Art", Qt::CaseInsensitive))) {
+        imageUrl = jsonImage.toObject()["original"].toString();
+        if(imageUrl.isEmpty()) {
+          imageUrl = jsonImage.toObject()["original_url"].toString();
         }
-      }
-    }
-
-    // Deep dive into the image endpoint:
-    if(imageUrl.isEmpty()) {
-      jsonArray = jsonObj["image_tags"].toArray();
-      for(const auto &jsonTags: std::as_const(jsonArray)) {
-        if(jsonTags.toObject()["name"].toString().contains("Media", Qt::CaseInsensitive) ||
-           (jsonTags.toObject()["name"].toString().contains("Art", Qt::CaseInsensitive) &&
-            !jsonTags.toObject()["name"].toString().contains("Box Art", Qt::CaseInsensitive))) {
-
-          QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-          printf("Waiting to get image data..."); fflush(stdout);
-          if(!requestGb(endPointUrl, &lastImageRequest)) {
-            printf(" ERROR, skipping marquee image.\n");
-            return;
-          }
-          printf(" DONE\n");
-          QJsonArray jsonMarquee = jsonDoc.object()["results"].toArray();
-
-          if(!jsonMarquee.isEmpty()) {
-            imageUrl = jsonMarquee.first().toObject()["original_url"].toString();
-          }
+        if(!imageUrl.isEmpty()) {
           break;
         }
       }
     }
+  }
 
-    if(!imageUrl.isEmpty()) {
-      // qDebug() << "Marquee: " << imageUrl;
-      netComm->request(imageUrl);
-      q.exec();
-      QImage image;
-      if(netComm->getError() == QNetworkReply::NoError &&
-         image.loadFromData(netComm->getData())) {
-        game.marqueeData = netComm->getData();
+  // Deep dive into the image endpoint:
+  if(imageUrl.isEmpty()) {
+    jsonArray = jsonObj["image_tags"].toArray();
+    for(const auto &jsonTags: std::as_const(jsonArray)) {
+      if(jsonTags.toObject()["name"].toString().contains("Media", Qt::CaseInsensitive) ||
+         (jsonTags.toObject()["name"].toString().contains("Art", Qt::CaseInsensitive) &&
+          !jsonTags.toObject()["name"].toString().contains("Box Art", Qt::CaseInsensitive))) {
+
+        QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
+        printf("Waiting to get image data..."); fflush(stdout);
+        if(!requestGb(endPointUrl, &lastImageRequest)) {
+          printf(" ERROR, skipping marquee image.\n");
+          return;
+        }
+        printf(" DONE\n");
+        QJsonArray jsonMarquee = jsonDoc.object()["results"].toArray();
+
+        if(!jsonMarquee.isEmpty()) {
+          imageUrl = jsonMarquee.first().toObject()["original_url"].toString();
+        }
+        break;
       }
+    }
+  }
+
+  if(!imageUrl.isEmpty()) {
+    // qDebug() << "Marquee: " << imageUrl;
+    netComm->request(imageUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.marqueeData = netComm->getData();
     }
   }
 }
@@ -756,63 +760,61 @@ void GiantBomb::getMarquee(GameEntry &game)
 void GiantBomb::getWheel(GameEntry &game)
 {
   // WHEEL -> images->image->original+image_tags (*Screenshot*, 1)
-  if(!existingMedia.contains("wheel")) {
-    QString imageUrl;
-    QJsonArray jsonArray = jsonObj["images"].toArray();
-    if(!jsonArray.isEmpty()) {
-      for(const auto &jsonImage: std::as_const(jsonArray)) {
-        QString imageTag = jsonImage.toObject()["tags"].toString();
-        if(imageTag.contains("Screenshot", Qt::CaseInsensitive) &&
-           (QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch())) {
-          imageUrl = jsonImage.toObject()["original"].toString();
-          if(imageUrl.isEmpty()) {
-            imageUrl = jsonImage.toObject()["original_url"].toString();
-          }
-          if(!imageUrl.isEmpty()) {
-            break;
-          }
+  QString imageUrl;
+  QJsonArray jsonArray = jsonObj["images"].toArray();
+  if(!jsonArray.isEmpty()) {
+    for(const auto &jsonImage: std::as_const(jsonArray)) {
+      QString imageTag = jsonImage.toObject()["tags"].toString();
+      if(imageTag.contains("Screenshot", Qt::CaseInsensitive) &&
+         (QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch())) {
+        imageUrl = jsonImage.toObject()["original"].toString();
+        if(imageUrl.isEmpty()) {
+          imageUrl = jsonImage.toObject()["original_url"].toString();
         }
-      }
-    }
-
-    // Deep dive into the image endpoint:
-    if(imageUrl.isEmpty()) {
-      jsonArray = jsonObj["image_tags"].toArray();
-      for(const auto &jsonTags: std::as_const(jsonArray)) {
-        if(jsonTags.toObject()["name"].toString() == "Screenshots") {
-
-          if(jsonImages.isEmpty()) {
-            QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-            printf("Waiting to get image data..."); fflush(stdout);
-            if(requestGb(endPointUrl, &lastImageRequest)) {
-              printf(" DONE\n");
-              jsonImages = jsonDoc.object()["results"].toArray();
-            } else {
-              printf(" ERROR, skipping screenshot image.\n");
-              return;
-            }
-          }
-
-          for(const auto &jsonImage: std::as_const(jsonImages)) {
-            imageUrl = jsonImage.toObject()["original_url"].toString();
-            if(QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch()) {
-              break;
-            }
-          }
+        if(!imageUrl.isEmpty()) {
           break;
         }
       }
     }
+  }
 
-    if(!imageUrl.isEmpty()) {
-      // qDebug() << "Wheel: " << imageUrl;
-      netComm->request(imageUrl);
-      q.exec();
-      QImage image;
-      if(netComm->getError() == QNetworkReply::NoError &&
-         image.loadFromData(netComm->getData())) {
-        game.wheelData = netComm->getData();
+  // Deep dive into the image endpoint:
+  if(imageUrl.isEmpty()) {
+    jsonArray = jsonObj["image_tags"].toArray();
+    for(const auto &jsonTags: std::as_const(jsonArray)) {
+      if(jsonTags.toObject()["name"].toString() == "Screenshots") {
+
+        if(jsonImages.isEmpty()) {
+          QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
+          printf("Waiting to get image data..."); fflush(stdout);
+          if(requestGb(endPointUrl, &lastImageRequest)) {
+            printf(" DONE\n");
+            jsonImages = jsonDoc.object()["results"].toArray();
+          } else {
+            printf(" ERROR, skipping screenshot image.\n");
+            return;
+          }
+        }
+
+        for(const auto &jsonImage: std::as_const(jsonImages)) {
+          imageUrl = jsonImage.toObject()["original_url"].toString();
+          if(QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch()) {
+            break;
+          }
+        }
+        break;
       }
+    }
+  }
+
+  if(!imageUrl.isEmpty()) {
+    // qDebug() << "Wheel: " << imageUrl;
+    netComm->request(imageUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.wheelData = netComm->getData();
     }
   }
 }
@@ -820,63 +822,61 @@ void GiantBomb::getWheel(GameEntry &game)
 void GiantBomb::getScreenshot(GameEntry &game)
 {
   // SCREENSHOT -> images->image->original+image_tags (*Screenshot*, >1)
-  if(!existingMedia.contains("screenshot")) {
-    QString imageUrl;
-    QJsonArray jsonArray = jsonObj["images"].toArray();
-    if(!jsonArray.isEmpty()) {
-      for(const auto &jsonImage: std::as_const(jsonArray)) {
-        QString imageTag = jsonImage.toObject()["tags"].toString();
-        if(imageTag.contains("Screenshot", Qt::CaseInsensitive) &&
-           (!QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch())) {
-          imageUrl = jsonImage.toObject()["original"].toString();
-          if(imageUrl.isEmpty()) {
-            imageUrl = jsonImage.toObject()["original_url"].toString();
-          }
-          if(!imageUrl.isEmpty()) {
-            break;
-          }
+  QString imageUrl;
+  QJsonArray jsonArray = jsonObj["images"].toArray();
+  if(!jsonArray.isEmpty()) {
+    for(const auto &jsonImage: std::as_const(jsonArray)) {
+      QString imageTag = jsonImage.toObject()["tags"].toString();
+      if(imageTag.contains("Screenshot", Qt::CaseInsensitive) &&
+         (!QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch())) {
+        imageUrl = jsonImage.toObject()["original"].toString();
+        if(imageUrl.isEmpty()) {
+          imageUrl = jsonImage.toObject()["original_url"].toString();
         }
-      }
-    }
-
-    // Deep dive into the image endpoint:
-    if(imageUrl.isEmpty()) {
-      jsonArray = jsonObj["image_tags"].toArray();
-      for(const auto &jsonTags: std::as_const(jsonArray)) {
-        if(jsonTags.toObject()["name"].toString() == "Screenshots") {
-
-          if(jsonImages.isEmpty()) {
-            QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
-            printf("Waiting to get image data..."); fflush(stdout);
-            if(requestGb(endPointUrl, &lastImageRequest)) {
-              printf(" DONE\n");
-              jsonImages = jsonDoc.object()["results"].toArray();
-            } else {
-              printf(" ERROR, skipping screenshot image.\n");
-              return;
-            }
-          }
-
-          for(const auto &jsonImage: std::as_const(jsonImages)) {
-            imageUrl = jsonImage.toObject()["original_url"].toString();
-            if(!QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch()) {
-              break;
-            }
-          }
+        if(!imageUrl.isEmpty()) {
           break;
         }
       }
     }
+  }
 
-    if(!imageUrl.isEmpty()) {
-      // qDebug() << "Screenshot: " << imageUrl;
-      netComm->request(imageUrl);
-      q.exec();
-      QImage image;
-      if(netComm->getError() == QNetworkReply::NoError &&
-         image.loadFromData(netComm->getData())) {
-        game.screenshotData = netComm->getData();
+  // Deep dive into the image endpoint:
+  if(imageUrl.isEmpty()) {
+    jsonArray = jsonObj["image_tags"].toArray();
+    for(const auto &jsonTags: std::as_const(jsonArray)) {
+      if(jsonTags.toObject()["name"].toString() == "Screenshots") {
+
+        if(jsonImages.isEmpty()) {
+          QString endPointUrl = jsonTags.toObject()["api_detail_url"].toString() + "&" + urlPost;
+          printf("Waiting to get image data..."); fflush(stdout);
+          if(requestGb(endPointUrl, &lastImageRequest)) {
+            printf(" DONE\n");
+            jsonImages = jsonDoc.object()["results"].toArray();
+          } else {
+            printf(" ERROR, skipping screenshot image.\n");
+            return;
+          }
+        }
+
+        for(const auto &jsonImage: std::as_const(jsonImages)) {
+          imageUrl = jsonImage.toObject()["original_url"].toString();
+          if(!QRegularExpression("[-_]0*1[.]").match(imageUrl).hasMatch()) {
+            break;
+          }
+        }
+        break;
       }
+    }
+  }
+
+  if(!imageUrl.isEmpty()) {
+    // qDebug() << "Screenshot: " << imageUrl;
+    netComm->request(imageUrl);
+    q.exec();
+    QImage image;
+    if(netComm->getError() == QNetworkReply::NoError &&
+       image.loadFromData(netComm->getData())) {
+      game.screenshotData = netComm->getData();
     }
   }
 }
@@ -884,35 +884,33 @@ void GiantBomb::getScreenshot(GameEntry &game)
 void GiantBomb::getVideo(GameEntry &game)
 {
   // VIDEO -> videos->video->api_detail_url -> results->low_url (1800->800?) (with web login)
-  if(!existingMedia.contains("video")) {
-    QString url;
-    if(!jsonObjVid.isEmpty()) {
-      url = jsonObjVid["low_url"].toString();
-      if(url.isEmpty()) {
-        url = jsonObjVid["high_url"].toString();
-      }
+  QString url;
+  if(!jsonObjVid.isEmpty()) {
+    url = jsonObjVid["low_url"].toString();
+    if(url.isEmpty()) {
+      url = jsonObjVid["high_url"].toString();
     }
+  }
 
-    if(!url.isEmpty()) {
-      bool moveOn = true;
-      for(int retries = 0; retries < RETRIESMAX; ++retries) {
-        netComm->request(url + "?" + urlPost.chopped(12));
-        q.exec();
-        game.videoData = netComm->getData();
-        // Make sure received data is actually a video file
-        QByteArray contentType = netComm->getContentType();
-        if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
-           contentType.contains("video/") &&
-           game.videoData.size() > 4096) {
-          game.videoFormat = contentType.mid(contentType.indexOf("/") + 1,
-                                             contentType.length() - contentType.indexOf("/") + 1);
-        } else {
-          game.videoData = "";
-          moveOn = false;
-        }
-        if(moveOn)
-          break;
+  if(!url.isEmpty()) {
+    bool moveOn = true;
+    for(int retries = 0; retries < RETRIESMAX; ++retries) {
+      netComm->request(url + "?" + urlPost.chopped(12));
+      q.exec();
+      game.videoData = netComm->getData();
+      // Make sure received data is actually a video file
+      QByteArray contentType = netComm->getContentType();
+      if(netComm->getError(config->verbosity) == QNetworkReply::NoError &&
+         contentType.contains("video/") &&
+         game.videoData.size() > 4096) {
+        game.videoFormat = contentType.mid(contentType.indexOf("/") + 1,
+                                           contentType.length() - contentType.indexOf("/") + 1);
+      } else {
+        game.videoData = "";
+        moveOn = false;
       }
+      if(moveOn)
+        break;
     }
   }
 }

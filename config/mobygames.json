@@ -230,7 +230,7 @@
     },
     {
       "platform_id": 77,
-      "platform_name": "Commodore PET/CBM"
+      "platform_name": "pet"
     },
     {
       "platform_id": 277,
@@ -718,7 +718,7 @@
     },
     {
       "platform_id": 75,
-      "platform_name": "Odyssey"
+      "platform_name": "odyssey"
     },
     {
       "platform_id": "78,128",
@@ -750,7 +750,7 @@
     },
     {
       "platform_id": 149,
-      "platform_name": "PC-6001"
+      "platform_name": "pc60"
     },
     {
       "platform_id": 201,
@@ -818,7 +818,7 @@
     },
     {
       "platform_id": 141,
-      "platform_name": "PlayStation 4"
+      "platform_name": "ps4"
     },
     {
       "platform_id": 288,
@@ -966,7 +966,7 @@
     },
     {
       "platform_id": 85,
-      "platform_name": "Spectravideo"
+      "platform_name": "spectravideo"
     },
     {
       "platform_id": 281,
@@ -1281,7 +1281,7 @@
       "platform_name": "actionmax"
     },
     {
-      "platform_id": 143,
+      "platform_id": 60,
       "platform_name": "amstradgx4000"
     },
     {
@@ -1290,63 +1290,15 @@
     },
     {
       "platform_id": 143,
-      "platform_name": "cave"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "cps1"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "cps2"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "cps3"
-    },
-    {
-      "platform_id": 143,
       "platform_name": "daphne"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "dataeast"
     },
     {
       "platform_id": 22,
       "platform_name": "fds"
     },
     {
-      "platform_id": 16,
-      "platform_name": "genesis-music"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "igs"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "irem"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "jaleco"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "kaneko"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "konami"
-    },
-    {
-      "platform_id": 205,
+      "platform_id": "205,204",
       "platform_name": "lcdhandheld"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "midway"
     },
     {
       "platform_id": 57,
@@ -1354,27 +1306,7 @@
     },
     {
       "platform_id": 143,
-      "platform_name": "namco"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "naomi"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "naomi2"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "nmk"
-    },
-    {
-      "platform_id": 40,
-      "platform_name": "pcengine-music"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "psikyo"
+      "platform_name": "arcade"
     },
     {
       "platform_id": 15,
@@ -1383,26 +1315,6 @@
     {
       "platform_id": 2,
       "platform_name": "scummvm"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "segasystemx"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "seta"
-    },
-    {
-      "platform_id": 15,
-      "platform_name": "snes-music"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "nichibutsu"
-    },
-    {
-      "platform_id": 143,
-      "platform_name": "toaplan"
     }
   ]
 }

@@ -3,7 +3,7 @@
  *
  *  Tue Feb 20 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -39,6 +39,8 @@
 class NameTools : public QObject
 {
 public:
+  NameTools(QString threadId);
+  ~NameTools();
   static QString getScummName(const QString &baseName, const QString &scummIni);
   static QString getNameWithSpaces(const QString &baseName);
   static QString getUrlQueryName(const QString &baseName,
@@ -63,28 +65,25 @@ public:
                                   QStringList &safeTransformations,
                                   QStringList &unsafeTransformations,
                                   bool offlineUsage);
-  static CanonicalData getCanonicalData(const QFileInfo &info, bool onlyChecksums = false);
-  static bool importCanonicalData(const QString &file);
-  QString searchLutrisData(const QString &filePath);
-  static qint64 dirSize(const QString &dirPath);
-  static qint64 calculateGameSize(const QString &filePath);
-  static qint64 recursiveCalculateGameSize(const QString &filePath);
+  static CanonicalData calculateChecksums(const QFileInfo &info);
+
+  CanonicalData getCanonicalData(const QFileInfo &info, bool onlyChecksums = false);
   bool searchCanonicalData(CanonicalData &canonical);
+  bool importCanonicalData(const QString &file);
+  QString searchLutrisData(const QString &filePath);
+  qint64 dirSize(const QString &dirPath);
+  qint64 calculateGameSize(const QString &filePath);
+  qint64 recursiveCalculateGameSize(const QString &filePath);
 
-  // Singleton template
-  static NameTools & get();
-  NameTools(const NameTools&) = delete;
-  void operator=(const NameTools&) = delete;
-
-  QSharedPointer<Cache> cache;
+  inline static QSharedPointer<Cache> cache;
 
 private:
-  NameTools();
   void loadConfig(const QString &configPath,
                   const QString &code, const QString &name);
 
   QSqlDatabase db;
-  QAtomicInteger<int> dbInitialized = 0;
+  QSqlDatabase lutrisdb;
+  QString threadId;
   QString dbName = "canonicaldata.db";
   QString dbLutris = "/share/Games/pcsteam/linux/.local/share/lutris/pga.db";
   QString configLutris = "/share/Games/pcsteam/linux/.config/lutris/games/";

@@ -3,7 +3,7 @@
  *
  *  Wed Jun 14 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -53,9 +53,12 @@ struct Settings {
   bool cacheGb = false;
   bool generateLbDb = false;
   QString dbPath = "";
+  QString gamebasePath = "";
+  QString exodosPath = "";
   QString guidesPath = "";
   QString docsPath = "";
   QString mapsPath = "";
+  QString spritesPath = "";
   QString igdbToken = "";
   QString apiKey = "";
   QString inputFolder = "";
@@ -90,6 +93,7 @@ struct Settings {
   int jpgQuality = 95;
   bool subdirs = true;
   bool onlyMissing = false;
+  bool singleImagePerType = false;
   QString startAt = "";
   QString endAt = "";
   bool pretend = false;
@@ -121,6 +125,7 @@ struct Settings {
   qint64 negCacheExpiration = 0;
   int negCacheDaysExpiration = 180;
   QStringList docTypes;
+  bool ignoreNegCache = false;
 
   int romLimit = -1;
 
@@ -132,11 +137,13 @@ struct Settings {
   bool reviews = false;
   bool artbooks = false;
   bool maps = false;
+  bool sprites = false;
   bool manuals = false;
   int manualSizeLimit = 100*1024*1024;
   QString videoConvertCommand = "";
   QString videoConvertExtension = "";
   bool symlink = false;
+  bool symlinkImages = false;
   bool skipExistingVideos = false;
   bool skipExistingManuals = false;
   bool cacheCovers = true;
@@ -152,6 +159,7 @@ struct Settings {
   bool cacheTextures = true;
   bool getMissingResources = false;
   bool chiptunes = false;
+  bool skipChecksum = false;
 
   QString user = "";
   QString password = "";

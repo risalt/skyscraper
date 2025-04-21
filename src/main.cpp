@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -64,11 +64,9 @@ void customMessageHandler(QtMsgType type, const QMessageLogContext &, const QStr
   // Decide which type of debug message it is, and add string to signify it
   // Then append the debug message itself to the same string.
   switch (type) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
   case QtInfoMsg:
     txt += QString("INFO: '%1'").arg(msg);
     break;
-#endif
   case QtDebugMsg:
     txt += QString("DEBUG: '%1'").arg(msg);
     break;
@@ -105,7 +103,7 @@ BOOL WINAPI ConsoleHandler(DWORD dwType)
 #endif
 {
 #if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
-  if(signal == 2) {
+  if(signal == SIGINT) {
     sigIntRequests++;
 #endif
 #if defined(Q_OS_WIN)
@@ -214,7 +212,9 @@ int main(int argc, char *argv[])
   QString platforms;
   const auto platformList = Platform::get().getPlatforms();
   for(const auto &platform: std::as_const(platformList)) {
-    platforms.append("'" + platform + "', ");
+    if(Platform::get().getSortBy(platform) != "0000") {
+      platforms.append("'" + platform + "', ");
+    }
   }
   // Remove the last ', '
   platforms = platforms.left(platforms.length() - 2);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
   parser.addVersionOption();
   QCommandLineOption fOption("f", "\nThe frontend you wish to generate a gamelist for. Remember to leave out the '-s' option when using this in order to enable Skyscraper's gamelist generation mode.\n(Currently supports 'emulationstation', 'retrobat', 'attractmode', 'pegasus', 'koillection' and 'xmlexport').\n(default is 'emulationstation')\n", "FRONTEND", "");
   QCommandLineOption pOption("p", "The platform you wish to scrape.\n(Currently supports " + platforms + ").\n.", "PLATFORM", "");
-  QCommandLineOption sOption("s", "The scraping module you wish to gather resources from for the platform set with '-p'.\nLeave the '-s' option out to enable Skyscraper's gamelist generation mode.\n(WEB: 'arcadedb', 'igdb', 'mobygames', 'openretro', 'rawg', 'screenscraper', 'thegamesdb'  and 'worldofspectrum'; HYBRID: 'giantbomb', 'launchbox', 'offlinemobygames', 'offlinetgdb' and 'vgfacts'; OFFLINE: 'chiptune', 'docsdb', 'gamefaqs', 'mamehistory' and 'vgmaps'; LOCAL: 'customflags', 'esgamelist' and 'import').\n \nSUPPORT PARAMETERS:\n", "MODULE", "");
+  QCommandLineOption sOption("s", "The scraping module you wish to gather resources from for the platform set with '-p'.\nLeave the '-s' option out to enable Skyscraper's gamelist generation mode.\n(WEB: 'arcadedb', 'igdb', 'mobygames', 'openretro', 'rawg', 'screenscraper', 'thegamesdb', 'vggeek' and 'worldofspectrum'; HYBRID: 'giantbomb', 'launchbox', 'offlinemobygames', 'offlinetgdb', 'everygame', 'spriters' and 'vgfacts'; OFFLINE: 'chiptune', 'docsdb', 'exodos', 'gamebase', 'gamefaqs', 'mamehistory' and 'vgmaps'; LOCAL: 'customflags', 'esgamelist' and 'import').\n \nSUPPORT PARAMETERS:\n", "MODULE", "");
   QCommandLineOption aOption("a", "Specify a non-default artwork.xml file to use when setting up the artwork compositing when in gamelist generation mode.\n(default is '~/.skyscraper/artwork.xml')", "FILENAME", "");
   QCommandLineOption addextOption("addext", "Add this or these file extension(s) to accepted file extensions during a scraping run. (example: '*.zst' or '*.zst *.ext')", "EXTENSION(S)", "");
   QCommandLineOption cOption("c", "Use this config file to set up Skyscraper.\n(default is '~/.skyscraper/config.ini')", "FILENAME", "");
@@ -253,6 +253,7 @@ int main(int argc, char *argv[])
   QCommandLineOption includepatternOption("includepattern", "Tells Skyscraper to only include the files matching the provided asterisk pattern(s). Remember to double-quote the pattern to avoid weird behaviour. You can add several patterns by separating them with ','. In cases where you need to match for a comma you need to escape it as '\\,'. (Pattern example: '\"Super*,*Fighter*\"')", "PATTERN", "");
   QCommandLineOption lOption("l", "Maximum game description length. Everything longer than this will be truncated.\n(default is 2500)", "0-100000", "");
   QCommandLineOption langOption("lang", "Set preferred result language for scraping modules that support it.\n(default is 'en')", "CODE", "en");
+  QCommandLineOption listOption("list", "List scrapers or platforms (for scripting usage).\n(used 'help' list to display the available options)", "LIST", "help");
   QCommandLineOption loadChecksum("loadchecksum", "Load the canonical data (game name, file name, size, CRC, SHA1, MD5) from an XML '.dat' (TOSEC, No-Intro, Redump) or '.xml' (MAME) file into the canonical database. The filename must be indicated. Use 'LUTRISDB' as filename to retrieve checksum data from the Lutris database.", "FILENAME", "");
   QCommandLineOption mOption("m", "Minimum match percentage when comparing search result titles to filename titles.\n(default is 65)", "0-100", "");
   QCommandLineOption maxfailsOption("maxfails", "Sets the allowed number of initial 'Not found' results before rage-quitting.\n(default is 42)", "1-200", "");
@@ -290,6 +291,7 @@ int main(int argc, char *argv[])
   parser.addOption(includefromOption);
   parser.addOption(includepatternOption);
   parser.addOption(lOption);
+  parser.addOption(listOption);
   parser.addOption(langOption);
   parser.addOption(loadChecksum);
   parser.addOption(mOption);
@@ -310,6 +312,28 @@ int main(int argc, char *argv[])
 
   if(argc <= 1 || parser.isSet("help") || parser.isSet("h")) {
     parser.showHelp();
+  } else if(parser.isSet("list")) {
+    if(parser.value("list") == "scrapers") {
+      printf("customflags launchbox gamefaqs vgmaps chiptune vgfacts arcadedb "
+             "igdb openretro offlinemobygames offlinetgdb worldofspectrum "
+             "docsdb mamehistory everygame spriters gamebase screenscraper "
+             "thegamesdb rawg giantbomb vggeek mobygames\n");
+    } else if(parser.value("list") == "fastscrapers") {
+      printf("customflags launchbox gamefaqs vgmaps chiptune vgfacts arcadedb "
+             "igdb openretro offlinemobygames offlinetgdb worldofspectrum "
+             "docsdb mamehistory everygame spriters gamebase screenscraper "
+             "thegamesdb rawg\n");
+    } else if(parser.value("list") == "slowscrapers") {
+      printf("giantbomb vggeek mobygames\n");
+    } else if(parser.value("list") == "platforms") {
+      QString platformsTerse = platforms;
+      platformsTerse.remove(",");
+      printf("%s\n", platformsTerse.toStdString().c_str());
+    } else {
+      printf("Please indicate one of the following list options:\n\tplatforms, "
+             "scrapers, fastscrapers, slowscrapers\n");
+    }
+    return 0;
   } else {
     x = new Skyscraper(parser, currentDir);
     QObject::connect(x, &Skyscraper::finished, &app, &QApplication::quit);

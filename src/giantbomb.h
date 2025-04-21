@@ -2,8 +2,7 @@
  *            giantbomb.h
  *
  *  Sun Aug 26 12:00:00 CEST 2018
- *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -42,7 +41,10 @@ class GiantBomb : public AbstractScraper
   Q_OBJECT
 
 public:
-  GiantBomb(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  GiantBomb(Settings *config,
+            QSharedPointer<NetManager> manager,
+            QString threadId,
+            NameTools *NameTool);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:
@@ -78,8 +80,6 @@ private:
   QMultiMap<QString, QPair<QString, QString>> gbPlatformMapTitle;
   QString platformId;
   
-  QStringList existingMedia;
-
   QJsonDocument jsonDoc;
   QJsonDocument jsonRel;
   QJsonDocument jsonVid;

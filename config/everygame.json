@@ -1,0 +1,312 @@
+{
+  "platforms": [
+    {
+      "machine_types": "455",
+      "code": "3do"
+    },
+    {
+      "machine_types": "52",
+      "code": "atom"
+    },
+    {
+      "machine_types": "7",
+      "code": "acornelectron"
+    },
+    {
+      "machine_types": "357,416,393,477,478,488,346,487,428",
+      "code": "amiga"
+    },
+    {
+      "machine_types": "348,445",
+      "code": "amigacd32"
+    },
+    {
+      "machine_types": "413,516,8,363,437",
+      "code": "amstradcpc"
+    },
+    {
+      "machine_types": "362",
+      "code": "amstradgx4000"
+    },
+    {
+      "machine_types": "60,61,9,62",
+      "code": "apple2"
+    },
+    {
+      "machine_types": "465",
+      "code": "apple2gs"
+    },
+    {
+      "machine_types": "503,10",
+      "code": "macintosh"
+    },
+    {
+      "machine_types": "378,432",
+      "code": "acorn"
+    },
+    {
+      "machine_types": "395,41,310,68,12,70,381,71,370",
+      "code": "atari800"
+    },
+    {
+      "machine_types": "74",
+      "code": "atari2600"
+    },
+    {
+      "machine_types": "415",
+      "code": "atari5200"
+    },
+    {
+      "machine_types": "421",
+      "code": "atari7800"
+    },
+    {
+      "machine_types": "459,461,460",
+      "code": "atarijaguar"
+    },
+    {
+      "machine_types": "462",
+      "code": "atarilynx"
+    },
+    {
+      "machine_types": "72,420",
+      "code": "atarist"
+    },
+    {
+      "machine_types": "5,379,6,36,2,4",
+      "code": "bbcmicro"
+    },
+    {
+      "machine_types": "53,90",
+      "code": "coleco"
+    },
+    {
+      "machine_types": "15,504",
+      "code": "c64"
+    },
+    {
+      "machine_types": "49,505",
+      "code": "pet"
+    },
+    {
+      "machine_types": "1,111",
+      "code": "dragon32"
+    },
+    {
+      "machine_types": "400,418,399",
+      "code": "dreamcast"
+    },
+    {
+      "machine_types": "479",
+      "code": "fmtowns"
+    },
+    {
+      "machine_types": "351",
+      "code": "gb"
+    },
+    {
+      "machine_types": "361",
+      "code": "gba"
+    },
+    {
+      "machine_types": "382",
+      "code": "gbc"
+    },
+    {
+      "machine_types": "20,369",
+      "code": "pc"
+    },
+    {
+      "machine_types": "20,369",
+      "code": "scummvm"
+    },
+    {
+      "machine_types": "145",
+      "code": "intellivision"
+    },
+    {
+      "machine_types": "411,385",
+      "code": "videopac"
+    },
+    {
+      "machine_types": "353,440,439",
+      "code": "megacd"
+    },
+    {
+      "machine_types": "22,248,249",
+      "code": "msx"
+    },
+    {
+      "machine_types": "248,249",
+      "code": "spectravideo"
+    },
+    {
+      "machine_types": "454,453",
+      "code": "neogeo"
+    },
+    {
+      "machine_types": "510,511,512",
+      "code": "ngpc"
+    },
+    {
+      "machine_types": "434,498,499,500",
+      "code": "3ds"
+    },
+    {
+      "machine_types": "451,471,352",
+      "code": "nes"
+    },
+    {
+      "machine_types": "451,471,352",
+      "code": "fds"
+    },
+    {
+      "machine_types": "398,397",
+      "code": "n64"
+    },
+    {
+      "machine_types": "360,513,514,515",
+      "code": "nds"
+    },
+    {
+      "machine_types": "371,463,464",
+      "code": "gc"
+    },
+    {
+      "machine_types": "436,468,495",
+      "code": "switch"
+    },
+    {
+      "machine_types": "374,394,486",
+      "code": "wii"
+    },
+    {
+      "machine_types": "373,452,494",
+      "code": "wiiu"
+    },
+    {
+      "machine_types": "23,32,42",
+      "code": "oric"
+    },
+    {
+      "machine_types": "501,347",
+      "code": "windows"
+    },
+    {
+      "machine_types": "405,449,450",
+      "code": "pcengine"
+    },
+    {
+      "machine_types": "404",
+      "code": "supergrafx"
+    },
+    {
+      "machine_types": "466",
+      "code": "pc88"
+    },
+    {
+      "machine_types": "344",
+      "code": "pc98"
+    },
+    {
+      "machine_types": "493",
+      "code": "pcfx"
+    },
+    {
+      "machine_types": "365,458,388",
+      "code": "psx"
+    },
+    {
+      "machine_types": "338,457,387",
+      "code": "ps2"
+    },
+    {
+      "machine_types": "368,496,389",
+      "code": "ps3"
+    },
+    {
+      "machine_types": "391,392,476",
+      "code": "ps4"
+    },
+    {
+      "machine_types": "364,390,427",
+      "code": "psp"
+    },
+    {
+      "machine_types": "417",
+      "code": "vita"
+    },
+    {
+      "machine_types": "414",
+      "code": "samcoupe"
+    },
+    {
+      "machine_types": "473,474",
+      "code": "sg-1000"
+    },
+    {
+      "machine_types": "442,443,444",
+      "code": "sega32x"
+    },
+    {
+      "machine_types": "354,403,448",
+      "code": "gamegear"
+    },
+    {
+      "machine_types": "355,358,441",
+      "code": "genesis"
+    },
+    {
+      "machine_types": "350,425,426,475",
+      "code": "mastersystem"
+    },
+    {
+      "machine_types": "380,423,424",
+      "code": "saturn"
+    },
+    {
+      "machine_types": "470",
+      "code": "x1"
+    },
+    {
+      "machine_types": "480",
+      "code": "x68000"
+    },
+    {
+      "machine_types": "27",
+      "code": "zx81"
+    },
+    {
+      "machine_types": "356,447,467",
+      "code": "snes"
+    },
+    {
+      "machine_types": "356,447,467",
+      "code": "satellaview"
+    },
+    {
+      "machine_types": "263,375",
+      "code": "trs80"
+    },
+    {
+      "machine_types": "35",
+      "code": "ti99"
+    },
+    {
+      "machine_types": "277,250,25,31,44,339,340",
+      "code": "zxspectrum"
+    },
+    {
+      "machine_types": "412",
+      "code": "vectrex"
+    },
+    {
+      "machine_types": "359,435",
+      "code": "xbox"
+    },
+    {
+      "machine_types": "341,410,438",
+      "code": "xbox360"
+    }
+  ]
+}

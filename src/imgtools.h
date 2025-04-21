@@ -3,7 +3,7 @@
  *
  *  Tue Feb 6 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.

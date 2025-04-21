@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -36,7 +36,10 @@ class TheGamesDb : public AbstractScraper
   Q_OBJECT
 
 public:
-  TheGamesDb(Settings *config, QSharedPointer<NetManager> manager, QString threadId);
+  TheGamesDb(Settings *config,
+             QSharedPointer<NetManager> manager,
+             QString threadId,
+             NameTools *NameTool);
   void getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache) override;
 
 protected:

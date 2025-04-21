@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -32,8 +32,9 @@
 
 ArcadeDB::ArcadeDB(Settings *config,
                    QSharedPointer<NetManager> manager,
-                   QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                   QString threadId,
+                   NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   baseUrl = "http://adb.arcadeitalia.net";
   searchUrlPre = "http://adb.arcadeitalia.net/service_scraper.php?ajax=query_mame&lang=en&use_parent=1&game_name=";
@@ -46,6 +47,9 @@ ArcadeDB::ArcadeDB(Settings *config,
     return;
   }
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(TAGS);
@@ -91,14 +95,17 @@ void ArcadeDB::getSearchResults(QList<GameEntry> &gameEntries,
 
   GameEntry game;
 
-  internalName = searchName;
+  game.id = searchName.toLower();
   game.title = jsonObj.value("title").toString();
   game.platform = Platform::get().getAliases(platform).at(1);
+  game.miscData = QJsonDocument(jsonObj).toJson(QJsonDocument::Compact);
   gameEntries.append(game);
 }
 
 void ArcadeDB::getGameData(GameEntry &game, QStringList &sharedBlobs, GameEntry *cache = nullptr)
 {
+  jsonObj = QJsonDocument::fromJson(game.miscData).object();
+
   fetchGameResources(game, sharedBlobs, cache);
 }
 
@@ -230,7 +237,7 @@ void ArcadeDB::getVideo(GameEntry &game)
      game.videoData.length() > 4096) {
     game.videoFormat = "mp4";
   } else {
-    netComm->request("https://www.progettosnaps.net/videosnaps/mp4/" + internalName + ".mp4");
+    netComm->request("https://www.progettosnaps.net/videosnaps/mp4/" + game.id + ".mp4");
     q.exec();
     game.videoData = netComm->getData();
     if(netComm->getError() == QNetworkReply::NoError &&
@@ -245,14 +252,14 @@ void ArcadeDB::getVideo(GameEntry &game)
 void ArcadeDB::getManual(GameEntry &game)
 {
   netComm->request("http://adb.arcadeitalia.net/download_file.php?tipo=mame_current&codice=" +
-         internalName + "&entity=manual&oper=view&filler=" + internalName + ".pdf");
+         game.id + "&entity=manual&oper=view&filler=" + game.id + ".pdf");
   q.exec();
   game.manualData = netComm->getData();
   if(netComm->getError() == QNetworkReply::NoError &&
      game.manualData.length() > 4096) {
     game.manualFormat = "pdf";
   } else {
-    netComm->request("https://www.progettosnaps.net/manuals/pdf/" + internalName + ".pdf");
+    netComm->request("https://www.progettosnaps.net/manuals/pdf/" + game.id + ".pdf");
     q.exec();
     game.manualData = netComm->getData();
     if(netComm->getError() == QNetworkReply::NoError &&

@@ -3,7 +3,7 @@
  *
  *  Wed Jun 18 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -28,15 +28,21 @@
 #include "thegamesdb.h"
 #include "strtools.h"
 #include "nametools.h"
-
+#include "platform.h"
 
 TheGamesDb::TheGamesDb(Settings *config,
                        QSharedPointer<NetManager> manager,
-                       QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                       QString threadId,
+                       NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
   loadMaps();
+
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by TheGamesDB or it hasn't "
@@ -52,6 +58,9 @@ TheGamesDb::TheGamesDb(Settings *config,
                   "&include=platform"
                   "&filter[platform]=";
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(RELEASEDATE);
   fetchOrder.append(DESCRIPTION);
   fetchOrder.append(TAGS);

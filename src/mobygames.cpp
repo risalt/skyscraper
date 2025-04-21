@@ -3,7 +3,7 @@
  *
  *  Fri Mar 30 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -28,18 +28,27 @@
 #include "strtools.h"
 
 #include <QJsonArray>
-
-#if QT_VERSION >= 0x050a00
 #include <QRandomGenerator>
-#endif
 
 MobyGames::MobyGames(Settings *config,
                      QSharedPointer<NetManager> manager,
-                     QString threadId)
-  : AbstractScraper(config, manager, threadId)
+                     QString threadId,
+                     NameTools *NameTool)
+  : AbstractScraper(config, manager, threadId, NameTool)
 {
+  if(config->userCreds.isEmpty()) {
+    printf("ERROR: Missing Mobygames API Key: please add one to the configuration file.\n");
+    reqRemaining = 0;
+    return;
+  }
+
   loadConfig("mobygames.json", "platform_name", "platform_id");
+
   platformId = getPlatformId(config->platform);
+  if(Platform::get().getFamily(config->platform) == "arcade" &&
+     platformId == "na") {
+    platformId = getPlatformId("arcade");
+  }
   if(platformId == "na") {
     reqRemaining = 0;
     printf("\033[0;31mPlatform not supported by MobyGames (see file mobygames.json)...\033[0m\n");
@@ -55,6 +64,9 @@ MobyGames::MobyGames(Settings *config,
 
   searchUrlPre = "https://api.mobygames.com/v1/games";
 
+  fetchOrder.append(ID);
+  fetchOrder.append(TITLE);
+  fetchOrder.append(PLATFORM);
   fetchOrder.append(PUBLISHER);
   fetchOrder.append(DEVELOPER);
   fetchOrder.append(RELEASEDATE);
@@ -74,70 +86,80 @@ MobyGames::MobyGames(Settings *config,
 void MobyGames::getSearchResults(QList<GameEntry> &gameEntries,
                                 QString searchName, QString)
 {
-  printf("Waiting as advised by MobyGames api restrictions...\n");
-  limiter.exec();
-  QString searchUrl = searchUrlPre + "?api_key=" + config->userCreds +
-                      "&title=" + StrTools::simplifyLetters(searchName) +
-                      "&platform=" + platformId.split(",").join("&platform=");
-  netComm->request(searchUrl);
-  q.exec();
-  if(netComm->getError() != QNetworkReply::NoError &&
-     netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
-    printf("Connection error. Is the API down?\n");
-    searchError = true;
-    return;
-  } else {
-    searchError = false;
-  }
-  data = netComm->getData();
-  printf("s %s\n", searchUrl.toStdString().c_str());
-
-  jsonDoc = QJsonDocument::fromJson(data);
-  if(jsonDoc.isEmpty()) {
-    searchError = true;
+  if(searchName.contains("(") || searchName.contains("[")) {
     return;
   }
 
-  if(jsonDoc.object()["code"].toInt() == 429) {
-    printf("\033[1;31mToo many requests! This is probably because some other "
-           "Skyscraper user is currently using the 'mobygames' module. Please "
-           "wait a while and try again.\n\nNow quitting...\033[0m\n");
-    reqRemaining = 0;
-    searchError = true;
-    return;
-  }
+  for(const auto &onePlatformId: platformId.split(",")) {
+    printf("Waiting as advised by MobyGames api restrictions...\n");
+    limiter.exec();
+    QString searchUrl = searchUrlPre + "?api_key=" + config->userCreds +
+                        "&title=" + StrTools::simplifyLetters(searchName) +
+                        "&platform=" + onePlatformId;
+    netComm->request(searchUrl);
+    q.exec();
+    if(netComm->getError() != QNetworkReply::NoError &&
+       netComm->getError() <= QNetworkReply::ProxyAuthenticationRequiredError) {
+      printf("Connection error. Is the API down?\n");
+      searchError = true;
+      return;
+    } else {
+      searchError = false;
+    }
+    data = netComm->getData();
+    printf("s %s\n", searchUrl.toStdString().c_str());
 
-  QJsonArray jsonGames = jsonDoc.object()["games"].toArray();
+    jsonDoc = QJsonDocument::fromJson(data);
+    if(jsonDoc.isEmpty()) {
+      searchError = true;
+      return;
+    }
 
-  while(!jsonGames.isEmpty()) {
-    GameEntry game;
-    QJsonObject jsonGame = jsonGames.first().toObject();
+    if(jsonDoc.object()["code"].toInt() == 429) {
+      printf("\033[1;31mToo many requests! This is probably because some other "
+             "Skyscraper user is currently using the 'mobygames' module. Please "
+             "wait a while and try again.\n\nNow quitting...\033[0m\n");
+      reqRemaining = 0;
+      searchError = true;
+      return;
+    }
 
-    game.id = QString::number(jsonGame["game_id"].toInt());
-    game.title = jsonGame["title"].toString();
-    game.miscData = QJsonDocument(jsonGame).toJson(QJsonDocument::Compact);
+    QJsonArray jsonGames = jsonDoc.object()["games"].toArray();
 
-    QJsonArray jsonPlatforms = jsonGame["platforms"].toArray();
-    while(!jsonPlatforms.isEmpty()) {
-      QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
-      QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
-      if(platformId.split(",").contains(gamePlatformId)) {
-        game.url = searchUrlPre + "/" + game.id + "/platforms/" +
-                   gamePlatformId + "?api_key=" + config->userCreds;
-        game.platform = jsonPlatform["platform_name"].toString();
-        gameEntries.append(game);
-        const QJsonArray variants = jsonGame["alternate_titles"].toArray();
-        for(const auto &variant: std::as_const(variants)) {
-          GameEntry variantGame = game;
-          variantGame.title = variant.toObject()["title"].toString();
-          if(!variantGame.title.isEmpty() && variantGame.title != game.title) {
-            gameEntries.append(variantGame);
+    while(!jsonGames.isEmpty()) {
+      GameEntry game;
+      QJsonObject jsonGame = jsonGames.first().toObject();
+
+      game.id = QString::number(jsonGame["game_id"].toInt());
+      game.title = jsonGame["title"].toString();
+      game.miscData = QJsonDocument(jsonGame).toJson(QJsonDocument::Compact);
+
+      QJsonArray jsonPlatforms = jsonGame["platforms"].toArray();
+      while(!jsonPlatforms.isEmpty()) {
+        QJsonObject jsonPlatform = jsonPlatforms.first().toObject();
+        QString gamePlatformId = QString::number(jsonPlatform["platform_id"].toInt());
+        if(platformId.split(",").contains(gamePlatformId)) {
+          game.url = searchUrlPre + "/" + game.id + "/platforms/" +
+                     gamePlatformId + "?api_key=" + config->userCreds;
+          game.platform = jsonPlatform["platform_name"].toString();
+          gameEntries.append(game);
+          const QJsonArray variants = jsonGame["alternate_titles"].toArray();
+          for(const auto &variant: std::as_const(variants)) {
+            GameEntry variantGame = game;
+            variantGame.title = variant.toObject()["title"].toString();
+            if(!variantGame.title.isEmpty() && variantGame.title != game.title) {
+              gameEntries.append(variantGame);
+            }
           }
         }
+        jsonPlatforms.removeFirst();
       }
-      jsonPlatforms.removeFirst();
+      jsonGames.removeFirst();
     }
-    jsonGames.removeFirst();
+
+    if(!gameEntries.isEmpty()) {
+      break;
+    }
   }
 }
 
@@ -632,11 +654,7 @@ void MobyGames::getScreenshot(GameEntry &game)
     return;
   } else if(jsonScreenshots.count() > 2) {
     // First 2 are almost always not ingame, so skip those if we have 3 or more
-#if QT_VERSION >= 0x050a00
     chosen = (QRandomGenerator::global()->generate() % (jsonScreenshots.count() - 2)) + 2;
-#else
-    chosen = (qrand() % (jsonScreenshots.count() - 2)) + 2;
-#endif
   }
   printf("Waiting to get screenshot data...\n");
   netComm->request(jsonScreenshots.at(chosen).toObject()["image"].toString().replace("http://", "https://"));

@@ -2,8 +2,7 @@
  *            koillection.cpp
  *
  *  Wed Jun 18 12:00:00 CEST 2017
- *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -97,12 +96,12 @@ Koillection::~Koillection()
   if(db.isOpen()) {
     db.close();
     db = QSqlDatabase();
-    QSqlDatabase::removeDatabase(db.connectionName());
+    QSqlDatabase::removeDatabase("koillection");
   }
   // Update the collection statistics
   if(!collectionId.isEmpty()) {
     printf("INFO: Updating global statistics... "); fflush(stdout);
-    netComm->request(baseUrl + "/api/refresh-caches", "", headers);
+    netComm->request(baseUrl + "/api/refresh-caches", QString(), headers);
     q.exec();
     printf("DONE\n");
   }
@@ -145,9 +144,8 @@ bool Koillection::skipExisting(QList<GameEntry> &, QSharedPointer<Queue> queue)
         // Delete from database
         printf("INFO: Item '%s' corresponding to a non-existant file will be deleted.\n",
                query.value(0).toString().toStdString().c_str());
-        QString request = "";
         netComm->request(baseUrl + "/api/items/" + query.value(0).toString(),
-                         request, headers, "DELETE");
+                         QString(), headers, "DELETE");
         q.exec();
         // Not sure how to check for the result of the delete operation
       }
@@ -312,11 +310,13 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     query.finish();
   }
 
-  if(collectionId.isEmpty() || koiToken.isEmpty() || categoryYears.isEmpty() ||
-      categoryGenres.isEmpty() || videogamesTemplate.isEmpty() || templateDefinition.isEmpty() ||
-      genresList.isEmpty() || platformsList.isEmpty() || yearsList.isEmpty() ||
-      categoryFranchises.isEmpty() || franchisesList.isEmpty() ||
-      categoryCatalog.isEmpty() || catalogTagList.isEmpty()) {
+  if(collectionId.isEmpty()       || koiToken.isEmpty()           ||
+     categoryYears.isEmpty()      || categoryGenres.isEmpty()     ||
+     videogamesTemplate.isEmpty() || templateDefinition.isEmpty() ||
+     genresList.isEmpty()         || platformsList.isEmpty()      ||
+     yearsList.isEmpty()          ||
+     categoryCatalog.isEmpty()    || catalogTagList.isEmpty()     ||
+     categoryFranchises.isEmpty() || franchisesList.isEmpty()) {
     return;
   }
 
@@ -348,7 +348,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       fullName = config->mameMap[fullName.toLower()];
     }
     QString platformCode = config->platform;
-    QString platform = "[\"" + Platform::get().getAliases(config->platform).at(1) + "\"]";
+    QString collection = "[\"" + Platform::get().getAliases(config->platform).at(1) + "\"]";
     QString gameFile = entryPath;
     gameFile = StrTools::uriEscape(gameFile).replace("/share/Games/", "/uploads/games/");
     QString launch = "retro://" + config->platform + StrTools::uriEscape(entryPath);
@@ -358,6 +358,15 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     if(!entry.rating.isEmpty()) {
       rating = entry.rating.toFloat() * 10.0;
       anyData = true;
+    }
+    QString id;
+    if(!entry.id.isEmpty()) {
+      id = entry.id;
+      id = "[\"" + id.replace(",", "\",\"") + "\"]";
+    }
+    QString platform = "";
+    if(!entry.platform.isEmpty()) {
+      platform = entry.platform;
     }
     /* QString youtubeSearch = "https://www.youtube.com/results?search_query=gameplay";
     QString searchString = platform + " " + name;
@@ -421,27 +430,31 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
     QStringList guides = {};
     if(!entry.guides.isEmpty()) {
-      guides = entry.guides.split(" ");
+      guides = entry.guides.split(";");
       guides.sort();
     }
     QStringList cheats = {};
     if(!entry.cheats.isEmpty()) {
-      cheats = entry.cheats.split(" ");
+      cheats = entry.cheats.split(";");
       cheats.sort();
     }
     QStringList reviews = {};
     if(!entry.reviews.isEmpty()) {
-      reviews = entry.reviews.split(" ");
+      reviews = entry.reviews.split(";");
       reviews.sort();
     }
     QStringList artbooks = {};
     if(!entry.artbooks.isEmpty()) {
-      artbooks = entry.artbooks.split(" ");
+      artbooks = entry.artbooks.split(";");
       artbooks.sort();
     }
     QStringList vgmaps = {};
     if(!entry.vgmaps.isEmpty()) {
-      vgmaps = entry.vgmaps.split(" ");
+      vgmaps = entry.vgmaps.split(";");
+    }
+    QStringList sprites = {};
+    if(!entry.sprites.isEmpty()) {
+      sprites = entry.sprites.split(";");
     }
     QDateTime dateEpoch;
     QString firstPlayed = "";
@@ -529,7 +542,13 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     // Soundtrack
     QString audioFile = "", audioUrl = "";
     if(!entry.chiptuneId.isEmpty() && !entry.chiptunePath.isEmpty()) {
-      audioUrl = "http://media.localnet.priv:4533/share/" + entry.chiptuneId;
+      if(entry.chiptuneIdSrc == "gamebase") {
+        audioUrl = "http://media.localnet.priv:4532/share/" + entry.chiptuneId;
+      } else if(entry.chiptuneIdSrc == "chiptune") {
+        audioUrl = "http://media.localnet.priv:4533/share/" + entry.chiptuneId;
+      } else if(entry.chiptuneIdSrc == "exodos") {
+        audioUrl = "http://media.localnet.priv:4531/share/" + entry.chiptuneId;
+      }
       audioFile = "retro://music" + StrTools::uriEscape(entry.chiptunePath);
     }
     // manual
@@ -574,7 +593,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             if(jsonObj.contains("id")) {
               genreId = jsonObj["id"].toString();
               genresList[sanitizedGenre] = genreId;
-              printf(" DONE\n");
+              printf(" DONE"); fflush(stdout);
             }
             else {
               printf("ERROR: Creation of genre tag has failed.\n");
@@ -605,7 +624,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
             if(jsonObj.contains("id")) {
               franchiseId = jsonObj["id"].toString();
               franchisesList[sanitizedFranchise] = franchiseId;
-              printf(" DONE\n");
+              printf(" DONE"); fflush(stdout);
             }
             else {
               printf("ERROR: Creation of franchise tag has failed.\n");
@@ -627,8 +646,11 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
       tagList << catalogTagList.value("With Handbook");
     }
     if(!guides.isEmpty() || !cheats.isEmpty() || !reviews.isEmpty() ||
-       !vgmaps.isEmpty() || !artbooks.isEmpty()) {
+       !vgmaps.isEmpty()) {
       tagList << catalogTagList.value("With Guides");
+    }
+    if(!vgmaps.isEmpty() || !artbooks.isEmpty() || !sprites.isEmpty()) {
+      tagList << catalogTagList.value("With Art");
     }
     if(!anyImage) {
       tagList << catalogTagList.value("Missing Images");
@@ -749,7 +771,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     QStringList noUpdateFields = {};
     QStringList imageFields = {"Box Back", "Artwork/Media", "Title Screen", "Gameplay Screen"};
     QStringList videoFields = {"Gameplay Video", "Soundtrack Player"};
-    QStringList choiceFields = {"Platform"};
+    QStringList choiceFields = {"Collection"};
     QList<QPair <QString, QString>> datumsItem = {};
     if(!genres.isEmpty()) {
       datumsItem << QPair<QString, QString>("Genres", "[\"" + genres.join("\",\"") + "\"]");
@@ -770,9 +792,11 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         guidesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
         pos++;
       }
-      datumsItem << QPair<QString, QString>("Guides", guidesLinks
-                                                      .replace(config->guidesPath, "/uploads/guides")
-                                                      .replace(config->docsPath, "/uploads/docsdb"));
+      datumsItem << QPair<QString, QString>("Guides",
+                                            guidesLinks.replace(config->guidesPath, "/uploads/guides")
+                                                       .replace(config->docsPath, "/uploads/docsdb")
+                                                       .replace(config->gamebasePath, "/uploads/gamebasedb")
+                                                       .replace(config->exodosPath, "/uploads/exodos"));
     }
     else {
       datumsItem << QPair<QString, QString>("Guides", "");
@@ -784,7 +808,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         cheatsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
         pos++;
       }
-      datumsItem << QPair<QString, QString>("Cheats", cheatsLinks.replace(config->docsPath, "/uploads/docsdb"));
+      datumsItem << QPair<QString, QString>("Cheats",
+                                            cheatsLinks.replace(config->docsPath, "/uploads/docsdb")
+                                                       .replace(config->gamebasePath, "/uploads/gamebasedb")
+                                                       .replace(config->exodosPath, "/uploads/exodos"));
     }
     else {
       datumsItem << QPair<QString, QString>("Cheats", "");
@@ -796,7 +823,8 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         reviewsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
         pos++;
       }
-      datumsItem << QPair<QString, QString>("Reviews", reviewsLinks.replace(config->docsPath, "/uploads/docsdb"));
+      datumsItem << QPair<QString, QString>("Reviews",
+                                            reviewsLinks.replace(config->docsPath, "/uploads/docsdb"));
     }
     else {
       datumsItem << QPair<QString, QString>("Reviews", "");
@@ -808,7 +836,10 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         artbooksLinks += "<a href=\"" + link + "\" target=\"_blank\">" + QString::number(pos) + "</a> ";
         pos++;
       }
-      datumsItem << QPair<QString, QString>("artbooks", artbooksLinks.replace(config->docsPath, "/uploads/docsdb"));
+      datumsItem << QPair<QString, QString>("artbooks",
+                                            artbooksLinks.replace(config->docsPath, "/uploads/docsdb")
+                                                         .replace(config->gamebasePath, "/uploads/gamebasedb")
+                                                         .replace(config->exodosPath, "/uploads/exodos"));
     }
     else {
       datumsItem << QPair<QString, QString>("Artbooks", "");
@@ -822,11 +853,32 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
         mapPlatform = map.baseName();
         vgmapsLinks += "<a href=\"" + link + "\" target=\"_blank\">" + mapPlatform + "</a> ";
       }
-      datumsItem << QPair<QString, QString>("Maps", vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps"));
+      datumsItem << QPair<QString, QString>("Maps",
+                                            vgmapsLinks.replace(config->mapsPath, "/uploads/vgmaps")
+                                                       .replace(config->gamebasePath, "/uploads/gamebasedb")
+                                                       .replace(config->exodosPath, "/uploads/exodos"));
     }
     else {
       datumsItem << QPair<QString, QString>("Maps", "");
     }
+    if(!sprites.isEmpty()) {
+      QString spritesLinks;
+      for(auto link: std::as_const(sprites)) {
+        if(link.endsWith('/')) {
+          link.chop(1);
+        }
+        QFileInfo sprite(link);
+        QString spritePlatform = sprite.absolutePath();
+        sprite.setFile(spritePlatform);
+        spritePlatform = sprite.baseName().toUpper();
+        spritesLinks += "<a href=\"" + link + "\" target=\"_blank\">" + spritePlatform + "</a> ";
+      }
+      datumsItem << QPair<QString, QString>("Sprites", spritesLinks.replace(config->spritesPath, "/uploads/sprites"));
+    }
+    else {
+      datumsItem << QPair<QString, QString>("Sprites", "");
+    }
+    datumsItem << QPair<QString, QString>("Id", id);
     datumsItem << QPair<QString, QString>("Players", maxPlayers);
     datumsItem << QPair<QString, QString>("Age Rating", ageRating);
     datumsItem << QPair<QString, QString>("Editor", editor);
@@ -846,6 +898,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     datumsItem << QPair<QString, QString>("Game File", gameFile);
     datumsItem << QPair<QString, QString>("Soundtrack", audioFile);
     datumsItem << QPair<QString, QString>("Name", name);
+    datumsItem << QPair<QString, QString>("Collection", collection);
     datumsItem << QPair<QString, QString>("Platform", platform);
     datumsItem << QPair<QString, QString>("Favourite", entry.favourite ? "1" : "0");
     datumsItem << QPair<QString, QString>("Played", entry.played ? "1" : "0");
@@ -997,8 +1050,7 @@ void Koillection::assembleList(QString &finalOutput, QList<GameEntry> &gameEntri
     }
     if(!gamePath.isFile() || (!presentInCache && fullMode)) {
       printf("INFO: Item '%s' corresponding to a non-existant file will be deleted.\n", query.value(0).toString().toStdString().c_str());
-      QString request = "";
-      netComm->request(baseUrl + "/api/items/" + query.value(0).toString(), request, headers, "DELETE");
+      netComm->request(baseUrl + "/api/items/" + query.value(0).toString(), QString(), headers, "DELETE");
       q.exec();
       // Not sure how to check for the result of the delete operation
     }

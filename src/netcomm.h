@@ -3,7 +3,7 @@
  *
  *  Wed Jun 7 12:00:00 CEST 2017
  *  Copyright 2017 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -37,7 +37,9 @@ class NetComm : public QObject
 
 public:
   NetComm(QSharedPointer<NetManager> manager);
-  void request(QString query, QString postData = QString(), QList<QPair<QString, QString> > headers = QList<QPair<QString, QString> >(), QByteArray operation="");
+  void request(QString query, QString postData = QString(), QList<QPair<QString,
+               QString> > headers = QList<QPair<QString, QString> >(),
+               QByteArray operation = "");
   QByteArray getData();
   QNetworkReply::NetworkError getError(const int &verbosity = 0);
   QByteArray getContentType();

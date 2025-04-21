@@ -1,0 +1,56 @@
+{
+	"categoryPatterns": [
+        	{
+                	"category":"cover",
+                        "patterns":["box.*front", "cover.*front", "flyer.*front", "flier.*front", "slip.*front", "front", "box", "cover"]
+                },
+        	{
+                	"category":"marquee",
+                        "patterns":["inlay", "incover", "advert", "newspaper", "pamphlet", "calendar", "poster", "card", "cartridge", "cart", "^cd$", "cd ", " cd", "^cds$"]
+                },
+        	{
+                	"category":"guides",
+                        "patterns":["briefing", "controls", "reference", "schedule", "solution", "terrain key", "guide", "walkthrough", "atlas", "tactic", "strategy", "scorepad"]
+                },
+        	{
+                	"category":"artbooks",
+                        "patterns":["artbook", "novella", "making of", "scrapbook", "journal", "book of", "album", "poster", "comic", "encyclopedia", "artwork"]
+                },
+        	{
+                	"category":"vgmaps",
+                        "patterns":[" map", "map ", "maps ", " maps", "^maps$", "^map$"]
+                },
+        	{
+                	"category":"cheats",
+                        "patterns":["cheat", "clue", "hint", "codes", "password", "secrets", " tip", "tip "]
+                },
+        	{
+                	"category":"texture",
+                        "patterns":["box.*back", "cover.*back", "flyer.*back", "flier.*back", "slip.*back", "back"]
+                },
+        	{
+                	"category":"manual",
+                        "patterns":["manual", "manaul", "handbook"]
+                },
+        	{
+                	"category":"chiptune",
+                        "patterns":["soundtrack", "sounstrack", "music"]
+                },
+                {
+                        "category":"wheel",
+                        "patterns":[]
+                },
+                {
+                        "category":"reviews",
+                        "patterns":[]
+                },
+                {
+                        "category":"sprites",
+                        "patterns":[]
+                },
+                {
+                        "category":"screenshot",
+                        "patterns":[]
+                }
+        ]
+}

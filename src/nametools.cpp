@@ -3,7 +3,7 @@
  *
  *  Tue Feb 20 12:00:00 CEST 2018
  *  Copyright 2018 Lars Muldjord
- *  muldjordlars@gmail.com
+ *  Copyright 2025 Risalt @ GitHub
  ****************************************************************************/
 /*
  *  This file is part of skyscraper.
@@ -39,14 +39,25 @@
 #include "skyscraper.h"
 #include "crc32.h"
 
-NameTools::NameTools()
+NameTools::NameTools(QString threadId)
+  : threadId(threadId)
 {
 }
 
-NameTools & NameTools::get()
+NameTools::~NameTools()
 {
-  static NameTools instance;
-  return instance;
+  if(db.isOpen()) {
+    db.close();
+    QString oldDatabase = db.connectionName();
+    db = QSqlDatabase();
+    QSqlDatabase::removeDatabase(oldDatabase);
+  }
+  if(lutrisdb.isOpen()) {
+    lutrisdb.close();
+    QString oldDatabase = lutrisdb.connectionName();
+    lutrisdb = QSqlDatabase();
+    QSqlDatabase::removeDatabase(oldDatabase);
+  }
 }
 
 QString NameTools::getScummName(const QString &baseName, const QString &scummIni)
@@ -422,11 +433,7 @@ QString NameTools::getParNotes(QString baseName)
 
 QString NameTools::getUniqueNotes(const QString &notes, QChar delim)
 {
-#if QT_VERSION >= 0x050e00
   QStringList notesList = notes.split(delim, Qt::SkipEmptyParts);
-#else
-  QStringList notesList = notes.split(delim, QString::SkipEmptyParts);
-#endif
   QStringList uniqueList;
   for(const auto &note: std::as_const(notesList)) {
     bool found = false;
@@ -469,7 +476,7 @@ QString NameTools::getCacheId(const QFileInfo &info)
     cacheIdFromData = false;
   }
   // If file is empty always do checksum on filename
-  if(info.size() == 0) {
+  if(info.size() < 100) {
     cacheIdFromData = false;
   }
   if(cacheIdFromData) {
@@ -828,85 +835,96 @@ void NameTools::generateSearchNames(const QString &baseName,
   }
 }
 
+CanonicalData NameTools::calculateChecksums(const QFileInfo &info)
+{
+  CanonicalData canonicalData;
+
+  if(info.size() != 0) {
+    QStringList compressedFormats = {"xz", "zip", "7z", "rar", "arj", "gz", "bz2"};
+    QCryptographicHash md5(QCryptographicHash::Md5);
+    QCryptographicHash sha1(QCryptographicHash::Sha1);
+    Crc32 crc;
+    crc.initInstance(1);
+    if(compressedFormats.contains(info.suffix().toLower())) {
+      // Not much can be done with multiple file archives, so we just scan all of it
+      QProcess decProc;
+      decProc.setReadChannel(QProcess::StandardOutput);
+      decProc.start("7z", QStringList({"x", "-so", info.absoluteFilePath()}));
+      if (decProc.waitForFinished(30000)) {
+        if (decProc.exitStatus() == QProcess::NormalExit) {
+           QByteArray allData = decProc.readAllStandardOutput();
+           md5.addData(allData);
+           sha1.addData(allData);
+           crc.pushData(1, allData.data(), allData.length());
+        } else {
+          printf("ERROR: Cannot decompress file '%s': checksum is not possible. Skipping file.\n",
+                 info.absoluteFilePath().toStdString().c_str());
+        }
+      } else {
+        printf("ERROR: Timeout decompressing file '%s': checksum is not possible. Skipping file.\n",
+               info.absoluteFilePath().toStdString().c_str());
+      }
+    } else {
+      QFile romFile(info.absoluteFilePath());
+      romFile.open(QIODevice::ReadOnly);
+      while(!romFile.atEnd()) {
+        QByteArray dataSeg = romFile.read(1024);
+        md5.addData(dataSeg);
+        sha1.addData(dataSeg);
+        crc.pushData(1, dataSeg.data(), dataSeg.length());
+      }
+      romFile.close();
+    }
+    QString crcResult = QString::number(crc.releaseInstance(1), 16);
+    while(crcResult.length() < 8) {
+      crcResult.prepend("0");
+    }
+    QString md5Result = md5.result().toHex();
+    while(md5Result.length() < 32) {
+      md5Result.prepend("0");
+    }
+    QString sha1Result = sha1.result().toHex();
+    while(sha1Result.length() < 40) {
+      sha1Result.prepend("0");
+    }
+    // Size
+    canonicalData.size = info.size();
+    // CRC
+    canonicalData.crc = crcResult.toLower();
+    // SHA1
+    canonicalData.sha1 = sha1Result.toLower();
+    // MD5
+    canonicalData.md5 = md5Result.toLower();
+  }
+
+  return canonicalData;
+}
+
 CanonicalData NameTools::getCanonicalData(const QFileInfo &info, bool onlyChecksums)
 {
   CanonicalData canonicalData;
 
   bool foundInCache = false;
   GameEntry cachedData;
-  QString quickId = get().cache->getQuickId(info);
+  QString quickId = cache->getQuickId(info);
   if(!quickId.isEmpty()) {
     cachedData.cacheId = quickId;
-    get().cache->fillBlanks(cachedData, "generic");
+    cache->fillBlanks(cachedData, "generic");
     if(cachedData.canonical.size > 0) {
       canonicalData = cachedData.canonical;
       if(!onlyChecksums && (canonicalData.name.isEmpty() ||
                             canonicalData.mameid.isEmpty())) {
-        get().searchCanonicalData(canonicalData);
+        searchCanonicalData(canonicalData);
       }
       foundInCache = true;
     }
   }
   if(!foundInCache) {
     if(info.size() != 0) {
-      QStringList compressedFormats = {"xz", "zip", "7z", "rar", "arj", "gz", "bz2"};
-      QCryptographicHash md5(QCryptographicHash::Md5);
-      QCryptographicHash sha1(QCryptographicHash::Sha1);
-      Crc32 crc;
-      crc.initInstance(1);
-      if(compressedFormats.contains(info.suffix().toLower())) {
-        // Not much can be done with multiple file archives, so we just scan all of it
-        QProcess decProc;
-        decProc.setReadChannel(QProcess::StandardOutput);
-        decProc.start("7z", QStringList({"x", "-so", info.absoluteFilePath()}));
-        if (decProc.waitForFinished(30000)) {
-          if (decProc.exitStatus() == QProcess::NormalExit) {
-             QByteArray allData = decProc.readAllStandardOutput();
-             md5.addData(allData);
-             sha1.addData(allData);
-             crc.pushData(1, allData.data(), allData.length());
-          } else {
-            printf("ERROR: Cannot decompress file '%s': checksum is not possible. Skipping file.\n",
-                   info.absoluteFilePath().toStdString().c_str());
-          }
-        } else {
-          printf("ERROR: Timeout decompressing file '%s': checksum is not possible. Skipping file.\n",
-                 info.absoluteFilePath().toStdString().c_str());
-        }
-      } else {
-        QFile romFile(info.absoluteFilePath());
-        romFile.open(QIODevice::ReadOnly);
-        while(!romFile.atEnd()) {
-          QByteArray dataSeg = romFile.read(1024);
-          md5.addData(dataSeg);
-          sha1.addData(dataSeg);
-          crc.pushData(1, dataSeg.data(), dataSeg.length());
-        }
-        romFile.close();
-      }
-      QString crcResult = QString::number(crc.releaseInstance(1), 16);
-      while(crcResult.length() < 8) {
-        crcResult.prepend("0");
-      }
-      QString md5Result = md5.result().toHex();
-      while(md5Result.length() < 32) {
-        md5Result.prepend("0");
-      }
-      QString sha1Result = sha1.result().toHex();
-      while(sha1Result.length() < 40) {
-        sha1Result.prepend("0");
-      }
-      // Size
-      canonicalData.size = info.size();
-      // CRC
-      canonicalData.crc = crcResult.toLower();
-      // SHA1
-      canonicalData.sha1 = sha1Result.toLower();
-      // MD5
-      canonicalData.md5 = md5Result.toLower();
+      canonicalData = calculateChecksums(info);
       // Name (removing double quotes if necessary)
       if(!onlyChecksums) {
-        get().searchCanonicalData(canonicalData);
+        searchCanonicalData(canonicalData);
       }
     } else {
       printf("WARNING: File '%s' is empty: checksum is not possible. Skipping file.\n",
@@ -919,15 +937,15 @@ CanonicalData NameTools::getCanonicalData(const QFileInfo &info, bool onlyChecks
     cachedData.canonical = canonicalData;
     cachedData.source = "generic";
     QString dummy;
-    get().cache->addResources(cachedData, Skyscraper::config, dummy);
+    cache->addResources(cachedData, Skyscraper::config, dummy);
   }
   return canonicalData;
 }
 
 bool NameTools::searchCanonicalData(CanonicalData &canonical)
 {
-  if(dbInitialized.testAndSetAcquire(0, 1)) {
-    db = QSqlDatabase::addDatabase("QSQLITE", "canonical");
+  if(!db.isOpen()) {
+    db = QSqlDatabase::addDatabase("QSQLITE", "canonical" + threadId);
     db.setDatabaseName(dbName);
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
     if(!db.open()) {
@@ -978,11 +996,12 @@ bool NameTools::searchCanonicalData(CanonicalData &canonical)
 
 bool NameTools::importCanonicalData(const QString &file)
 {
+  // This is NOT thread-safe. Use with single thread only.
   QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "canonical");
-  bool exists = QFileInfo(get().dbName).isFile();
-  db.setDatabaseName(get().dbName);
+  bool exists = QFileInfo(dbName).isFile();
+  db.setDatabaseName(dbName);
   if(!db.open()) {
-    printf("ERROR: Could not open/create the database %s.\n", get().dbName.toStdString().c_str());
+    printf("ERROR: Could not open/create the database %s.\n", dbName.toStdString().c_str());
     qDebug() << db.lastError();
     return false;
   }
@@ -1502,7 +1521,7 @@ qint64 NameTools::recursiveCalculateGameSize(const QString &filePath)
         QString line = filelist.readLine();
         QStringList parameters = line.split("/");
         if(parameters.size() > 1) {
-          QString windowsDir = get().searchLutrisData(parameters.at(1));
+          QString windowsDir = searchLutrisData(parameters.at(1));
           if(!windowsDir.isEmpty()) {
             diskSize += dirSize(QFileInfo(windowsDir).absolutePath());
             diskSize += QFileInfo(filePath).size();
@@ -1528,18 +1547,18 @@ qint64 NameTools::recursiveCalculateGameSize(const QString &filePath)
 
 QString NameTools::searchLutrisData(const QString &slugName)
 {
-  if(dbInitialized.testAndSetAcquire(0, 1)) {
-    db = QSqlDatabase::addDatabase("QSQLITE", "lutris");
-    db.setDatabaseName(dbLutris);
-    db.setConnectOptions("QSQLITE_OPEN_READONLY");
-    if(!db.open()) {
+  if(!lutrisdb.isOpen()) {
+    lutrisdb = QSqlDatabase::addDatabase("QSQLITE", "lutris" + threadId);
+    lutrisdb.setDatabaseName(dbLutris);
+    lutrisdb.setConnectOptions("QSQLITE_OPEN_READONLY");
+    if(!lutrisdb.open()) {
       printf("ERROR: Could not open the database %s. Please create it using the "
              "option '--loadchecksum FILENAME'\n", dbLutris.toStdString().c_str());
-      qDebug() << db.lastError();
+      qDebug() << lutrisdb.lastError();
       return "";
     }
   }
-  QSqlQuery query(db);
+  QSqlQuery query(lutrisdb);
   query.setForwardOnly(true);
   query.prepare("SELECT configpath FROM games WHERE slug='" + slugName + "'");
   if(!query.exec()) {
